@@ -39,6 +39,10 @@ DATABASE_URL=<direct url> npm run db:deploy
 DATABASE_URL=<direct url> APP_URL=https://portal.example.com npm run db:bootstrap -- owner@example.com "Owner Name"
 ```
 
+**No terminal?** On Vercel the `vercel-build` script runs migrations automatically (using
+`DIRECT_DATABASE_URL` when set). Set `SETUP_TOKEN` and open `/setup` to create the first Super
+Admin in the browser. The page disables itself once that account exists. See [go-live.md](go-live.md).
+
 `db:deploy` applies the schema, including the Postgres triggers that make audit logs and
 manifest versions immutable. `db:bootstrap` is idempotent. It creates system roles, permissions
 and the default manifest template, then prints a **one-time invitation link** for the first Super

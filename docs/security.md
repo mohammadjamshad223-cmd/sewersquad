@@ -112,7 +112,7 @@ Re-check with each upgrade, and plan the move to Next 16 once it is stable for t
 
 ## Known limitations
 
-- No admin-initiated password reset. Self-service reset requires email to be configured.
+- Self-service "Forgot password" requires email. Without it, staff can use **Send reset link** on the user, which shows a one-time link to hand over.
 - There is no WebAuthn/passkey support yet. TOTP is the only second factor.
 - Rate limits are per database. They work across instances, but they are not a substitute for an
   edge WAF on high-traffic deployments.

@@ -99,3 +99,38 @@ describe("authentication", () => {
     await expect(prisma.auditLog.delete({ where: { id: row.id } })).rejects.toThrow(/append-only/);
   });
 });
+
+describe("staff-issued access links", () => {
+  beforeAll(async () => {
+    await resetDb();
+    await seedRbac();
+  });
+
+  it("resends invitations or issues reset links under user-management permissions", async () => {
+    const { sendAccessLink } = await import("@/server/services/auth");
+    const admin = await staff("admin");
+    const dispatcher = await staff("dispatcher");
+    const owner = await staff("super_admin");
+    const A = await org("Link Co", { locations: 1 });
+    const cust = await customer(A.org.id, "ORG_ADMIN", []);
+    await prisma.user.update({ where: { id: cust.userId }, data: { passwordHash: await hashPassword("Old-password-1") } });
+
+    // Email isn't configured in tests, so the link comes back to the staff member.
+    const res = await sendAccessLink(admin, cust.userId);
+    const link = (res as { data?: { inviteLink?: string } }).data?.inviteLink ?? "";
+    expect(link).toMatch(/\/reset-password\?token=/);
+    const token = decodeURIComponent(link.split("token=")[1]!);
+    await resetPassword(token, "New-password-22", "127.0.0.1");
+    expect((await login(cust.email, "New-password-22", { ip: "127.0.0.1", userAgent: null })).status).toBe("ok");
+    expect(await prisma.auditLog.count({ where: { action: "user.password_reset_sent", entityId: cust.userId } })).toBe(1);
+
+    const invited = await prisma.user.create({ data: { email: "invited@t.test", name: "Invited", kind: "STAFF", status: "INVITED", roleId: (await prisma.role.findUniqueOrThrow({ where: { key: "dispatcher" } })).id } });
+    await expectCode(sendAccessLink(admin, invited.id), "FORBIDDEN"); // staff accounts need staff.manage
+    const inv = await sendAccessLink(owner, invited.id);
+    expect((inv as { data?: { inviteLink?: string } }).data?.inviteLink).toMatch(/\/invite\/accept\?token=/);
+
+    await expectCode(sendAccessLink(dispatcher, cust.userId), "FORBIDDEN"); // no customers.users
+    await expectCode(sendAccessLink(admin, owner.userId), "FORBIDDEN"); // only a super admin can reset a super admin
+    await expectCode(sendAccessLink(owner, owner.userId), "BAD_REQUEST"); // own account uses Forgot password
+  });
+});

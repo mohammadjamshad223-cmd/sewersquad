@@ -30,4 +30,22 @@ test("without an email provider, the inviting admin gets a one-time link the inv
   await again.goto(link);
   await expect(again.getByText(/invalid|expired|already/i).first()).toBeVisible();
   await invitee.close();
+
+  // The owner can also send that (now active) account a password-reset link.
+  const admin2 = await browser.newContext({ permissions: ["clipboard-read", "clipboard-write"] });
+  const op = await admin2.newPage();
+  await signIn(op, "owner@demo.sewersquad.test");
+  await op.goto("/admin/settings?tab=staff");
+  await op.getByRole("row", { name: new RegExp(email) }).getByRole("button", { name: "Send reset link" }).click();
+  await expect(op.getByText(`share this password-reset link with ${email}`)).toBeVisible();
+  await op.getByRole("button", { name: "Copy link" }).click();
+  const resetLink = await op.evaluate(() => navigator.clipboard.readText());
+  expect(resetLink).toMatch(/\/reset-password\?token=/);
+  await admin2.close();
+  const r = await (await browser.newContext()).newPage();
+  await r.goto(resetLink);
+  await r.getByLabel("New password").fill("Casey-reset-pass-2026");
+  await r.getByLabel("Confirm password").fill("Casey-reset-pass-2026");
+  await r.getByRole("button", { name: /reset|save|update/i }).click();
+  await expect(r).toHaveURL(/\/login\?reset=1/);
 });

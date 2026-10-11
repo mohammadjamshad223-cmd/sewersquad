@@ -221,7 +221,46 @@ export async function inviteUser(actor: Actor, input: InviteInput) {
 export function invitationResult(email: string, token: string) {
   if (integrations.email()) return { ok: true as const, message: `Invitation sent to ${email}.` };
   const inviteLink = `${env().APP_URL.replace(/\/$/, "")}/invite/accept?token=${encodeURIComponent(token)}`;
-  return { ok: true as const, message: `Email isn't configured — share this one-time invitation link with ${email} securely.`, data: { inviteLink } };
+  return { ok: true as const, message: `Email isn't configured — share this one-time invitation link with ${email} securely.`, data: { inviteLink, linkNote: "Valid for 7 days, single use. It will not be shown again." } };
+}
+
+/**
+ * Staff help for a user who can't get in: re-sends the invitation (not yet accepted) or a
+ * password-reset link (active account). Same permission rules as deactivating the user. When
+ * email is not configured the link is returned once to the staff member to hand over.
+ */
+export async function sendAccessLink(actor: Actor, userId: string) {
+  const target = await prisma.user.findUnique({ where: { id: userId }, include: { role: true } });
+  if (!target) throw notFound();
+  if (!hasPermission(actor, target.kind === "CUSTOMER" ? "customers.users" : "staff.manage")) throw forbidden();
+  if (target.id === actor.userId) throw badRequest("Use “Forgot password” on the sign-in page for your own account.");
+  if (target.role?.key === "super_admin" && actor.roleKey !== "super_admin") throw forbidden();
+  if (target.status === "DEACTIVATED") throw badRequest("Reactivate the account first.");
+  await rateLimit(`access-link:${target.id}`, 10, 60 * 60);
+
+  const kind = target.status === "INVITED" ? "INVITATION" : "PASSWORD_RESET";
+  const path = kind === "INVITATION" ? "/invite/accept" : "/reset-password";
+  const token = await prisma.$transaction(async (tx) => {
+    const t = await issueAuthToken(tx, target.id, target.email, kind);
+    await audit(tx, { actorId: actor.userId, action: kind === "INVITATION" ? "user.invite_resent" : "user.password_reset_sent", entityType: "User", entityId: target.id, after: { email: target.email } });
+    await notify(tx, {
+      userIds: [target.id],
+      type: "account.security",
+      title: kind === "INVITATION" ? "Your Sewer Squad portal invitation" : "Reset your Sewer Squad password",
+      body: kind === "INVITATION" ? `${actor.name} re-sent your invitation. Use the link below to set your password. It expires in 7 days.` : `${actor.name} sent you a link to set a new password. It expires in 1 hour.`,
+      link: `${path}?token=${encodeURIComponent(t)}`,
+      dedupeKey: `access-link:${sha256Hex(t).slice(0, 16)}`,
+      forceEmail: true,
+    });
+    return t;
+  });
+  const label = kind === "INVITATION" ? "invitation" : "password-reset link";
+  if (integrations.email()) return { ok: true as const, message: `A new ${label} was emailed to ${target.email}.` };
+  return {
+    ok: true as const,
+    message: `Email isn't configured — share this ${label} with ${target.email} securely.`,
+    data: { inviteLink: `${env().APP_URL.replace(/\/$/, "")}${path}?token=${encodeURIComponent(token)}`, linkNote: kind === "INVITATION" ? "Valid for 7 days, single use." : "Valid for 1 hour, single use." },
+  };
 }
 
 export async function acceptInvitation(token: string, password: string, meta: { ip: string; userAgent: string | null }) {

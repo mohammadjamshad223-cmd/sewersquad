@@ -5,6 +5,7 @@ import { ActionForm, ActionButton, Field, SubmitButton } from "@/components/ui/f
 import { Checkbox, Input, Select, Textarea } from "@/components/ui/input";
 import { FormDialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { sendAccessLinkAction } from "@/app/admin/_actions/customers";
 import { changeStaffRoleAction, inviteStaffAction, saveRolePermissionsAction, saveSettingsAction, saveTemplateAction, setStaffActiveAction } from "@/app/admin/_actions/settings";
 import { savePricingRuleAction } from "@/app/admin/_actions/billing";
 import { SERVICE_TYPE_LABEL } from "@/lib/status";
@@ -110,6 +111,7 @@ export function StaffRow({ user, roles, canEdit, self }: { user: { id: string; r
       }}>
         {roles.map((r) => <option key={r.key} value={r.key}>{r.name}</option>)}
       </select>
+      {canEdit && !self && user.status !== "DEACTIVATED" && <ActionButton size="sm" variant="ghost" action={() => sendAccessLinkAction(user.id)} refresh={false}>{user.status === "INVITED" ? "Resend invite" : "Send reset link"}</ActionButton>}
       {canEdit && !self && <ActionButton size="sm" variant="ghost" action={() => setStaffActiveAction(user.id, user.status === "DEACTIVATED")} confirm={user.status === "DEACTIVATED" ? undefined : "Deactivate this staff account? They'll be signed out immediately."} successMessage="Updated.">{user.status === "DEACTIVATED" ? "Reactivate" : "Deactivate"}</ActionButton>}
     </div>
   );

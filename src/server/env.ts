@@ -13,6 +13,8 @@ const schema = z.object({
   APP_ENCRYPTION_KEY: z.string().min(32, "APP_ENCRYPTION_KEY must be at least 32 characters"),
   CRON_SECRET: z.string().min(8).optional(),
   REQUIRE_ADMIN_MFA: z.enum(["true", "false"]).default("true"),
+  /** Enables the one-time /setup page that creates the first Super Admin. Remove after setup. */
+  SETUP_TOKEN: z.string().min(16, "SETUP_TOKEN must be at least 16 characters").optional(),
   SESSION_TTL_HOURS: z.coerce.number().int().positive().default(12),
 
   STORAGE_DRIVER: z.enum(["local", "s3"]).default("local"),

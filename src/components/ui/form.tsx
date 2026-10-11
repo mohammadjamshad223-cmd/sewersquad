@@ -27,6 +27,25 @@ export function useFieldError(name: string): string | undefined {
  * Form bound to a server action via useActionState. Shows toasts for success/error, exposes
  * field errors to <Field>, and optionally redirects / resets / refreshes on success.
  */
+/**
+ * Success toast. A one-time sign-in link (returned when no email provider is configured) gets a
+ * persistent toast with a copy button instead, so staff can hand it over.
+ */
+function announceSuccess(state: ActionState, fallback?: string | false) {
+  if (!state.ok) return;
+  const msg = state.message ?? fallback;
+  const data = state.data as { inviteLink?: string; linkNote?: string } | undefined;
+  if (data?.inviteLink) {
+    const link = data.inviteLink;
+    toast.message(msg || "Link created", {
+      description: data.linkNote ?? "Single use. It will not be shown again.",
+      duration: Infinity,
+      closeButton: true,
+      action: { label: "Copy link", onClick: () => void navigator.clipboard.writeText(link).then(() => toast.success("Link copied.")) },
+    });
+  } else if (msg) toast.success(msg);
+}
+
 export function ActionForm({
   action,
   children,
@@ -56,16 +75,7 @@ export function ActionForm({
     if (!state || state === last.current) return;
     last.current = state;
     if (state.ok) {
-      const msg = state.message ?? successMessage;
-      const inviteLink = (state.data as { inviteLink?: string } | undefined)?.inviteLink;
-      if (inviteLink) {
-        toast.message(msg || "Invitation created", {
-          description: "Valid for 7 days, single use. It will not be shown again.",
-          duration: Infinity,
-          closeButton: true,
-          action: { label: "Copy link", onClick: () => void navigator.clipboard.writeText(inviteLink).then(() => toast.success("Invitation link copied.")) },
-        });
-      } else if (msg) toast.success(msg);
+      announceSuccess(state, successMessage);
       if (resetOnSuccess) formRef.current?.reset();
       onSuccess?.(state);
       if (redirectTo) router.push(redirectTo);
@@ -172,8 +182,7 @@ export function ActionButton({
         start(async () => {
           const res = await action();
           if (res.ok) {
-            const msg = res.message ?? successMessage;
-            if (msg) toast.success(msg);
+            announceSuccess(res, successMessage);
             if (refresh) router.refresh();
           } else toast.error(res.error);
           onDone?.(res);

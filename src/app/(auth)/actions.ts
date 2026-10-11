@@ -112,3 +112,20 @@ export async function completeMfaSetupAction(prev: ActionResult, fd: FormData) {
 export async function verifyMfaAction(prev: ActionResult, fd: FormData) {
   return _verifyMfaAction(prev, fd);
 }
+
+const _setupAction = formAction(
+  z
+    .object({ token: z.string().min(1, "Enter the setup code."), name: z.string().trim().min(2, "Enter your name."), email, password: z.string().min(1), confirm: z.string().min(1) })
+    .refine((v) => v.password === v.confirm, { message: "Passwords do not match.", path: ["confirm"] }),
+  async (input) => {
+    const meta = await requestMeta();
+    const { completeSetup } = await import("@/server/services/bootstrap");
+    const { createSession } = await import("@/server/auth/session");
+    const user = await completeSetup(input, meta);
+    await createSession(user.id, { mfaVerified: false, ip: meta.ip, userAgent: meta.userAgent });
+    redirect(env().REQUIRE_ADMIN_MFA === "true" ? "/mfa/setup" : "/admin/dashboard");
+  },
+);
+export async function setupAction(prev: ActionResult, fd: FormData) {
+  return _setupAction(prev, fd);
+}

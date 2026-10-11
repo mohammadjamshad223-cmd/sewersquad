@@ -8,6 +8,8 @@ import { DescriptionList, PageHeader, Stat } from "@/components/ui/misc";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { DriverEditDialog } from "@/components/admin/fleet-forms";
+import { ActionButton } from "@/components/ui/form";
+import { sendAccessLinkAction } from "@/app/admin/_actions/customers";
 import { formatDateKey, keyFromDate } from "@/lib/dates";
 import { formatCents, formatGallons } from "@/lib/money";
 import { titleCase } from "@/lib/utils";
@@ -28,7 +30,7 @@ export default async function DriverDetail({ params }: { params: Promise<{ id: s
   const completed = await prisma.job.count({ where: { driverId: id, status: { in: ["SUBMITTED", "COMPLETED"] } } });
   return (
     <div className="space-y-6">
-      <PageHeader title={d.user.name} description={`${d.employeeNumber} · ${titleCase(d.status)}`} breadcrumbs={[{ label: "Drivers & fleet", href: "/admin/drivers" }, { label: d.user.name }]} actions={hasPermission(actor, "fleet.write") && <DriverEditDialog driver={{ id: d.id, status: d.status, licenseNumber: d.licenseNumber, licenseClass: d.licenseClass, licenseExpiry: d.licenseExpiry ? keyFromDate(d.licenseExpiry) : null, territory: d.territory, hireDate: d.hireDate ? keyFromDate(d.hireDate) : null, hourlyCostCents: d.hourlyCostCents, defaultVehicleId: d.defaultVehicleId, phone: d.user.phone }} vehicles={vehicles} />} />
+      <PageHeader title={d.user.name} description={`${d.employeeNumber} · ${titleCase(d.status)}`} breadcrumbs={[{ label: "Drivers & fleet", href: "/admin/drivers" }, { label: d.user.name }]} actions={<div className="flex gap-2">{hasPermission(actor, "staff.manage") && d.user.status !== "DEACTIVATED" && <ActionButton variant="secondary" size="sm" action={sendAccessLinkAction.bind(null, d.userId)} refresh={false}>{d.user.status === "INVITED" ? "Resend invite" : "Send reset link"}</ActionButton>}{hasPermission(actor, "fleet.write") && <DriverEditDialog driver={{ id: d.id, status: d.status, licenseNumber: d.licenseNumber, licenseClass: d.licenseClass, licenseExpiry: d.licenseExpiry ? keyFromDate(d.licenseExpiry) : null, territory: d.territory, hireDate: d.hireDate ? keyFromDate(d.hireDate) : null, hourlyCostCents: d.hourlyCostCents, defaultVehicleId: d.defaultVehicleId, phone: d.user.phone }} vehicles={vehicles} />}</div>} />
       <div className="grid gap-4 sm:grid-cols-3">
         <Stat label="Completed jobs" value={completed} />
         <Stat label="Gallons pumped" value={formatGallons(totals._sum.gallonsPumped ?? 0)} />

@@ -4,10 +4,10 @@ import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { z } from "zod";
 import { assertStaff } from "@/server/authz/guards";
-import { formAction, runAction, type ActionResult } from "@/server/action";
+import { formAction, runAction, toActionError, type ActionResult } from "@/server/action";
 import * as customers from "@/server/services/customers";
 import { createPlan, planSchema, setPlanStatus, updatePlan } from "@/server/services/plans";
-import { inviteUser, setUserActive, invitationResult } from "@/server/services/auth";
+import { inviteUser, setUserActive, invitationResult, sendAccessLink } from "@/server/services/auth";
 import { processDueDeliveries } from "@/server/services/notifications";
 import { badRequest } from "@/server/errors";
 import { prisma } from "@/server/db";
@@ -113,6 +113,17 @@ const _inviteCustomer = formAction(
   },
 );
 export async function inviteCustomerUserAction(p: ActionResult, fd: FormData) { return _inviteCustomer(p, fd); }
+
+/** Re-send an invitation or a password-reset link to any user (staff, driver or customer). */
+export async function sendAccessLinkAction(userId: string): Promise<ActionResult> {
+  try {
+    const res = await sendAccessLink(await assertStaff(), z.string().uuid().parse(userId));
+    after(() => processDueDeliveries());
+    return res;
+  } catch (err) {
+    return toActionError(err);
+  }
+}
 
 export async function setUserActiveAction(userId: string, active: boolean) {
   return runAction(async () => setUserActive(await assertStaff(), userId, active));

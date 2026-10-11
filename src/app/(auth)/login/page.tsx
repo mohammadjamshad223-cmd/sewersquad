@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getActor, homePathFor } from "@/server/auth/session";
 import { LoginForm } from "./login-form";
 import { Alert } from "@/components/ui/misc";
+import { setupAvailable } from "@/server/services/bootstrap";
 
 export const metadata = { title: "Sign in" };
 
@@ -10,10 +11,16 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const actor = await getActor();
   if (actor && (!actor.mfaEnabled || actor.mfaVerified) && !actor.mfaEnrollmentRequired) redirect(homePathFor(actor));
   const sp = await searchParams;
+  const firstRun = await setupAvailable();
   return (
     <div>
       <h1 className="text-2xl font-semibold">Sign in</h1>
       <p className="mt-1 text-sm text-muted-foreground">Customer, driver and staff access.</p>
+      {firstRun && (
+        <Alert tone="info" className="mt-6" title="No owner account yet">
+          This portal hasn&apos;t been set up. <Link href="/setup" className="font-medium text-brand hover:underline">Create the owner account</Link> with your setup code.
+        </Alert>
+      )}
       {sp.reset && (
         <Alert tone="success" className="mt-6" title="Password updated">
           Sign in with your new password.

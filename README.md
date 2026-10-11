@@ -57,7 +57,7 @@ truck issue. Disposal facilities and permit numbers in the seed are fictitious a
 | `npm run db:migrate` | Create a new migration in development |
 | `npm run db:deploy` | Apply migrations (CI / production) |
 | `npm run db:seed` | Reset the database and load demo data (never in production) |
-| `npm run db:bootstrap -- you@company.com "Your Name"` | Production: create roles/permissions/default template and print a one-time Super Admin invitation link |
+| `npm run db:bootstrap -- you@company.com "Your Name"` | Production (terminal alternative to the `/setup` page): create roles/permissions/default template and print a one-time Super Admin invitation link |
 | `npm test` | Unit + integration tests (Vitest) against `DATABASE_URL_TEST` |
 | `npm run test:e2e` | Playwright end-to-end tests (reseeds the dev database) |
 
@@ -94,6 +94,7 @@ docs/              deployment, integrations, security, architecture, admin guide
 
 ## Documentation
 
+- **[Go-live guide](docs/go-live.md): start here to put the portal into use (no programming needed)**
 - [Deployment](docs/deployment.md) — Vercel or self-hosted, database, storage, cron, webhooks
 - [Integrations & go-live blockers](docs/integrations.md) — Stripe, Resend, Twilio, S3, maps, brand assets
 - [Admin guide & onboarding](docs/admin-guide.md) — first-time setup, staff, customers, drivers

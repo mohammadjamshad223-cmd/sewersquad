@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "prisma generate && next build",
+    "vercel-build": "prisma generate && DATABASE_URL=${DIRECT_DATABASE_URL:-$DATABASE_URL} prisma migrate deploy && next build",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
@@ -16,7 +17,7 @@
     "db:deploy": "prisma migrate deploy",
     "db:seed": "tsx --conditions=react-server prisma/seed.ts",
     "db:reset": "prisma migrate reset --force",
-    "db:bootstrap": "tsx prisma/bootstrap.ts",
+    "db:bootstrap": "tsx --conditions=react-server prisma/bootstrap.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test"
