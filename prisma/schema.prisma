@@ -1,0 +1,1577 @@
+// Sewer Squad platform schema.
+//
+// Conventions
+// - UUID primary keys everywhere.
+// - Money totals are stored as integer cents (Int). Unit rates that may carry fractional cents
+//   (e.g. $0.065/gal) are stored as Decimal "cents" values. Never floats.
+// - Calendar dates for service scheduling (no time component) are stored as @db.Date and are
+//   interpreted in the company's operating time zone (default America/Chicago).
+// - All timestamps are stored in UTC.
+// - Every customer-owned record carries organizationId (and locationId where applicable) so that
+//   authorization scoping is a simple, indexable predicate.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Identity, authentication & RBAC
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum UserKind {
+  STAFF
+  DRIVER
+  CUSTOMER
+}
+
+enum UserStatus {
+  INVITED
+  ACTIVE
+  DEACTIVATED
+}
+
+model User {
+  id                String     @id @default(uuid()) @db.Uuid
+  email             String     @unique
+  name              String
+  phone             String?
+  kind              UserKind
+  status            UserStatus @default(INVITED)
+  passwordHash      String?
+  emailVerifiedAt   DateTime?
+  roleId            String?    @db.Uuid
+  role              Role?      @relation(fields: [roleId], references: [id])
+  mfaSecretEnc      String?
+  mfaEnabledAt      DateTime?
+  mfaRecoveryHashes String[]   @default([])
+  failedLoginCount  Int        @default(0)
+  lockedUntil       DateTime?
+  lastLoginAt       DateTime?
+  passwordChangedAt DateTime?
+  isDemo            Boolean    @default(false)
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+  deactivatedAt     DateTime?
+
+  sessions                Session[]
+  authTokens              AuthToken[]
+  orgMemberships          OrganizationMembership[]
+  locationMemberships     LocationMembership[]
+  driver                  Driver?
+  notifications           Notification[]
+  notificationPreferences NotificationPreference[]
+  accountRepFor           Organization[]           @relation("AccountRep")
+  auditLogs               AuditLog[]
+
+  @@index([kind, status])
+}
+
+model Role {
+  id          String           @id @default(uuid()) @db.Uuid
+  key         String           @unique
+  name        String
+  description String?
+  isSystem    Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  users       User[]
+  permissions RolePermission[]
+}
+
+model Permission {
+  id          String           @id @default(uuid()) @db.Uuid
+  key         String           @unique
+  description String
+  group       String
+  roles       RolePermission[]
+}
+
+model RolePermission {
+  id           String     @id @default(uuid()) @db.Uuid
+  roleId       String     @db.Uuid
+  permissionId String     @db.Uuid
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+}
+
+model Session {
+  id          String   @id // SHA-256 of the session token (the raw token only lives in the cookie)
+  userId      String   @db.Uuid
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt   DateTime
+  mfaVerified Boolean  @default(false)
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+  lastSeenAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+enum AuthTokenType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+  INVITATION
+}
+
+model AuthToken {
+  id        String        @id @default(uuid()) @db.Uuid
+  type      AuthTokenType
+  tokenHash String        @unique
+  userId    String        @db.Uuid
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email     String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime      @default(now())
+
+  @@index([userId, type])
+}
+
+model RateLimitBucket {
+  key         String   @id
+  count       Int
+  windowStart DateTime
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Customers: organizations, locations, memberships, contacts, billing
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum OrganizationType {
+  RESTAURANT_GROUP
+  RESTAURANT
+  HOTEL
+  HOSPITAL
+  SCHOOL
+  GROCERY
+  INSTITUTIONAL
+  OTHER
+}
+
+enum RecordStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum BillingMode {
+  CONSOLIDATED
+  PER_LOCATION
+}
+
+model Organization {
+  id               String           @id @default(uuid()) @db.Uuid
+  accountNumber    String           @unique
+  name             String
+  type             OrganizationType @default(RESTAURANT)
+  status           RecordStatus     @default(ACTIVE)
+  billingMode      BillingMode      @default(CONSOLIDATED)
+  primaryEmail     String?
+  primaryPhone     String?
+  website          String?
+  notes            String?
+  accountRepId     String?          @db.Uuid
+  accountRep       User?            @relation("AccountRep", fields: [accountRepId], references: [id])
+  stripeCustomerId String?          @unique
+  isDemo           Boolean          @default(false)
+  createdById      String?          @db.Uuid
+  updatedById      String?          @db.Uuid
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  deletedAt        DateTime?
+
+  memberships       OrganizationMembership[]
+  locations         ServiceLocation[]
+  contacts          CustomerContact[]
+  billingProfiles   BillingProfile[]
+  assets            ServiceAsset[]
+  plans             ServicePlan[]
+  jobs              Job[]
+  manifests         Manifest[]
+  invoices          Invoice[]
+  payments          Payment[]
+  emergencyRequests EmergencyRequest[]
+  supportTickets    SupportTicket[]
+  documents         Document[]
+  pricingRules      PricingRule[]
+
+  @@index([name])
+  @@index([status])
+}
+
+enum OrgRole {
+  ORG_ADMIN
+  LOCATION_MANAGER
+  READ_ONLY
+}
+
+model OrganizationMembership {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @db.Uuid
+  userId         String       @db.Uuid
+  role           OrgRole
+  canPay         Boolean      @default(true)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@unique([organizationId, userId])
+  @@index([userId])
+}
+
+model ServiceLocation {
+  id                  String          @id @default(uuid()) @db.Uuid
+  organizationId      String          @db.Uuid
+  organization        Organization    @relation(fields: [organizationId], references: [id])
+  code                String          @unique
+  name                String
+  addressLine1        String
+  addressLine2        String?
+  city                String
+  state               String          @default("TX")
+  postalCode          String
+  county              String?
+  latitude            Float?
+  longitude           Float?
+  siteContactName     String?
+  siteContactPhone    String?
+  siteContactEmail    String?
+  accessInstructions  String?
+  specialRequirements String?
+  territory           String?
+  defaultWindowStart  String? // "HH:mm" in company time zone
+  defaultWindowEnd    String?
+  status              RecordStatus    @default(ACTIVE)
+  billingProfileId    String?         @db.Uuid
+  billingProfile      BillingProfile? @relation("LocationBilling", fields: [billingProfileId], references: [id])
+  isDemo              Boolean         @default(false)
+  createdById         String?         @db.Uuid
+  updatedById         String?         @db.Uuid
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  deletedAt           DateTime?
+
+  memberships       LocationMembership[]
+  contacts          CustomerContact[]
+  assets            ServiceAsset[]
+  plans             ServicePlan[]
+  jobs              Job[]
+  manifests         Manifest[]
+  serviceInvoices   Invoice[]            @relation("InvoiceServiceLocation")
+  billingInvoices   Invoice[]            @relation("InvoiceBillingLocation")
+  emergencyRequests EmergencyRequest[]
+  supportTickets    SupportTicket[]
+  documents         Document[]
+
+  @@index([organizationId])
+  @@index([city])
+  @@index([postalCode])
+}
+
+model LocationMembership {
+  id         String          @id @default(uuid()) @db.Uuid
+  locationId String          @db.Uuid
+  userId     String          @db.Uuid
+  location   ServiceLocation @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime        @default(now())
+
+  @@unique([locationId, userId])
+  @@index([userId])
+}
+
+model CustomerContact {
+  id                String           @id @default(uuid()) @db.Uuid
+  organizationId    String           @db.Uuid
+  locationId        String?          @db.Uuid
+  organization      Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  location          ServiceLocation? @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  name              String
+  title             String?
+  email             String?
+  phone             String?
+  isPrimary         Boolean          @default(false)
+  receivesInvoices  Boolean          @default(false)
+  receivesReminders Boolean          @default(true)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([organizationId])
+}
+
+model BillingProfile {
+  id                   String            @id @default(uuid()) @db.Uuid
+  organizationId       String            @db.Uuid
+  organization         Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name                 String
+  billingEmail         String?
+  billingPhone         String?
+  addressLine1         String?
+  addressLine2         String?
+  city                 String?
+  state                String?
+  postalCode           String?
+  paymentTermsDays     Int               @default(30)
+  taxExempt            Boolean           @default(false)
+  taxRateBps           Int? // overrides company default when set, basis points (825 = 8.25%)
+  allowPartialPayments Boolean?
+  poNumber             String?
+  isDefault            Boolean           @default(false)
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  locations            ServiceLocation[] @relation("LocationBilling")
+  invoices             Invoice[]
+
+  @@index([organizationId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Equipment & recurring service plans
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum AssetType {
+  GREASE_TRAP
+  GREASE_INTERCEPTOR
+  SEPTIC_TANK
+  GRIT_TRAP
+  LINT_TRAP
+  LIFT_STATION
+  OTHER
+}
+
+enum AssetPlacement {
+  INDOOR
+  OUTDOOR
+}
+
+model ServiceAsset {
+  id                 String          @id @default(uuid()) @db.Uuid
+  assetTag           String          @unique
+  organizationId     String          @db.Uuid
+  locationId         String          @db.Uuid
+  organization       Organization    @relation(fields: [organizationId], references: [id])
+  location           ServiceLocation @relation(fields: [locationId], references: [id])
+  type               AssetType
+  customTypeLabel    String?
+  name               String?
+  capacityGallons    Int
+  placement          AssetPlacement
+  installLocation    String?
+  accessInstructions String?
+  requiredEquipment  String?
+  frequencyDays      Int?
+  notes              String?
+  status             RecordStatus    @default(ACTIVE)
+  lastServicedAt     DateTime?
+  createdById        String?         @db.Uuid
+  updatedById        String?         @db.Uuid
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  deletedAt          DateTime?
+
+  planAssets   ServicePlanAsset[]
+  jobAssets    JobAsset[]
+  assetRecords ServiceAssetRecord[]
+  documents    Document[]
+
+  @@index([locationId])
+  @@index([organizationId])
+}
+
+enum ServiceType {
+  GREASE_TRAP_PUMPING
+  INTERCEPTOR_PUMPING
+  SEPTIC_PUMPING
+  GRIT_TRAP_CLEANING
+  LINT_TRAP_CLEANING
+  LIFT_STATION_SERVICE
+  HYDRO_JETTING
+  LINE_CLEANING
+  INSPECTION
+  OTHER
+}
+
+enum RecurrenceUnit {
+  DAY
+  WEEK
+  MONTH
+  SPECIFIC_DATES
+}
+
+enum RecurrenceAnchor {
+  FIXED_CALENDAR // next = anchor + k*interval, independent of when the visit was performed
+  COMPLETION_DATE // next = actual completion date + interval
+}
+
+model RecurrenceRule {
+  id            String           @id @default(uuid()) @db.Uuid
+  unit          RecurrenceUnit
+  interval      Int              @default(1)
+  anchor        RecurrenceAnchor @default(FIXED_CALENDAR)
+  anchorDate    DateTime         @db.Date
+  specificDates DateTime[]       @db.Date
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  plan          ServicePlan?
+}
+
+enum PlanStatus {
+  ACTIVE
+  PAUSED
+  ENDED
+}
+
+enum PricingModel {
+  PER_GALLON
+  FLAT_RATE
+}
+
+model ServicePlan {
+  id                   String          @id @default(uuid()) @db.Uuid
+  planNumber           String          @unique
+  organizationId       String          @db.Uuid
+  locationId           String          @db.Uuid
+  organization         Organization    @relation(fields: [organizationId], references: [id])
+  location             ServiceLocation @relation(fields: [locationId], references: [id])
+  name                 String
+  serviceType          ServiceType
+  status               PlanStatus      @default(ACTIVE)
+  recurrenceRuleId     String          @unique @db.Uuid
+  recurrenceRule       RecurrenceRule  @relation(fields: [recurrenceRuleId], references: [id])
+  nextServiceDate      DateTime?       @db.Date
+  preferredWindowStart String?
+  preferredWindowEnd   String?
+  pricingModel         PricingModel    @default(FLAT_RATE)
+  flatPriceCents       Int?
+  perGallonCents       Decimal?        @db.Decimal(14, 4)
+  minimumChargeCents   Int?
+  territory            String?
+  defaultDriverId      String?         @db.Uuid
+  defaultVehicleId     String?         @db.Uuid
+  specialInstructions  String?
+  startDate            DateTime        @db.Date
+  endDate              DateTime?       @db.Date
+  lastCompletedAt      DateTime?
+  createdById          String?         @db.Uuid
+  updatedById          String?         @db.Uuid
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+
+  assets ServicePlanAsset[]
+  jobs   Job[]
+
+  @@index([status, nextServiceDate])
+  @@index([locationId])
+}
+
+model ServicePlanAsset {
+  id      String       @id @default(uuid()) @db.Uuid
+  planId  String       @db.Uuid
+  assetId String       @db.Uuid
+  plan    ServicePlan  @relation(fields: [planId], references: [id], onDelete: Cascade)
+  asset   ServiceAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@unique([planId, assetId])
+}
+
+model PricingRule {
+  id             String        @id @default(uuid()) @db.Uuid
+  organizationId String?       @db.Uuid // null = company default
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  kind           LineItemKind
+  serviceType    ServiceType?
+  amountCents    Decimal       @db.Decimal(14, 4) // flat amount, or per-unit amount for per-gallon rules
+  percentBps     Int? // for percentage surcharges (e.g. 5000 = 50%)
+  active         Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([organizationId, kind])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Fleet & drivers
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum DriverStatus {
+  ACTIVE
+  ON_LEAVE
+  INACTIVE
+}
+
+model Driver {
+  id               String       @id @default(uuid()) @db.Uuid
+  userId           String       @unique @db.Uuid
+  user             User         @relation(fields: [userId], references: [id])
+  employeeNumber   String       @unique
+  status           DriverStatus @default(ACTIVE)
+  licenseNumber    String?
+  licenseClass     String?
+  licenseExpiry    DateTime?    @db.Date
+  territory        String?
+  hireDate         DateTime?    @db.Date
+  hourlyCostCents  Int?
+  defaultVehicleId String?      @db.Uuid
+  defaultVehicle   Vehicle?     @relation("DefaultVehicle", fields: [defaultVehicleId], references: [id])
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  jobs           Job[]
+  assignments    JobAssignment[]
+  serviceRecords ServiceRecord[]
+  inspections    VehicleInspection[]
+  disposalEvents DisposalEvent[]
+}
+
+enum VehicleStatus {
+  AVAILABLE
+  ASSIGNED
+  IN_SERVICE
+  MAINTENANCE
+  OUT_OF_SERVICE
+}
+
+model Vehicle {
+  id                  String        @id @default(uuid()) @db.Uuid
+  unitNumber          String        @unique
+  vin                 String?       @unique
+  licensePlate        String?
+  make                String?
+  model               String?
+  year                Int?
+  tankCapacityGallons Int
+  status              VehicleStatus @default(AVAILABLE)
+  registrationExpiry  DateTime?     @db.Date
+  insuranceExpiry     DateTime?     @db.Date
+  permitNumber        String?
+  permitExpiry        DateTime?     @db.Date
+  costPerHourCents    Int?
+  notes               String?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  defaultFor     Driver[]             @relation("DefaultVehicle")
+  jobs           Job[]
+  assignments    JobAssignment[]
+  maintenance    VehicleMaintenance[]
+  inspections    VehicleInspection[]
+  disposalEvents DisposalEvent[]
+  serviceRecords ServiceRecord[]
+}
+
+model VehicleMaintenance {
+  id          String   @id @default(uuid()) @db.Uuid
+  vehicleId   String   @db.Uuid
+  vehicle     Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  performedOn DateTime @db.Date
+  category    String
+  description String
+  costCents   Int?
+  odometer    Int?
+  vendor      String?
+  createdById String?  @db.Uuid
+  createdAt   DateTime @default(now())
+
+  @@index([vehicleId, performedOn])
+}
+
+enum InspectionType {
+  PRE_TRIP
+  POST_TRIP
+}
+
+model VehicleInspection {
+  id             String         @id @default(uuid()) @db.Uuid
+  vehicleId      String         @db.Uuid
+  driverId       String         @db.Uuid
+  vehicle        Vehicle        @relation(fields: [vehicleId], references: [id])
+  driver         Driver         @relation(fields: [driverId], references: [id])
+  type           InspectionType
+  inspectedAt    DateTime       @default(now())
+  odometer       Int?
+  items          Json // [{ key, label, result: "PASS" | "FAIL" | "NA", note }]
+  hasDefects     Boolean        @default(false)
+  defectsSummary String?
+  comments       String?
+  acknowledgedBy String // typed name acknowledgment
+  acknowledgedAt DateTime
+  createdAt      DateTime       @default(now())
+  documents      Document[]
+
+  @@index([vehicleId, inspectedAt])
+  @@index([driverId, inspectedAt])
+}
+
+enum IssueCategory {
+  SERVICE
+  ACCESS
+  EQUIPMENT
+  VEHICLE
+  SAFETY
+  CUSTOMER
+  OTHER
+}
+
+enum IssueSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum IssueStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+}
+
+model IssueReport {
+  id           String        @id @default(uuid()) @db.Uuid
+  reportNumber String        @unique
+  reportedById String        @db.Uuid
+  jobId        String?       @db.Uuid
+  job          Job?          @relation(fields: [jobId], references: [id])
+  vehicleId    String?       @db.Uuid
+  category     IssueCategory
+  severity     IssueSeverity @default(MEDIUM)
+  description  String
+  status       IssueStatus   @default(OPEN)
+  resolution   String?
+  resolvedById String?       @db.Uuid
+  resolvedAt   DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([status])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Jobs, dispatch & service records
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum JobType {
+  RECURRING
+  ONE_TIME
+  EMERGENCY
+}
+
+enum JobPriority {
+  NORMAL
+  HIGH
+  EMERGENCY
+}
+
+enum JobStatus {
+  SCHEDULED // created, not yet assigned to a driver
+  ASSIGNED // driver + truck assigned by dispatch
+  ACCEPTED // driver acknowledged
+  EN_ROUTE
+  ARRIVED
+  IN_PROGRESS
+  PENDING_DOCUMENTATION
+  SUBMITTED // driver submitted for review
+  COMPLETED // approved by office
+  UNABLE_TO_SERVICE
+  MISSED
+  CANCELLED
+}
+
+model Job {
+  id                 String          @id @default(uuid()) @db.Uuid
+  jobNumber          String          @unique
+  organizationId     String          @db.Uuid
+  locationId         String          @db.Uuid
+  organization       Organization    @relation(fields: [organizationId], references: [id])
+  location           ServiceLocation @relation(fields: [locationId], references: [id])
+  planId             String?         @db.Uuid
+  plan               ServicePlan?    @relation(fields: [planId], references: [id])
+  occurrenceDate     DateTime?       @db.Date // the plan occurrence this job fulfils (never shifted by rescheduling)
+  type               JobType
+  serviceType        ServiceType
+  priority           JobPriority     @default(NORMAL)
+  status             JobStatus       @default(SCHEDULED)
+  scheduledDate      DateTime        @db.Date
+  windowStart        String?
+  windowEnd          String?
+  confirmedByOffice  Boolean         @default(false)
+  routeOrder         Int?
+  estimatedGallons   Int?
+  driverId           String?         @db.Uuid
+  vehicleId          String?         @db.Uuid
+  driver             Driver?         @relation(fields: [driverId], references: [id])
+  vehicle            Vehicle?        @relation(fields: [vehicleId], references: [id])
+  instructions       String?
+  internalNotes      String?
+  quotedPriceCents   Int?
+  cancellationReason String?
+  completedAt        DateTime?
+  approvedAt         DateTime?
+  approvedById       String?         @db.Uuid
+  idempotencyKey     String?         @unique
+  isDemo             Boolean         @default(false)
+  createdById        String?         @db.Uuid
+  updatedById        String?         @db.Uuid
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  assets           JobAsset[]
+  assignments      JobAssignment[]
+  statusEvents     JobStatusEvent[]
+  serviceRecord    ServiceRecord?
+  manifest         Manifest?
+  invoices         Invoice[]
+  charges          JobCharge[]
+  emergencyRequest EmergencyRequest?
+  documents        Document[]
+  issues           IssueReport[]
+  loadAllocations  DisposalLoadAllocation[]
+  supportTickets   SupportTicket[]
+
+  @@unique([planId, occurrenceDate])
+  @@index([scheduledDate, status])
+  @@index([driverId, scheduledDate])
+  @@index([organizationId, scheduledDate])
+  @@index([locationId, scheduledDate])
+}
+
+model JobAsset {
+  id      String       @id @default(uuid()) @db.Uuid
+  jobId   String       @db.Uuid
+  assetId String       @db.Uuid
+  job     Job          @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  asset   ServiceAsset @relation(fields: [assetId], references: [id])
+
+  @@unique([jobId, assetId])
+}
+
+model JobAssignment {
+  id           String    @id @default(uuid()) @db.Uuid
+  jobId        String    @db.Uuid
+  job          Job       @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  driverId     String?   @db.Uuid
+  driver       Driver?   @relation(fields: [driverId], references: [id])
+  vehicleId    String?   @db.Uuid
+  vehicle      Vehicle?  @relation(fields: [vehicleId], references: [id])
+  assignedById String?   @db.Uuid
+  assignedAt   DateTime  @default(now())
+  endedAt      DateTime?
+  reason       String?
+
+  @@index([jobId])
+}
+
+model JobStatusEvent {
+  id         String     @id @default(uuid()) @db.Uuid
+  jobId      String     @db.Uuid
+  job        Job        @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  fromStatus JobStatus?
+  toStatus   JobStatus
+  actorId    String?    @db.Uuid
+  note       String?
+  latitude   Float?
+  longitude  Float?
+  occurredAt DateTime   @default(now())
+
+  @@index([jobId, occurredAt])
+}
+
+enum ChargeStatus {
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+}
+
+model JobCharge {
+  id             String       @id @default(uuid()) @db.Uuid
+  jobId          String       @db.Uuid
+  job            Job          @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  kind           LineItemKind
+  description    String
+  quantity       Decimal      @db.Decimal(12, 3)
+  unitPriceCents Decimal      @db.Decimal(14, 4)
+  status         ChargeStatus @default(PENDING_APPROVAL)
+  addedById      String       @db.Uuid
+  reviewedById   String?      @db.Uuid
+  reviewedAt     DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@index([jobId])
+}
+
+enum ReviewStatus {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+model ServiceRecord {
+  id                      String       @id @default(uuid()) @db.Uuid
+  jobId                   String       @unique @db.Uuid
+  job                     Job          @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  driverId                String       @db.Uuid
+  driver                  Driver       @relation(fields: [driverId], references: [id])
+  vehicleId               String?      @db.Uuid
+  vehicle                 Vehicle?     @relation(fields: [vehicleId], references: [id])
+  arrivedAt               DateTime?
+  startedAt               DateTime?
+  finishedAt              DateTime?
+  conditionBefore         String?
+  accessIssues            String?
+  unusualConditions       String?
+  conditionAfter          String?
+  issuesFound             String?
+  followUpRecommendations String?
+  additionalWork          String?
+  wasteType               String?
+  notes                   String?
+  reviewStatus            ReviewStatus @default(DRAFT)
+  reviewNotes             String?
+  reviewedById            String?      @db.Uuid
+  reviewedAt              DateTime?
+  submittedAt             DateTime?
+  clientDraftVersion      Int          @default(0)
+  createdAt               DateTime     @default(now())
+  updatedAt               DateTime     @updatedAt
+
+  assetRecords ServiceAssetRecord[]
+}
+
+model ServiceAssetRecord {
+  id               String        @id @default(uuid()) @db.Uuid
+  serviceRecordId  String        @db.Uuid
+  serviceRecord    ServiceRecord @relation(fields: [serviceRecordId], references: [id], onDelete: Cascade)
+  assetId          String        @db.Uuid
+  asset            ServiceAsset  @relation(fields: [assetId], references: [id])
+  capacityGallons  Int // snapshot of capacity at the time of service
+  gallonsPumped    Int
+  wasteType        String
+  servicePerformed String?
+  conditionBefore  String?
+  conditionAfter   String?
+  notes            String?
+  createdAt        DateTime      @default(now())
+
+  @@unique([serviceRecordId, assetId])
+  @@index([assetId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Manifests
+// ─────────────────────────────────────────────────────────────────────────────
+
+model ManifestTemplate {
+  id           String        @id @default(uuid()) @db.Uuid
+  key          String        @unique
+  name         String
+  jurisdiction String // e.g. "TX", "TX-HARRIS", "TX-HOUSTON"
+  wasteTypes   String[]
+  serviceTypes ServiceType[]
+  fields       Json // [{ key, label, section, source, required }]
+  isDefault    Boolean       @default(false)
+  active       Boolean       @default(true)
+  notes        String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  manifests    Manifest[]
+}
+
+enum ManifestStatus {
+  DRAFT
+  PENDING_DRIVER
+  SUBMITTED
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  FINALIZED
+}
+
+model Manifest {
+  id              String            @id @default(uuid()) @db.Uuid
+  manifestNumber  String            @unique
+  jobId           String            @unique @db.Uuid
+  job             Job               @relation(fields: [jobId], references: [id])
+  organizationId  String            @db.Uuid
+  locationId      String            @db.Uuid
+  organization    Organization      @relation(fields: [organizationId], references: [id])
+  location        ServiceLocation   @relation(fields: [locationId], references: [id])
+  templateId      String?           @db.Uuid
+  template        ManifestTemplate? @relation(fields: [templateId], references: [id])
+  status          ManifestStatus    @default(DRAFT)
+  serviceDate     DateTime          @db.Date
+  wasteType       String?
+  totalGallons    Int               @default(0)
+  driverName      String?
+  currentVersion  Int               @default(0)
+  rejectionReason String?
+  approvedById    String?           @db.Uuid
+  approvedAt      DateTime?
+  finalizedById   String?           @db.Uuid
+  finalizedAt     DateTime?
+  isDemo          Boolean           @default(false)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  versions   ManifestVersion[]
+  signatures ManifestSignature[]
+  documents  Document[]
+  invoices   Invoice[]
+
+  @@index([organizationId, serviceDate])
+  @@index([locationId, serviceDate])
+  @@index([status])
+}
+
+/// Immutable snapshots. A Postgres trigger (see migration) rejects UPDATE/DELETE on this table.
+model ManifestVersion {
+  id            String   @id @default(uuid()) @db.Uuid
+  manifestId    String   @db.Uuid
+  manifest      Manifest @relation(fields: [manifestId], references: [id])
+  version       Int
+  data          Json // full field snapshot, grouped by data source
+  contentHash   String
+  reason        String?
+  isFinal       Boolean  @default(false)
+  pdfDocumentId String?  @db.Uuid
+  createdById   String?  @db.Uuid
+  createdAt     DateTime @default(now())
+
+  @@unique([manifestId, version])
+}
+
+enum SignatureRole {
+  CUSTOMER
+  DRIVER
+  DISPOSAL_FACILITY
+  ADMIN_VERIFICATION
+}
+
+model ManifestSignature {
+  id                  String        @id @default(uuid()) @db.Uuid
+  manifestId          String        @db.Uuid
+  manifest            Manifest      @relation(fields: [manifestId], references: [id])
+  role                SignatureRole
+  signerName          String
+  signerTitle         String?
+  signerUserId        String?       @db.Uuid
+  signatureDocumentId String?       @db.Uuid // PNG stored privately
+  unavailable         Boolean       @default(false)
+  unavailableReason   String?
+  signedAt            DateTime      @default(now())
+  ipAddress           String?
+
+  @@index([manifestId, role])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Documents (private object storage, versioned)
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum DocumentType {
+  MANIFEST
+  MANIFEST_OFFICIAL
+  INVOICE
+  RECEIPT
+  DISPOSAL_TICKET
+  SERVICE_PHOTO
+  SIGNATURE
+  CONTRACT
+  AGREEMENT
+  PERMIT
+  INSPECTION
+  EQUIPMENT_PHOTO
+  SUPPORT_ATTACHMENT
+  OTHER
+}
+
+enum DocumentVisibility {
+  INTERNAL
+  CUSTOMER
+}
+
+enum PhotoPhase {
+  BEFORE
+  AFTER
+  ISSUE
+}
+
+model Document {
+  id                 String             @id @default(uuid()) @db.Uuid
+  type               DocumentType
+  title              String
+  visibility         DocumentVisibility @default(INTERNAL)
+  photoPhase         PhotoPhase?
+  organizationId     String?            @db.Uuid
+  organization       Organization?      @relation(fields: [organizationId], references: [id])
+  locationId         String?            @db.Uuid
+  location           ServiceLocation?   @relation(fields: [locationId], references: [id])
+  jobId              String?            @db.Uuid
+  job                Job?               @relation(fields: [jobId], references: [id])
+  manifestId         String?            @db.Uuid
+  manifest           Manifest?          @relation(fields: [manifestId], references: [id])
+  invoiceId          String?            @db.Uuid
+  invoice            Invoice?           @relation(fields: [invoiceId], references: [id])
+  paymentId          String?            @db.Uuid
+  assetId            String?            @db.Uuid
+  asset              ServiceAsset?      @relation(fields: [assetId], references: [id])
+  inspectionId       String?            @db.Uuid
+  inspection         VehicleInspection? @relation(fields: [inspectionId], references: [id])
+  disposalEventId    String?            @db.Uuid
+  disposalEvent      DisposalEvent?     @relation(fields: [disposalEventId], references: [id])
+  emergencyRequestId String?            @db.Uuid
+  emergencyRequest   EmergencyRequest?  @relation(fields: [emergencyRequestId], references: [id])
+  supportTicketId    String?            @db.Uuid
+  supportTicket      SupportTicket?     @relation(fields: [supportTicketId], references: [id])
+  vehicleId          String?            @db.Uuid
+  currentVersion     Int                @default(1)
+  uploadedById       String?            @db.Uuid
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  deletedAt          DateTime?
+
+  versions DocumentVersion[]
+
+  @@index([organizationId, type])
+  @@index([jobId])
+  @@index([manifestId])
+  @@index([invoiceId])
+}
+
+model DocumentVersion {
+  id           String   @id @default(uuid()) @db.Uuid
+  documentId   String   @db.Uuid
+  document     Document @relation(fields: [documentId], references: [id])
+  version      Int
+  storageKey   String   @unique
+  fileName     String
+  mimeType     String
+  sizeBytes    Int
+  sha256       String
+  uploadedById String?  @db.Uuid
+  note         String?
+  createdAt    DateTime @default(now())
+
+  @@unique([documentId, version])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Disposal
+// ─────────────────────────────────────────────────────────────────────────────
+
+model DisposalFacility {
+  id                 String          @id @default(uuid()) @db.Uuid
+  name               String
+  addressLine1       String
+  city               String
+  state              String          @default("TX")
+  postalCode         String
+  phone              String?
+  permitNumber       String?
+  acceptedWasteTypes String[]
+  ratePerGallonCents Decimal?        @db.Decimal(14, 4)
+  status             RecordStatus    @default(ACTIVE)
+  notes              String?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  events             DisposalEvent[]
+}
+
+model DisposalEvent {
+  id                   String           @id @default(uuid()) @db.Uuid
+  eventNumber          String           @unique
+  driverId             String           @db.Uuid
+  vehicleId            String           @db.Uuid
+  facilityId           String           @db.Uuid
+  driver               Driver           @relation(fields: [driverId], references: [id])
+  vehicle              Vehicle          @relation(fields: [vehicleId], references: [id])
+  facility             DisposalFacility @relation(fields: [facilityId], references: [id])
+  disposedAt           DateTime
+  wasteType            String
+  gallons              Int
+  ratePerGallonCents   Decimal          @db.Decimal(14, 4)
+  totalCostCents       Int
+  ticketNumber         String?
+  openingLoadGallons   Int? // documented tank load before the loads allocated to this event
+  closingLoadGallons   Int? // documented tank load remaining after discharge
+  adjustmentGallons    Int              @default(0)
+  adjustmentReason     String?
+  notes                String?
+  facilityAcknowledged Boolean          @default(false)
+  recordedById         String?          @db.Uuid
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+
+  allocations DisposalLoadAllocation[]
+  documents   Document[]
+
+  @@index([vehicleId, disposedAt])
+  @@index([disposedAt])
+}
+
+model DisposalLoadAllocation {
+  id              String        @id @default(uuid()) @db.Uuid
+  disposalEventId String        @db.Uuid
+  disposalEvent   DisposalEvent @relation(fields: [disposalEventId], references: [id], onDelete: Cascade)
+  jobId           String        @db.Uuid
+  job             Job           @relation(fields: [jobId], references: [id])
+  gallons         Int
+
+  @@unique([disposalEventId, jobId])
+  @@index([jobId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Billing
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  VIEWED
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  VOID
+  WRITTEN_OFF
+}
+
+enum LineItemKind {
+  SERVICE
+  PER_GALLON
+  FLAT_RATE
+  MINIMUM_CHARGE
+  EMERGENCY_SURCHARGE
+  AFTER_HOURS
+  ADDITIONAL_EQUIPMENT
+  DISPOSAL_FEE
+  DISCOUNT
+  LATE_FEE
+  OTHER
+}
+
+model Invoice {
+  id                String           @id @default(uuid()) @db.Uuid
+  invoiceNumber     String           @unique
+  organizationId    String           @db.Uuid
+  organization      Organization     @relation(fields: [organizationId], references: [id])
+  billingProfileId  String?          @db.Uuid
+  billingProfile    BillingProfile?  @relation(fields: [billingProfileId], references: [id])
+  billingLocationId String?          @db.Uuid
+  billingLocation   ServiceLocation? @relation("InvoiceBillingLocation", fields: [billingLocationId], references: [id])
+  serviceLocationId String?          @db.Uuid
+  serviceLocation   ServiceLocation? @relation("InvoiceServiceLocation", fields: [serviceLocationId], references: [id])
+  jobId             String?          @unique @db.Uuid // at most one invoice per job (prevents duplicate billing)
+  job               Job?             @relation(fields: [jobId], references: [id])
+  manifestId        String?          @db.Uuid
+  manifest          Manifest?        @relation(fields: [manifestId], references: [id])
+  status            InvoiceStatus    @default(DRAFT)
+  serviceDate       DateTime?        @db.Date
+  issueDate         DateTime         @db.Date
+  dueDate           DateTime         @db.Date
+  paymentTermsDays  Int
+  subtotalCents     Int
+  discountCents     Int              @default(0)
+  taxRateBps        Int              @default(0)
+  taxCents          Int              @default(0)
+  totalCents        Int
+  amountPaidCents   Int              @default(0)
+  balanceCents      Int
+  allowPartial      Boolean          @default(true)
+  poNumber          String?
+  notes             String?
+  sentAt            DateTime?
+  viewedAt          DateTime?
+  paidAt            DateTime?
+  voidedAt          DateTime?
+  voidReason        String?
+  isDemo            Boolean          @default(false)
+  createdById       String?          @db.Uuid
+  updatedById       String?          @db.Uuid
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  lineItems   InvoiceLineItem[]
+  allocations PaymentAllocation[]
+  documents   Document[]
+  tickets     SupportTicket[]
+
+  @@index([organizationId, status])
+  @@index([status, dueDate])
+  @@index([serviceLocationId])
+}
+
+model InvoiceLineItem {
+  id             String       @id @default(uuid()) @db.Uuid
+  invoiceId      String       @db.Uuid
+  invoice        Invoice      @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  kind           LineItemKind
+  description    String
+  quantity       Decimal      @db.Decimal(12, 3)
+  unitPriceCents Decimal      @db.Decimal(14, 4)
+  amountCents    Int
+  taxable        Boolean      @default(true)
+  sortOrder      Int          @default(0)
+}
+
+enum PaymentMethod {
+  CARD
+  ACH
+  CHECK
+  CASH
+  OTHER
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+  REFUNDED
+  PARTIALLY_REFUNDED
+  DISPUTED
+}
+
+model Payment {
+  id                      String        @id @default(uuid()) @db.Uuid
+  paymentNumber           String        @unique
+  organizationId          String        @db.Uuid
+  organization            Organization  @relation(fields: [organizationId], references: [id])
+  method                  PaymentMethod
+  status                  PaymentStatus @default(PENDING)
+  amountCents             Int
+  refundedCents           Int           @default(0)
+  currency                String        @default("usd")
+  stripeCheckoutSessionId String?       @unique
+  stripePaymentIntentId   String?       @unique
+  stripeChargeId          String?
+  reference               String?
+  failureReason           String?
+  receivedAt              DateTime?
+  initiatedById           String?       @db.Uuid
+  recordedById            String?       @db.Uuid
+  idempotencyKey          String?       @unique
+  notes                   String?
+  isDemo                  Boolean       @default(false)
+  createdAt               DateTime      @default(now())
+  updatedAt               DateTime      @updatedAt
+
+  allocations PaymentAllocation[]
+  refunds     Refund[]
+
+  @@index([organizationId, status])
+  @@index([receivedAt])
+}
+
+model PaymentAllocation {
+  id          String   @id @default(uuid()) @db.Uuid
+  paymentId   String   @db.Uuid
+  invoiceId   String   @db.Uuid
+  payment     Payment  @relation(fields: [paymentId], references: [id])
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id])
+  amountCents Int
+  applied     Boolean  @default(false) // true once the payment has settled and the invoice balance was reduced
+  createdAt   DateTime @default(now())
+
+  @@unique([paymentId, invoiceId])
+  @@index([invoiceId])
+}
+
+enum RefundStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+}
+
+model Refund {
+  id             String       @id @default(uuid()) @db.Uuid
+  paymentId      String       @db.Uuid
+  payment        Payment      @relation(fields: [paymentId], references: [id])
+  amountCents    Int
+  reason         String?
+  status         RefundStatus @default(PENDING)
+  stripeRefundId String?      @unique
+  createdById    String?      @db.Uuid
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model StripeEvent {
+  id          String    @id @default(uuid()) @db.Uuid
+  eventId     String    @unique
+  type        String
+  livemode    Boolean
+  receivedAt  DateTime  @default(now())
+  processedAt DateTime?
+  error       String?
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Emergency requests & support
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum EmergencyCategory {
+  TRAP_OVERFLOWING
+  DRAIN_BACKUP
+  INTERCEPTOR_FULL
+  URGENT_PUMPING
+  SEPTIC_ISSUE
+  GRIT_WASTEWATER
+  OTHER
+}
+
+enum EmergencySeverity {
+  URGENT
+  HIGH
+  STANDARD
+}
+
+enum EmergencyStatus {
+  SUBMITTED
+  ACKNOWLEDGED
+  CONTACTING_CUSTOMER
+  AWAITING_APPROVAL
+  DISPATCHED
+  EN_ROUTE
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ContactMethod {
+  PHONE
+  SMS
+  EMAIL
+}
+
+enum RequestedTiming {
+  ASAP
+  TODAY
+  NEXT_BUSINESS_DAY
+  SPECIFIC_TIME
+}
+
+model EmergencyRequest {
+  id                  String            @id @default(uuid()) @db.Uuid
+  requestNumber       String            @unique
+  organizationId      String            @db.Uuid
+  locationId          String            @db.Uuid
+  organization        Organization      @relation(fields: [organizationId], references: [id])
+  location            ServiceLocation   @relation(fields: [locationId], references: [id])
+  submittedById       String?           @db.Uuid
+  contactName         String
+  contactPhone        String
+  contactEmail        String?
+  preferredContact    ContactMethod     @default(PHONE)
+  serviceType         ServiceType
+  category            EmergencyCategory
+  severity            EmergencySeverity
+  description         String
+  requestedTiming     RequestedTiming   @default(ASAP)
+  requestedFor        DateTime?
+  status              EmergencyStatus   @default(SUBMITTED)
+  acknowledgedAt      DateTime?
+  acknowledgedById    String?           @db.Uuid
+  confirmedArrival    DateTime? // set only when dispatch confirms with the customer
+  confirmedPriceCents Int?
+  customerApprovedAt  DateTime?
+  jobId               String?           @unique @db.Uuid
+  job                 Job?              @relation(fields: [jobId], references: [id])
+  internalNotes       String?
+  cancellationReason  String?
+  closedAt            DateTime?
+  isDemo              Boolean           @default(false)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  events    EmergencyRequestEvent[]
+  documents Document[]
+
+  @@index([status, createdAt])
+  @@index([organizationId])
+}
+
+model EmergencyRequestEvent {
+  id                 String           @id @default(uuid()) @db.Uuid
+  emergencyRequestId String           @db.Uuid
+  emergencyRequest   EmergencyRequest @relation(fields: [emergencyRequestId], references: [id], onDelete: Cascade)
+  fromStatus         EmergencyStatus?
+  toStatus           EmergencyStatus
+  actorId            String?          @db.Uuid
+  note               String?
+  customerVisible    Boolean          @default(true)
+  occurredAt         DateTime         @default(now())
+
+  @@index([emergencyRequestId, occurredAt])
+}
+
+enum TicketCategory {
+  GENERAL
+  BILLING
+  SERVICE_ISSUE
+  CALLBACK
+  RESCHEDULE
+  ADDITIONAL_SERVICE
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_ON_CUSTOMER
+  RESOLVED
+  CLOSED
+}
+
+model SupportTicket {
+  id             String           @id @default(uuid()) @db.Uuid
+  ticketNumber   String           @unique
+  organizationId String           @db.Uuid
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  locationId     String?          @db.Uuid
+  location       ServiceLocation? @relation(fields: [locationId], references: [id])
+  createdById    String           @db.Uuid
+  category       TicketCategory
+  subject        String
+  status         TicketStatus     @default(OPEN)
+  assignedToId   String?          @db.Uuid
+  jobId          String?          @db.Uuid
+  job            Job?             @relation(fields: [jobId], references: [id])
+  invoiceId      String?          @db.Uuid
+  invoice        Invoice?         @relation(fields: [invoiceId], references: [id])
+  callbackPhone  String?
+  requestedDate  DateTime?        @db.Date
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  messages  SupportMessage[]
+  documents Document[]
+
+  @@index([organizationId, status])
+  @@index([status, updatedAt])
+}
+
+model SupportMessage {
+  id         String        @id @default(uuid()) @db.Uuid
+  ticketId   String        @db.Uuid
+  ticket     SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  authorId   String        @db.Uuid
+  body       String
+  isInternal Boolean       @default(false)
+  createdAt  DateTime      @default(now())
+
+  @@index([ticketId, createdAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Notifications
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Notification {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @db.Uuid
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type       String
+  title      String
+  body       String
+  link       String?
+  entityType String?
+  entityId   String?
+  dedupeKey  String
+  readAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  deliveries NotificationDelivery[]
+
+  @@unique([userId, dedupeKey])
+  @@index([userId, readAt, createdAt])
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+}
+
+enum DeliveryStatus {
+  PENDING
+  SENT
+  FAILED
+  SKIPPED
+}
+
+model NotificationDelivery {
+  id                String              @id @default(uuid()) @db.Uuid
+  notificationId    String              @db.Uuid
+  notification      Notification        @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  channel           NotificationChannel
+  destination       String
+  status            DeliveryStatus      @default(PENDING)
+  attempts          Int                 @default(0)
+  lastError         String?
+  providerMessageId String?
+  nextAttemptAt     DateTime            @default(now())
+  sentAt            DateTime?
+  createdAt         DateTime            @default(now())
+
+  @@unique([notificationId, channel])
+  @@index([status, nextAttemptAt])
+}
+
+model NotificationPreference {
+  id     String  @id @default(uuid()) @db.Uuid
+  userId String  @db.Uuid
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type   String
+  inApp  Boolean @default(true)
+  email  Boolean @default(true)
+  sms    Boolean @default(false)
+
+  @@unique([userId, type])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Audit, settings, sequences
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Append-only. A Postgres trigger (see migration) rejects UPDATE/DELETE on this table.
+model AuditLog {
+  id             String   @id @default(uuid()) @db.Uuid
+  actorId        String?  @db.Uuid
+  actor          User?    @relation(fields: [actorId], references: [id])
+  action         String
+  entityType     String
+  entityId       String
+  organizationId String?  @db.Uuid
+  before         Json?
+  after          Json?
+  reason         String?
+  ipAddress      String?
+  createdAt      DateTime @default(now())
+
+  @@index([entityType, entityId, createdAt])
+  @@index([actorId, createdAt])
+  @@index([organizationId, createdAt])
+  @@index([createdAt])
+}
+
+model CompanySetting {
+  id          String   @id @default(uuid()) @db.Uuid
+  key         String   @unique
+  value       Json
+  updatedById String?  @db.Uuid
+  updatedAt   DateTime @updatedAt
+}
+
+model NumberSequence {
+  key   String @id
+  value Int
+}

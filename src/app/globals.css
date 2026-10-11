@@ -1,0 +1,60 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Design tokens (HSL) — Sewer Squad brand: navy #002957, green #65AA27 (from the official logo).
+ * Green is an accent: as a fill it carries navy text (5.0:1); for green text on white use
+ * --accent-strong (5.2:1). White text on the bright green fails contrast, so it is never used.
+ */
+@layer base {
+  :root {
+    --brand: 212 100% 17%;           /* #002957 */
+    --brand-strong: 212 100% 12%;    /* #001D3F */
+    --brand-soft: 213 48% 95%;       /* #EEF3F9 */
+    --brand-foreground: 0 0% 100%;
+    --accent: 92 63% 41%;            /* #65AA27 */
+    --accent-foreground: 212 100% 17%;
+    --accent-strong: 94 74% 27%;     /* #3F7A12 */
+    --accent-soft: 90 50% 95%;       /* #F1F8EA */
+
+    --background: 220 20% 98%;
+    --surface: 0 0% 100%;
+    --subtle: 220 16% 96%;
+    --foreground: 222 47% 11%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 215 16% 42%;
+    --border: 220 13% 90%;
+    --input: 220 13% 86%;
+    --ring: 212 70% 40%;
+
+    --danger: 0 72% 46%;
+    --danger-soft: 0 86% 97%;
+    --danger-foreground: 0 0% 100%;
+    --warning: 32 90% 40%;
+    --warning-soft: 40 96% 95%;
+    --success: 152 60% 32%;
+    --success-soft: 145 60% 95%;
+    --info: 213 80% 45%;
+    --info-soft: 213 90% 96%;
+  }
+
+  * { @apply border-border; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+  :focus-visible { @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background; }
+  h1, h2, h3 { @apply tracking-tight; }
+  table { font-variant-numeric: tabular-nums; }
+}
+
+@layer components {
+  .tabular { font-variant-numeric: tabular-nums; }
+  .skip-link { @apply sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-50 focus:rounded-md focus:bg-surface focus:px-3 focus:py-2 focus:shadow-pop; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

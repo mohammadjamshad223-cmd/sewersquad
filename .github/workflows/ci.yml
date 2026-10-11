@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DATABASE_URL: postgresql://sewersquad:sewersquad@localhost:5432/sewersquad?schema=public
+  DATABASE_URL_TEST: postgresql://sewersquad:sewersquad@localhost:5432/sewersquad_test?schema=public
+  APP_URL: http://localhost:3000
+  APP_ENCRYPTION_KEY: ci-only-encryption-key-not-a-secret-0123456789
+  CRON_SECRET: ci-cron-secret
+  REQUIRE_ADMIN_MFA: "false"
+  STORAGE_DRIVER: local
+  LOCAL_STORAGE_DIR: ./storage
+  NEXT_TELEMETRY_DISABLED: "1"
+
+jobs:
+  checks:
+    name: Typecheck, lint, unit & integration tests, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: sewersquad
+          POSTGRES_PASSWORD: sewersquad
+          POSTGRES_DB: sewersquad
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U sewersquad" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npm run typecheck
+      - run: npm run lint
+      - name: Create test database
+        run: PGPASSWORD=sewersquad psql -h localhost -U sewersquad -d sewersquad -c "CREATE DATABASE sewersquad_test"
+      - run: npm test
+      - run: npm run build
+
+  e2e:
+    name: End-to-end (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: sewersquad
+          POSTGRES_PASSWORD: sewersquad
+          POSTGRES_DB: sewersquad
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U sewersquad" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run db:deploy
+      - run: npm run build
+      - name: Start production server
+        run: |
+          ALLOW_LOCAL_STORAGE=true nohup npm start > server.log 2>&1 &
+          for i in $(seq 1 60); do curl -sf http://localhost:3000/api/health && exit 0; sleep 1; done
+          cat server.log; exit 1
+      - run: npm run test:e2e
+        env:
+          E2E_BASE_URL: http://localhost:3000
+      - name: Server log
+        if: failure()
+        run: cat server.log
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-results
+          path: test-results/
+          retention-days: 7
