@@ -6,7 +6,7 @@ import { audit } from "../audit";
 import { badRequest, forbidden, notFound } from "../errors";
 import { numbers } from "../numbering";
 import type { Actor } from "../auth/session";
-import { assertStaffActor } from "../authz/guards";
+import { assertStaffActor } from "../authz/check";
 import { computeInvoiceTotals, deriveInvoiceStatus, lineAmountCents, type InvoiceStatus } from "@/domain/invoice-math";
 import { addDays, dateFromKey, formatDateKey, isDateKey, keyFromDate, todayKey } from "@/lib/dates";
 import { formatCents, parseDollarRateToCentsString } from "@/lib/money";

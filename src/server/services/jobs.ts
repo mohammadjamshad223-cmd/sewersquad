@@ -6,7 +6,7 @@ import { audit } from "../audit";
 import { badRequest, conflict, notFound } from "../errors";
 import { numbers } from "../numbering";
 import type { Actor } from "../auth/session";
-import { assertDriverActor, assertStaffActor } from "../authz/guards";
+import { assertDriverActor, assertStaffActor } from "../authz/check";
 import { assertTransition, emergencyStatusForJob, TransitionError, type TransitionActor } from "@/domain/job-state";
 import { compareKeys, dateFromKey, formatDateKey, formatWindow, isDateKey, keyFromDate, todayKey } from "@/lib/dates";
 import { advancePlan } from "./plans";

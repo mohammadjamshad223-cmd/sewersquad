@@ -4,7 +4,7 @@ import { prisma } from "../db";
 import { audit } from "../audit";
 import { badRequest, notFound } from "../errors";
 import type { Actor } from "../auth/session";
-import { assertDriverActor, assertStaffActor } from "../authz/guards";
+import { assertDriverActor, assertStaffActor } from "../authz/check";
 import { dateFromKey, isDateKey } from "@/lib/dates";
 import { notify, staffWithPermission } from "./notifications";
 import { storeDocument } from "./documents";

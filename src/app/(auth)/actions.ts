@@ -18,7 +18,7 @@ function safeNext(next: unknown): string | null {
   return typeof next === "string" && next.startsWith("/") && !next.startsWith("//") ? next : null;
 }
 
-export const loginAction = formAction(z.object({ email, password: z.string().min(1, "Enter your password."), next: z.string().optional() }), async (input) => {
+const _loginAction = formAction(z.object({ email, password: z.string().min(1, "Enter your password."), next: z.string().optional() }), async (input) => {
   const meta = await requestMeta();
   const res = await auth.login(input.email, input.password, meta);
   if (res.status === "mfa_required") redirect("/mfa/verify");
@@ -31,14 +31,14 @@ export async function logoutAction() {
   redirect("/login");
 }
 
-export const forgotPasswordAction = formAction(z.object({ email }), async (input): Promise<ActionResult> => {
+const _forgotPasswordAction = formAction(z.object({ email }), async (input): Promise<ActionResult> => {
   const { ip } = await requestMeta();
   await auth.requestPasswordReset(input.email, ip);
   after(() => processDueDeliveries());
   return { ok: true, message: "If an account exists for that email, a reset link is on its way." };
 });
 
-export const resetPasswordAction = formAction(
+const _resetPasswordAction = formAction(
   z
     .object({ token: z.string().min(10), password: z.string().min(1), confirm: z.string().min(1) })
     .refine((v) => v.password === v.confirm, { message: "Passwords do not match.", path: ["confirm"] }),
@@ -49,7 +49,7 @@ export const resetPasswordAction = formAction(
   },
 );
 
-export const acceptInviteAction = formAction(
+const _acceptInviteAction = formAction(
   z
     .object({ token: z.string().min(10), password: z.string().min(1), confirm: z.string().min(1) })
     .refine((v) => v.password === v.confirm, { message: "Passwords do not match.", path: ["confirm"] }),
@@ -75,7 +75,7 @@ export async function beginMfaSetupAction(): Promise<{ uri: string; base32: stri
   return { uri, base32, qrSvg };
 }
 
-export const completeMfaSetupAction = formAction(z.object({ code: z.string().trim().min(6) }), async (input): Promise<ActionResult<{ codes: string[] }>> => {
+const _completeMfaSetupAction = formAction(z.object({ code: z.string().trim().min(6) }), async (input): Promise<ActionResult<{ codes: string[] }>> => {
   const actor = await getActor();
   if (!actor) throw unauthenticated();
   const jar = await cookies();
@@ -86,9 +86,29 @@ export const completeMfaSetupAction = formAction(z.object({ code: z.string().tri
   return { ok: true, message: "Two-factor authentication is on.", data: { codes } };
 });
 
-export const verifyMfaAction = formAction(z.object({ code: z.string().trim().min(6) }), async (input) => {
+const _verifyMfaAction = formAction(z.object({ code: z.string().trim().min(6) }), async (input) => {
   const actor = await getActor();
   if (!actor) throw unauthenticated();
   await auth.verifyMfaForSession(actor, input.code);
   redirect(homePathFor(actor));
 });
+
+// Exported server actions must be literal async functions.
+export async function loginAction(prev: ActionResult, fd: FormData) {
+  return _loginAction(prev, fd);
+}
+export async function forgotPasswordAction(prev: ActionResult, fd: FormData) {
+  return _forgotPasswordAction(prev, fd);
+}
+export async function resetPasswordAction(prev: ActionResult, fd: FormData) {
+  return _resetPasswordAction(prev, fd);
+}
+export async function acceptInviteAction(prev: ActionResult, fd: FormData) {
+  return _acceptInviteAction(prev, fd);
+}
+export async function completeMfaSetupAction(prev: ActionResult, fd: FormData) {
+  return _completeMfaSetupAction(prev, fd);
+}
+export async function verifyMfaAction(prev: ActionResult, fd: FormData) {
+  return _verifyMfaAction(prev, fd);
+}

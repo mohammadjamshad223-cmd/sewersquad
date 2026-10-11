@@ -7,7 +7,7 @@ import { logger } from "../logger";
 import { badRequest, notConfigured, notFound } from "../errors";
 import { numbers } from "../numbering";
 import type { Actor } from "../auth/session";
-import { assertStaffActor } from "../authz/guards";
+import { assertStaffActor } from "../authz/check";
 import { canPayForOrg, customerScopeFor, invoiceScopedWhere } from "../authz/scope";
 import { allocatePayment } from "@/domain/invoice-math";
 import { formatCents } from "@/lib/money";

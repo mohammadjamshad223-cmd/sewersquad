@@ -5,7 +5,7 @@ import { audit } from "../audit";
 import { badRequest, notFound } from "../errors";
 import { sha256Hex } from "../crypto";
 import type { Actor } from "../auth/session";
-import { assertStaffActor } from "../authz/guards";
+import { assertStaffActor } from "../authz/check";
 import { formatAddress } from "@/lib/utils";
 import { dateFromKey, isDateKey, keyFromDate } from "@/lib/dates";
 import { numbers } from "../numbering";

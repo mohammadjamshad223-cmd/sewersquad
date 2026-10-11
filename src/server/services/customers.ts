@@ -6,7 +6,7 @@ import { audit, diff } from "../audit";
 import { badRequest, notFound } from "../errors";
 import { numbers } from "../numbering";
 import type { Actor } from "../auth/session";
-import { assertStaffActor } from "../authz/guards";
+import { assertStaffActor } from "../authz/check";
 
 // ── Validation schemas (shared with server actions) ──────────────────────────
 

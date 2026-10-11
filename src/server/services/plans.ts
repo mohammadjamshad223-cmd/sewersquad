@@ -6,7 +6,7 @@ import { audit } from "../audit";
 import { badRequest, notFound } from "../errors";
 import { numbers } from "../numbering";
 import type { Actor } from "../auth/session";
-import { assertStaffActor } from "../authz/guards";
+import { assertStaffActor } from "../authz/check";
 import { addDays, compareKeys, dateFromKey, isDateKey, keyFromDate, todayKey, type DateKey } from "@/lib/dates";
 import { firstOccurrenceOnOrAfter, nextOccurrence, validateRule, type Rule } from "@/domain/recurrence";
 import { companyTimeZone, getSetting } from "./settings";

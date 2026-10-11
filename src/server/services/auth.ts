@@ -20,7 +20,7 @@ import {
 import { sha256Hex } from "../crypto";
 import { notify } from "./notifications";
 import { numbers } from "../numbering";
-import { hasPermission } from "../authz/guards";
+import { hasPermission } from "../authz/check";
 
 const MAX_FAILED_LOGINS = 5;
 const LOCKOUT_MINUTES = 15;

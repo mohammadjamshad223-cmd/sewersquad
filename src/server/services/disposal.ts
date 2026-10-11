@@ -6,7 +6,7 @@ import { audit } from "../audit";
 import { badRequest, forbidden, notFound } from "../errors";
 import { numbers } from "../numbering";
 import type { Actor } from "../auth/session";
-import { hasPermission } from "../authz/guards";
+import { hasPermission } from "../authz/check";
 import { lineAmountCents } from "@/domain/invoice-math";
 import { reconcile, reconcileEvent } from "@/domain/reconciliation";
 import { dateFromKey, isDateKey } from "@/lib/dates";

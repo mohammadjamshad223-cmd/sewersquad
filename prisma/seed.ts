@@ -37,7 +37,31 @@ let rnd = 42;
 const rand = () => ((rnd = (rnd * 1103515245 + 12345) % 2 ** 31) / 2 ** 31);
 const between = (a: number, b: number) => Math.round(a + rand() * (b - a));
 
+async function generateDocuments() {
+  // Uses the real PDF + storage services so seeded documents download exactly like production ones.
+  const { renderManifestPdf } = await import("../src/server/pdf/manifest-pdf");
+  const { storeDocument } = await import("../src/server/services/documents");
+  const { renderAndStoreInvoicePdf } = await import("../src/server/services/invoices");
+  const { renderReceiptPdf } = await import("../src/server/pdf/invoice-pdf");
+  const manifests = await prisma.manifest.findMany({ where: { status: "FINALIZED" } });
+  for (const m of manifests) {
+    const bytes = await renderManifestPdf(prisma, m.id, m.currentVersion);
+    const doc = await storeDocument(prisma, { bytes, fileName: `${m.manifestNumber}-v${m.currentVersion}.pdf`, title: `Manifest ${m.manifestNumber}`, type: "MANIFEST", visibility: "CUSTOMER", organizationId: m.organizationId, locationId: m.locationId, jobId: m.jobId, manifestId: m.id, uploadedById: null, trusted: { mime: "application/pdf", ext: "pdf" } });
+    await prisma.manifestVersion.update({ where: { manifestId_version: { manifestId: m.id, version: m.currentVersion } }, data: { pdfDocumentId: doc.id } });
+  }
+  const invoices = await prisma.invoice.findMany({ where: { status: { not: "DRAFT" } } });
+  for (const inv of invoices) await renderAndStoreInvoicePdf(prisma, inv.id, null);
+  const payments = await prisma.payment.findMany({ where: { status: "SUCCEEDED" }, include: { allocations: { include: { invoice: true } } } });
+  for (const p of payments) {
+    const inv = p.allocations[0]?.invoice;
+    await storeDocument(prisma, { bytes: await renderReceiptPdf(prisma, p.id), fileName: `${p.paymentNumber}-receipt.pdf`, title: `Receipt ${p.paymentNumber}`, type: "RECEIPT", visibility: "CUSTOMER", organizationId: p.organizationId, locationId: inv?.serviceLocationId ?? null, invoiceId: inv?.id ?? null, paymentId: p.id, uploadedById: null, trusted: { mime: "application/pdf", ext: "pdf" } });
+  }
+  console.log(`Generated ${manifests.length} manifest PDFs, ${invoices.length} invoice PDFs, ${payments.length} receipts.`);
+}
+
 async function reset() {
+  const { rm } = await import("node:fs/promises");
+  await rm(process.env.LOCAL_STORAGE_DIR ?? "./storage", { recursive: true, force: true });
   const tables = await prisma.$queryRaw<{ tablename: string }[]>`SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename <> '_prisma_migrations'`;
   // TRUNCATE bypasses the append-only row triggers (they guard UPDATE/DELETE only).
   await prisma.$executeRawUnsafe(`TRUNCATE ${tables.map((t) => `"${t.tablename}"`).join(", ")} RESTART IDENTITY CASCADE`);
@@ -516,6 +540,7 @@ async function main() {
   ];
   for (const [key, value] of sequences) await prisma.numberSequence.create({ data: { key, value } });
 
+  await generateDocuments();
   void owner;
   console.log(`Seeded demo data. Sign in with any demo account using password: ${DEMO_PASSWORD}`);
   console.log("  owner@demo.sewersquad.test (super admin) · admin@ · dispatch@ · accounting@");

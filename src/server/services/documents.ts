@@ -7,7 +7,7 @@ import { randomToken, sha256Hex } from "../crypto";
 import { storage } from "../storage";
 import { ALLOWED_DESCRIPTION, detectFileType, sanitizeFileName } from "../storage/file-validation";
 import type { Actor } from "../auth/session";
-import { hasPermission } from "../authz/guards";
+import { hasPermission } from "../authz/check";
 import { customerScopeFor, documentScopedWhere } from "../authz/scope";
 import { getSetting } from "./settings";
 

@@ -3,10 +3,8 @@ import { redirect } from "next/navigation";
 import { getActor, type Actor } from "../auth/session";
 import { forbidden, unauthenticated } from "../errors";
 import type { Permission } from "./permissions";
-
-export function hasPermission(actor: Actor, permission: Permission) {
-  return actor.kind === "STAFF" && actor.permissions.has(permission);
-}
+import { assertDriverActor, assertStaffActor, hasPermission } from "./check";
+export { assertDriverActor, assertStaffActor, hasPermission };
 
 function mfaGate(actor: Actor): string | null {
   if (actor.mfaEnrollmentRequired) return "/mfa/setup";
@@ -58,22 +56,11 @@ export async function assertStaff(permission?: Permission | Permission[]): Promi
   return assertStaffActor(actor, permission);
 }
 
-export function assertStaffActor(actor: Actor, permission?: Permission | Permission[]): Actor {
-  if (actor.kind !== "STAFF") throw forbidden();
-  const perms = permission ? (Array.isArray(permission) ? permission : [permission]) : [];
-  if (perms.length && !perms.some((p) => actor.permissions.has(p))) throw forbidden();
-  return actor;
-}
-
 export async function assertDriver(): Promise<Actor & { driverId: string }> {
   const actor = await assertSignedIn();
   return assertDriverActor(actor);
 }
 
-export function assertDriverActor(actor: Actor): Actor & { driverId: string } {
-  if (actor.kind !== "DRIVER" || !actor.driverId || !actor.permissions.has("driver.portal")) throw forbidden();
-  return actor as Actor & { driverId: string };
-}
 
 export async function assertCustomer(): Promise<Actor> {
   const actor = await assertSignedIn();

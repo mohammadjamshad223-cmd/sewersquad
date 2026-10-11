@@ -6,7 +6,7 @@ import { audit } from "../audit";
 import { badRequest, notFound } from "../errors";
 import { numbers } from "../numbering";
 import type { Actor } from "../auth/session";
-import { assertStaffActor } from "../authz/guards";
+import { assertStaffActor } from "../authz/check";
 import { customerScopeFor, invoiceScopedWhere } from "../authz/scope";
 import { rateLimit } from "../auth/rate-limit";
 import { notify, staffWithPermission } from "./notifications";

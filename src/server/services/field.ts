@@ -5,7 +5,7 @@ import { prisma, type Db } from "../db";
 import { audit } from "../audit";
 import { badRequest, conflict, notFound } from "../errors";
 import type { Actor } from "../auth/session";
-import { assertDriverActor, assertStaffActor } from "../authz/guards";
+import { assertDriverActor, assertStaffActor } from "../authz/check";
 import { DRIVER_EDITABLE_STATUSES, assertTransition, type JobStatus } from "@/domain/job-state";
 import { instantToDateKey, keyFromDate } from "@/lib/dates";
 import { storeDocument } from "./documents";
