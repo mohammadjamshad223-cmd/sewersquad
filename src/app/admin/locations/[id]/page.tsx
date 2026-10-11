@@ -62,7 +62,7 @@ export default async function LocationDetail({ params, searchParams }: { params:
           <>
             <Badge tone={loc.status === "ACTIVE" ? "success" : "neutral"} dot>{titleCase(loc.status)}</Badge>
             {hasPermission(actor, "jobs.write") && <Button asChild size="sm" variant="secondary"><Link href={`/admin/jobs/new?locationId=${loc.id}`}><CalendarPlus /> Schedule job</Link></Button>}
-            {canWrite && <LocationDialog trigger={{ label: "Edit", icon: "edit" }} title="Edit location" loc={loc} billingProfiles={loc.organization.billingProfiles} />}
+            {canWrite && <LocationDialog trigger={{ label: "Edit", icon: "edit" }} title="Edit location" loc={{ id: loc.id, name: loc.name, addressLine1: loc.addressLine1, addressLine2: loc.addressLine2, city: loc.city, state: loc.state, postalCode: loc.postalCode, county: loc.county, siteContactName: loc.siteContactName, siteContactPhone: loc.siteContactPhone, siteContactEmail: loc.siteContactEmail, accessInstructions: loc.accessInstructions, specialRequirements: loc.specialRequirements, territory: loc.territory, defaultWindowStart: loc.defaultWindowStart, defaultWindowEnd: loc.defaultWindowEnd, latitude: loc.latitude, longitude: loc.longitude, billingProfileId: loc.billingProfileId }} billingProfiles={loc.organization.billingProfiles} />}
             {hasPermission(actor, "customers.deactivate") && (
               <ReasonDialog trigger={{ label: loc.status === "ACTIVE" ? "Deactivate" : "Reactivate", variant: loc.status === "ACTIVE" ? "danger-outline" : "secondary" }} title={loc.status === "ACTIVE" ? "Deactivate location" : "Reactivate location"} description={loc.status === "ACTIVE" ? "Active plans for this location will be paused." : undefined} action={setLocationStatusAction} hidden={{ id: loc.id, active: loc.status === "ACTIVE" ? "false" : "true" }} reasonRequired={loc.status === "ACTIVE"} submitLabel="Confirm" submitVariant={loc.status === "ACTIVE" ? "danger" : "primary"} />
             )}
@@ -107,7 +107,7 @@ export default async function LocationDetail({ params, searchParams }: { params:
                       <TD className="hidden lg:table-cell text-[13px]">{a.installLocation ?? "—"}</TD>
                       <TD className="whitespace-nowrap">{a.lastServicedAt ? formatInstant(a.lastServicedAt, tz, "date") : "—"}</TD>
                       <TD><Badge tone={a.status === "ACTIVE" ? "success" : "neutral"}>{titleCase(a.status)}</Badge></TD>
-                      <TD className="text-right">{canWrite && <AssetDialog trigger={{ label: "Edit", variant: "ghost" }} title={`Edit ${a.assetTag}`} locationId={loc.id} asset={a} />}</TD>
+                      <TD className="text-right">{canWrite && <AssetDialog trigger={{ label: "Edit", variant: "ghost" }} title={`Edit ${a.assetTag}`} locationId={loc.id} asset={{ id: a.id, type: a.type, customTypeLabel: a.customTypeLabel, name: a.name, capacityGallons: a.capacityGallons, placement: a.placement, installLocation: a.installLocation, accessInstructions: a.accessInstructions, requiredEquipment: a.requiredEquipment, frequencyDays: a.frequencyDays, notes: a.notes, status: a.status }} />}</TD>
                     </TR>
                   ))}
                 </TBody>

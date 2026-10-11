@@ -54,7 +54,7 @@ export default async function CustomerDetail({ params, searchParams }: { params:
         actions={
           <>
             <Badge tone={org.status === "ACTIVE" ? "success" : "neutral"} dot>{titleCase(org.status)}</Badge>
-            {canWrite && <OrgDialog trigger={{ label: "Edit", icon: "edit" }} org={org} reps={reps} />}
+            {canWrite && <OrgDialog trigger={{ label: "Edit", icon: "edit" }} org={{ id: org.id, name: org.name, type: org.type, billingMode: org.billingMode, primaryEmail: org.primaryEmail, primaryPhone: org.primaryPhone, website: org.website, notes: org.notes, accountRepId: org.accountRepId }} reps={reps} />}
             {hasPermission(actor, "customers.deactivate") && (
               <ReasonDialog
                 trigger={{ label: org.status === "ACTIVE" ? "Deactivate" : "Reactivate", variant: org.status === "ACTIVE" ? "danger-outline" : "secondary" }}
