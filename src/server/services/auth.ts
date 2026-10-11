@@ -1,7 +1,7 @@
 import "server-only";
 import type { OrgRole, UserKind } from "@prisma/client";
 import { prisma } from "../db";
-import { env } from "../env";
+import { env, integrations } from "../env";
 import { audit } from "../audit";
 import { badRequest, conflict, forbidden, notFound } from "../errors";
 import { burnPasswordCheck, hashPassword, passwordProblem, verifyPassword } from "../auth/password";
@@ -212,6 +212,16 @@ export async function inviteUser(actor: Actor, input: InviteInput) {
     return { user, token };
   });
   return result;
+}
+
+/**
+ * Action result for an invitation. Without an email provider the invitee would never receive
+ * the link, so it is returned once to the inviting staff member to hand over securely.
+ */
+export function invitationResult(email: string, token: string) {
+  if (integrations.email()) return { ok: true as const, message: `Invitation sent to ${email}.` };
+  const inviteLink = `${env().APP_URL.replace(/\/$/, "")}/invite/accept?token=${encodeURIComponent(token)}`;
+  return { ok: true as const, message: `Email isn't configured — share this one-time invitation link with ${email} securely.`, data: { inviteLink } };
 }
 
 export async function acceptInvitation(token: string, password: string, meta: { ip: string; userAgent: string | null }) {

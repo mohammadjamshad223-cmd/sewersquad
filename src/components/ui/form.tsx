@@ -57,7 +57,15 @@ export function ActionForm({
     last.current = state;
     if (state.ok) {
       const msg = state.message ?? successMessage;
-      if (msg) toast.success(msg);
+      const inviteLink = (state.data as { inviteLink?: string } | undefined)?.inviteLink;
+      if (inviteLink) {
+        toast.message(msg || "Invitation created", {
+          description: "Valid for 7 days, single use. It will not be shown again.",
+          duration: Infinity,
+          closeButton: true,
+          action: { label: "Copy link", onClick: () => void navigator.clipboard.writeText(inviteLink).then(() => toast.success("Invitation link copied.")) },
+        });
+      } else if (msg) toast.success(msg);
       if (resetOnSuccess) formRef.current?.reset();
       onSuccess?.(state);
       if (redirectTo) router.push(redirectTo);

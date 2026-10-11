@@ -21,6 +21,7 @@ export const NOTIFICATION_TYPES = {
   "invoice.reminder": { audience: "CUSTOMER", label: "Invoice reminders", defaults: { email: true, sms: false } },
   "payment.received": { audience: "CUSTOMER", label: "Payment received", defaults: { email: true, sms: false } },
   "payment.failed": { audience: "ANY", label: "Payment failed", defaults: { email: true, sms: false } },
+  "payment.refunded": { audience: "CUSTOMER", label: "Refund issued", defaults: { email: true, sms: false } },
   "emergency.update": { audience: "CUSTOMER", label: "Emergency request updates", defaults: { email: true, sms: false } },
   "support.reply": { audience: "CUSTOMER", label: "Support replies", defaults: { email: true, sms: false } },
   // Driver

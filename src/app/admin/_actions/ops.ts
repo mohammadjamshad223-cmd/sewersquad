@@ -13,7 +13,7 @@ import { disposalSchema, recordDisposal, facilitySchema, upsertFacility } from "
 import { staffReply, updateTicket } from "@/server/services/support";
 import { readUploadedFile } from "@/server/services/documents";
 import { processDueDeliveries } from "@/server/services/notifications";
-import { inviteUser } from "@/server/services/auth";
+import { inviteUser, invitationResult } from "@/server/services/auth";
 import { isUuid } from "@/server/params";
 import { badRequest } from "@/server/errors";
 
@@ -148,9 +148,9 @@ const _driver = formAction(fleet.driverSchema.and(z.object({ driverId: id })), a
 export async function updateDriverAction(p: ActionResult, fd: FormData) { return _driver(p, fd); }
 
 const _inviteDriver = formAction(z.object({ email: z.string().trim().email(), name: z.string().trim().min(2), phone: z.string().trim().optional() }), async (i) => {
-  await inviteUser(await assertStaff("staff.manage"), { kind: "DRIVER", roleKey: "driver", ...i });
+  const { token } = await inviteUser(await assertStaff("staff.manage"), { kind: "DRIVER", roleKey: "driver", ...i });
   flush();
-  return { ok: true, message: `Invitation sent to ${i.email}.` };
+  return invitationResult(i.email, token);
 });
 export async function inviteDriverAction(p: ActionResult, fd: FormData) { return _inviteDriver(p, fd); }
 

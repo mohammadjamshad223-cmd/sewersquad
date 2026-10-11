@@ -15,6 +15,10 @@ function sessionEvent(id: string, type: string, paymentId: string, amount: numbe
   return { id, type, livemode: false, data: { object: { id: `cs_${id}`, object: "checkout.session", metadata: { paymentId }, client_reference_id: paymentId, amount_total: amount, payment_status: paymentStatus, payment_intent: null } } } as unknown as Stripe.Event;
 }
 
+function chargeRefunded(id: string, paymentIntent: string, amountRefunded: number): Stripe.Event {
+  return { id, type: "charge.refunded", livemode: false, data: { object: { id: `ch_${id}`, object: "charge", payment_intent: paymentIntent, amount_refunded: amountRefunded } } } as unknown as Stripe.Event;
+}
+
 describe("payments & invoices", () => {
   let accounting: Awaited<ReturnType<typeof staff>>, A: Awaited<ReturnType<typeof org>>;
   beforeAll(async () => {
@@ -68,6 +72,34 @@ describe("payments & invoices", () => {
     const p = await pendingPayment(A.org.id, [{ invoiceId: inv.id, amountCents: 5_000 }]);
     await expect(settlePayment(p.id, { amountTotal: 4_999, paymentIntentId: null, method: "CARD" })).rejects.toThrow(/mismatch/);
     expect((await prisma.invoice.findUniqueOrThrow({ where: { id: inv.id } })).amountPaidCents).toBe(0);
+  });
+
+  it("Stripe refunds: charge.refunded confirms pending refunds, records dashboard refunds, and is idempotent", async () => {
+    const inv = await sentInvoice(A.org.id, A.locations[0]!.id, 10_000);
+    const p = await pendingPayment(A.org.id, [{ invoiceId: inv.id, amountCents: 10_000 }]);
+    await settlePayment(p.id, { amountTotal: 10_000, paymentIntentId: "pi_refund_1", method: "CARD" });
+    // A refund requested from the admin portal, waiting on Stripe.
+    const requested = await prisma.refund.create({ data: { paymentId: p.id, amountCents: 3_000, reason: "Overcharge", stripeRefundId: "re_1" } });
+    await expectCode(refundPayment(accounting, p.id, 7_001, "Too much"), "BAD_REQUEST"); // pending refund counts against the limit
+
+    await handleStripeEvent(chargeRefunded("evt_rf_1", "pi_refund_1", 3_000));
+    expect((await prisma.refund.findUniqueOrThrow({ where: { id: requested.id } })).status).toBe("SUCCEEDED");
+    let pay = await prisma.payment.findUniqueOrThrow({ where: { id: p.id } });
+    expect([pay.status, pay.refundedCents]).toEqual(["PARTIALLY_REFUNDED", 3_000]);
+    expect((await prisma.invoice.findUniqueOrThrow({ where: { id: inv.id } })).balanceCents).toBe(3_000);
+
+    // A different event carrying the same cumulative total changes nothing.
+    await handleStripeEvent(chargeRefunded("evt_rf_2", "pi_refund_1", 3_000));
+    expect((await prisma.invoice.findUniqueOrThrow({ where: { id: inv.id } })).balanceCents).toBe(3_000);
+
+    // Refund issued directly in the Stripe dashboard.
+    await handleStripeEvent(chargeRefunded("evt_rf_3", "pi_refund_1", 10_000));
+    pay = await prisma.payment.findUniqueOrThrow({ where: { id: p.id } });
+    expect([pay.status, pay.refundedCents]).toEqual(["REFUNDED", 10_000]);
+    const refunds = await prisma.refund.findMany({ where: { paymentId: p.id }, orderBy: { createdAt: "asc" } });
+    expect(refunds.map((r) => [r.amountCents, r.status])).toEqual([[3_000, "SUCCEEDED"], [7_000, "SUCCEEDED"]]);
+    const after = await prisma.invoice.findUniqueOrThrow({ where: { id: inv.id } });
+    expect([after.amountPaidCents, after.balanceCents]).toEqual([0, 10_000]);
   });
 
   it("partial payments across invoices allocate oldest-first and update statuses", async () => {

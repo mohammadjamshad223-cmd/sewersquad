@@ -309,19 +309,36 @@ async function failPayment(paymentId: string, reason: string) {
 }
 
 /**
- * Bring local refund state in line with Stripe's cumulative refunded amount and reverse the
- * corresponding invoice credit (newest allocations first). Idempotent by construction.
+ * Bring local refund state in line with Stripe's cumulative refunded amount (`charge.amount_refunded`)
+ * and reverse the corresponding invoice credit (newest allocations first). Only the difference from
+ * what is already recorded is applied, under a row lock, so replays and concurrent deliveries are
+ * no-ops. Pending refunds requested here are confirmed oldest first; any remainder was issued
+ * directly in the Stripe dashboard and is recorded as its own refund.
  */
-async function syncRefundTotal(paymentIntentId: string, totalRefundedCents: number) {
-  await prisma.$transaction(async (tx) => {
-    const p = await tx.payment.findUnique({ where: { stripePaymentIntentId: paymentIntentId }, include: { allocations: { orderBy: { createdAt: "desc" } } } });
-    if (!p) return;
-    const delta = totalRefundedCents - p.refundedCents;
-    if (delta <= 0) return;
+export async function syncRefundTotal(paymentIntentId: string, totalRefundedCents: number) {
+  return prisma.$transaction(async (tx) => {
+    const found = await tx.payment.findUnique({ where: { stripePaymentIntentId: paymentIntentId }, select: { id: true } });
+    if (!found) return false;
+    await tx.$queryRaw`SELECT id FROM "Payment" WHERE id = ${found.id}::uuid FOR UPDATE`;
+    const p = await tx.payment.findUniqueOrThrow({ where: { id: found.id }, include: { allocations: { orderBy: { createdAt: "desc" } } } });
+    const total = Math.min(totalRefundedCents, p.amountCents);
+    const delta = total - p.refundedCents;
+    if (delta <= 0) return false;
+
+    let left = delta;
+    const pending = await tx.refund.findMany({ where: { paymentId: p.id, status: "PENDING" }, orderBy: { createdAt: "asc" } });
+    for (const r of pending) {
+      if (r.amountCents > left) break;
+      await tx.refund.update({ where: { id: r.id }, data: { status: "SUCCEEDED" } });
+      left -= r.amountCents;
+    }
+    if (left > 0) await tx.refund.create({ data: { paymentId: p.id, amountCents: left, status: "SUCCEEDED", reason: "Issued in the Stripe dashboard" } });
+
     await reverseAcrossAllocations(tx, p.allocations, delta);
-    await tx.payment.update({ where: { id: p.id }, data: { refundedCents: totalRefundedCents, status: totalRefundedCents >= p.amountCents ? "REFUNDED" : "PARTIALLY_REFUNDED" } });
-    await tx.refund.updateMany({ where: { paymentId: p.id, status: "PENDING" }, data: { status: "SUCCEEDED" } });
-    await audit(tx, { action: "payment.refund_synced", entityType: "Payment", entityId: p.id, organizationId: p.organizationId, after: { totalRefundedCents, delta } });
+    await tx.payment.update({ where: { id: p.id }, data: { refundedCents: total, status: total >= p.amountCents ? "REFUNDED" : "PARTIALLY_REFUNDED" } });
+    await audit(tx, { action: "payment.refund_synced", entityType: "Payment", entityId: p.id, organizationId: p.organizationId, before: { refundedCents: p.refundedCents }, after: { refundedCents: total, delta, externalCents: left } });
+    if (p.initiatedById) await notify(tx, { userIds: [p.initiatedById], type: "payment.refunded", title: "Refund issued", body: `${formatCents(delta)} was refunded to your original payment method. It can take 5–10 business days to appear.`, link: "/customer/payments", entityType: "Payment", entityId: p.id, dedupeKey: `payment:${p.id}:refund:${total}` });
+    return true;
   });
 }
 
@@ -371,7 +388,8 @@ export async function refundPayment(actor: Actor, paymentId: string, amountCents
   const p = await prisma.payment.findUnique({ where: { id: paymentId }, include: { allocations: { orderBy: { createdAt: "desc" } } } });
   if (!p) throw notFound();
   if (!["SUCCEEDED", "PARTIALLY_REFUNDED"].includes(p.status)) throw badRequest("Only settled payments can be refunded.");
-  if (!Number.isInteger(amountCents) || amountCents <= 0 || amountCents > p.amountCents - p.refundedCents) throw badRequest("Refund amount exceeds the refundable balance.");
+  const pendingCents = (await prisma.refund.aggregate({ where: { paymentId, status: "PENDING" }, _sum: { amountCents: true } }))._sum.amountCents ?? 0;
+  if (!Number.isInteger(amountCents) || amountCents <= 0 || amountCents > p.amountCents - p.refundedCents - pendingCents) throw badRequest("Refund amount exceeds the refundable balance (including refunds still processing).");
 
   const refund = await prisma.$transaction(async (tx) => {
     const r = await tx.refund.create({ data: { paymentId, amountCents, reason, createdById: actor.userId } });
@@ -381,8 +399,16 @@ export async function refundPayment(actor: Actor, paymentId: string, amountCents
 
   if (p.stripePaymentIntentId) {
     const s = await stripe();
-    const sr = await s.refunds.create({ payment_intent: p.stripePaymentIntentId, amount: amountCents, reason: "requested_by_customer", metadata: { refundId: refund.id } }, { idempotencyKey: `refund:${refund.id}` });
-    await prisma.refund.update({ where: { id: refund.id }, data: { stripeRefundId: sr.id, status: sr.status === "failed" ? "FAILED" : "PENDING" } });
+    let sr: Stripe.Refund;
+    try {
+      sr = await s.refunds.create({ payment_intent: p.stripePaymentIntentId, amount: amountCents, reason: "requested_by_customer", metadata: { refundId: refund.id } }, { idempotencyKey: `refund:${refund.id}` });
+    } catch (err) {
+      await prisma.refund.update({ where: { id: refund.id }, data: { status: "FAILED" } });
+      throw err;
+    }
+    // Don't write status here: the charge.refunded webhook may already have confirmed it.
+    await prisma.refund.update({ where: { id: refund.id }, data: { stripeRefundId: sr.id } });
+    if (sr.status === "failed" || sr.status === "canceled") await prisma.refund.updateMany({ where: { id: refund.id, status: "PENDING" }, data: { status: "FAILED" } });
     // Balance reversal happens when Stripe confirms via charge.refunded.
     return { refundId: refund.id, pending: true };
   }

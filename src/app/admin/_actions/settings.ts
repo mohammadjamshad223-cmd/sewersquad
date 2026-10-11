@@ -5,7 +5,7 @@ import { z } from "zod";
 import { assertStaff } from "@/server/authz/guards";
 import { formAction, runAction, type ActionResult } from "@/server/action";
 import { settingsSchemas, updateSetting, type SettingsKey } from "@/server/services/settings";
-import { inviteUser, setUserActive } from "@/server/services/auth";
+import { inviteUser, setUserActive, invitationResult } from "@/server/services/auth";
 import { processDueDeliveries } from "@/server/services/notifications";
 import { prisma } from "@/server/db";
 import { audit } from "@/server/audit";
@@ -38,9 +38,9 @@ export async function saveSettingsAction(p: ActionResult, fd: FormData): Promise
 }
 
 const _staff = formAction(z.object({ email: z.string().trim().email(), name: z.string().trim().min(2), phone: z.string().trim().optional(), roleKey: z.enum(["super_admin", "admin", "dispatcher", "accounting"]) }), async (i) => {
-  await inviteUser(await assertStaff("staff.manage"), { kind: "STAFF", ...i });
+  const { token } = await inviteUser(await assertStaff("staff.manage"), { kind: "STAFF", ...i });
   after(() => processDueDeliveries());
-  return { ok: true, message: `Invitation sent to ${i.email}.` };
+  return invitationResult(i.email, token);
 });
 export async function inviteStaffAction(p: ActionResult, fd: FormData) { return _staff(p, fd); }
 

@@ -7,7 +7,7 @@ import { assertStaff } from "@/server/authz/guards";
 import { formAction, runAction, type ActionResult } from "@/server/action";
 import * as customers from "@/server/services/customers";
 import { createPlan, planSchema, setPlanStatus, updatePlan } from "@/server/services/plans";
-import { inviteUser, setUserActive } from "@/server/services/auth";
+import { inviteUser, setUserActive, invitationResult } from "@/server/services/auth";
 import { processDueDeliveries } from "@/server/services/notifications";
 import { badRequest } from "@/server/errors";
 import { prisma } from "@/server/db";
@@ -107,9 +107,9 @@ const _inviteCustomer = formAction(
   z.object({ organizationId: id, email: z.string().trim().email(), name: z.string().trim().min(2), phone: z.string().trim().optional(), orgRole: z.enum(["ORG_ADMIN", "LOCATION_MANAGER", "READ_ONLY"]), canPay: z.enum(["on"]).optional(), locationIds: z.array(id).default([]) }),
   async (i) => {
     const actor = await assertStaff("customers.users");
-    await inviteUser(actor, { kind: "CUSTOMER", email: i.email, name: i.name, phone: i.phone, organizationId: i.organizationId, orgRole: i.orgRole, canPay: i.canPay === "on", locationIds: i.locationIds });
+    const { token } = await inviteUser(actor, { kind: "CUSTOMER", email: i.email, name: i.name, phone: i.phone, organizationId: i.organizationId, orgRole: i.orgRole, canPay: i.canPay === "on", locationIds: i.locationIds });
     after(() => processDueDeliveries());
-    return { ok: true, message: `Invitation sent to ${i.email}.` };
+    return invitationResult(i.email, token);
   },
 );
 export async function inviteCustomerUserAction(p: ActionResult, fd: FormData) { return _inviteCustomer(p, fd); }
