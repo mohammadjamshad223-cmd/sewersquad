@@ -81,7 +81,7 @@ export function DriverEditDialog({ driver, vehicles }: { driver: { id: string; s
 
 export function InviteDriverDialog() {
   return (
-    <FormDialog trigger={<Button size="sm"><Plus /> Invite driver</Button>} title="Invite driver" description="They'll get an email link to set a password and use the driver app.">
+    <FormDialog trigger={<Button size="sm"><Plus /> Invite driver</Button>} title="Invite driver" description="They'll receive a one-time invitation link to set a password and use the driver app.">
       {(close) => (
         <ActionForm action={inviteDriverAction as Act} className="space-y-4" onSuccess={close}>
           <Field label="Name" name="name" required><Input /></Field>

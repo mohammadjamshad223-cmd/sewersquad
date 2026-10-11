@@ -15,6 +15,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const actor = await getActor();
   if (!actor) return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
+  if (actor.mfaEnrollmentRequired || (actor.mfaEnabled && !actor.mfaVerified)) return NextResponse.json({ error: "MFA required" }, { status: 403 });
   const tz = await companyTimeZone();
   const today = todayKey(tz);
   const window = { gte: dateFromKey(addDays(today, -2)), lte: dateFromKey(addDays(today, 14)) };
