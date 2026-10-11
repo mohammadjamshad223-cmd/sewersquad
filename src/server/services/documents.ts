@@ -129,6 +129,7 @@ export async function archiveDocument(actor: Actor, documentId: string, reason: 
  * Returns the document when access is allowed; throws notFound otherwise (no existence leak).
  */
 export async function authorizeDocument(actor: Actor, documentId: string) {
+  if (!/^[0-9a-f-]{36}$/i.test(documentId)) throw notFound();
   const doc = await prisma.document.findFirst({ where: { id: documentId, deletedAt: null }, include: { versions: { orderBy: { version: "desc" } } } });
   if (!doc) throw notFound();
   if (actor.kind === "STAFF") {
