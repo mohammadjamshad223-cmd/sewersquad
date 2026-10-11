@@ -398,6 +398,8 @@ export async function listJobs(params: { q?: string; status?: string; from?: str
       ? { status: { in: ["SCHEDULED", "ASSIGNED", "ACCEPTED", "EN_ROUTE", "ARRIVED", "IN_PROGRESS", "PENDING_DOCUMENTATION"] } }
       : params.status === "UNASSIGNED"
         ? { status: "SCHEDULED", driverId: null }
+        : params.status === "OVERDUE"
+          ? { status: { in: ["SCHEDULED", "ASSIGNED", "ACCEPTED"] }, scheduledDate: { lt: dateFromKey(todayKey()) } }
         : params.status
           ? { status: params.status as JobStatus }
           : {}),
