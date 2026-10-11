@@ -6,7 +6,17 @@ import { audit } from "../audit";
 import { badRequest, conflict, notFound } from "../errors";
 import type { Actor } from "../auth/session";
 import { assertDriverActor, assertStaffActor } from "../authz/check";
-import { DRIVER_EDITABLE_STATUSES, assertTransition, type JobStatus } from "@/domain/job-state";
+import { DRIVER_EDITABLE_STATUSES, assertTransition as assertDomainTransition, TransitionError, type JobStatus, type TransitionActor } from "@/domain/job-state";
+
+/** State-machine violations are user errors (400), not server faults. */
+function assertTransition(from: JobStatus, to: JobStatus, by: TransitionActor) {
+  try {
+    assertDomainTransition(from, to, by);
+  } catch (e) {
+    if (e instanceof TransitionError) throw badRequest(e.message);
+    throw e;
+  }
+}
 import { instantToDateKey, keyFromDate } from "@/lib/dates";
 import { storeDocument } from "./documents";
 import { ensureManifest, finalizeManifest, rejectManifest, writeSubmittedVersion } from "./manifests";

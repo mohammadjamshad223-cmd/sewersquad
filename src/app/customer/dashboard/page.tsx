@@ -12,7 +12,7 @@ import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { DocLink } from "@/components/portal/doc-link";
 import { formatDateKey, formatWindow, relativeDays, keyFromDate } from "@/lib/dates";
 import { formatCents, formatGallons } from "@/lib/money";
-import { ASSET_TYPE_LABEL, SERVICE_TYPE_LABEL, EMERGENCY_CATEGORY_LABEL } from "@/lib/status";
+import { ASSET_TYPE_LABEL, SERVICE_TYPE_LABEL } from "@/lib/status";
 import { telHref } from "@/lib/utils";
 
 export const metadata = { title: "Overview" };

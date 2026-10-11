@@ -17,6 +17,8 @@ const schema = z.object({
 
   STORAGE_DRIVER: z.enum(["local", "s3"]).default("local"),
   LOCAL_STORAGE_DIR: z.string().default("./storage"),
+  /** Self-hosted single server with a persistent disk (or local production testing) only. */
+  ALLOW_LOCAL_STORAGE: z.enum(["true", "false"]).default("false"),
   S3_BUCKET: z.string().optional(),
   S3_REGION: z.string().optional(),
   S3_ENDPOINT: z.string().optional(),

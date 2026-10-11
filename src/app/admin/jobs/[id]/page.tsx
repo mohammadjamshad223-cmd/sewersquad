@@ -14,7 +14,7 @@ import { ActionButton } from "@/components/ui/form";
 import { ReasonDialog, FieldInput } from "@/components/admin/dialogs";
 import { AssignControl } from "@/components/admin/assign-control";
 import { DocLink } from "@/components/portal/doc-link";
-import { approveJobAction, cancelJobAction, markMissedAction, rejectJobAction, rescheduleJobAction, reviewChargeAction, updateJobDetailsAction } from "@/app/admin/_actions/ops";
+import { approveJobAction, cancelJobAction, markMissedAction, rejectJobAction, rescheduleJobAction, reviewChargeAction } from "@/app/admin/_actions/ops";
 import { generateInvoiceAction } from "@/app/admin/_actions/billing";
 import { formatDateKey, formatInstant, formatWindow, keyFromDate } from "@/lib/dates";
 import { formatCents, formatGallons, formatRateCents } from "@/lib/money";

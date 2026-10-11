@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { customerContext } from "@/server/customer-context";
 import { prisma } from "@/server/db";
 import { AccountSettings } from "@/components/portal/account-settings";
@@ -30,7 +31,7 @@ export default async function CustomerSettings() {
               <div><p className="text-[12px] uppercase tracking-wide text-muted-foreground">Billing</p><p className="mt-1">{o.billingMode === "CONSOLIDATED" ? "Consolidated (one account)" : "Billed per location"}</p></div>
               <div><p className="text-[12px] uppercase tracking-wide text-muted-foreground">Billing contact</p><p className="mt-1">{bp?.billingEmail ?? o.primaryEmail ?? "—"}</p></div>
               <div><p className="text-[12px] uppercase tracking-wide text-muted-foreground">Payment terms</p><p className="mt-1">{bp ? `Net ${bp.paymentTermsDays}` : "—"}</p></div>
-              <p className="text-[13px] text-muted-foreground sm:col-span-3">To change billing details or add users, <a href="/customer/support/new?category=BILLING" className="font-medium text-brand hover:underline">send us a request</a> — changes are verified by our office.</p>
+              <p className="text-[13px] text-muted-foreground sm:col-span-3">To change billing details or add users, <Link href="/customer/support/new?category=BILLING" className="font-medium text-brand hover:underline">send us a request</Link> — changes are verified by our office.</p>
             </CardBody>
           </Card>
         );

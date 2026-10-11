@@ -92,9 +92,9 @@ export function storage(): StorageDriver {
     if (!env().S3_BUCKET) throw new Error("STORAGE_DRIVER=s3 requires S3_BUCKET");
     driver = new S3Driver();
   } else {
-    if (env().NODE_ENV === "production") {
+    if (env().NODE_ENV === "production" && env().ALLOW_LOCAL_STORAGE !== "true") {
       // Local disk is not durable on serverless platforms; refuse to silently lose documents.
-      throw new Error("STORAGE_DRIVER=local is not allowed in production. Configure S3-compatible storage.");
+      throw new Error("STORAGE_DRIVER=local is not allowed in production. Configure S3-compatible storage (or set ALLOW_LOCAL_STORAGE=true on a single server with a persistent disk).");
     }
     driver = new LocalDriver();
   }

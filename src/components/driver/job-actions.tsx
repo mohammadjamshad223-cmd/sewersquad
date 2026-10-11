@@ -12,9 +12,16 @@ import { jobTransitionAction } from "@/app/driver/actions";
 
 type To = "ACCEPTED" | "EN_ROUTE" | "ARRIVED" | "IN_PROGRESS" | "UNABLE_TO_SERVICE";
 
+/**
+ * Best-effort GPS stamp. The browser's own timeout only starts after permission is granted, so an
+ * unanswered permission prompt would otherwise block the driver — always give up after 5 seconds.
+ */
 function position(): Promise<{ latitude: number; longitude: number } | null> {
   if (typeof navigator === "undefined" || !navigator.geolocation) return Promise.resolve(null);
-  return new Promise((resolve) => navigator.geolocation.getCurrentPosition((p) => resolve({ latitude: p.coords.latitude, longitude: p.coords.longitude }), () => resolve(null), { timeout: 4000, maximumAge: 60_000 }));
+  const gps = new Promise<{ latitude: number; longitude: number } | null>((resolve) =>
+    navigator.geolocation.getCurrentPosition((p) => resolve({ latitude: p.coords.latitude, longitude: p.coords.longitude }), () => resolve(null), { timeout: 4000, maximumAge: 60_000 }),
+  );
+  return Promise.race([gps, new Promise<null>((r) => setTimeout(() => r(null), 5000))]);
 }
 
 /** Large, single-tap status controls for field use. */

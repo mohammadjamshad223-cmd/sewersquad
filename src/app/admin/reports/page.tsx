@@ -14,6 +14,9 @@ import { addDays, dateFromKey, formatDateKey, isDateKey, todayKey } from "@/lib/
 import { formatCents, formatGallons, formatNumber, formatPercent } from "@/lib/money";
 import { companyTimeZone } from "@/server/services/settings";
 
+/** Download endpoint (an API route, not a page — a plain link is correct here). */
+const AGING_CSV = "/api/export/aging";
+
 export const metadata = { title: "Reports & analytics" };
 
 export default async function Reports({ searchParams }: { searchParams: Promise<{ tab?: string; from?: string; to?: string }> }) {
@@ -65,7 +68,7 @@ async function Financial({ from, to, qs }: { from: string; to: string; qs: strin
         <Card><CardHeader title="Revenue by driver" description="Job-linked invoices only." /><CardBody><RankedBars rows={b.byDriver.map((r) => ({ name: r.name, value: r.cents }))} /></CardBody></Card>
       </div>
       <Card>
-        <CardHeader title="Accounts receivable aging" action={<a href="/api/export/aging" className="text-[13px] font-medium text-brand hover:underline">CSV</a>} />
+        <CardHeader title="Accounts receivable aging" action={<a href={AGING_CSV} download className="text-[13px] font-medium text-brand hover:underline">CSV</a>} />
         <Table><THead><tr>{aging.map((a) => <TH key={a.key} className="text-right">{a.label}</TH>)}</tr></THead><TBody><TR>{aging.map((a) => <TD key={a.key} className="text-right tabular-nums">{formatCents(a.cents)}</TD>)}</TR></TBody></Table>
       </Card>
     </div>

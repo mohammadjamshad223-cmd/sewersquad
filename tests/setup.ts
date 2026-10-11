@@ -6,3 +6,17 @@ process.env.APP_URL ??= "http://localhost:3000";
 process.env.REQUIRE_ADMIN_MFA ??= "false";
 process.env.STORAGE_DRIVER = "local";
 process.env.LOCAL_STORAGE_DIR = "./storage-test";
+
+import { vi } from "vitest";
+
+// Next.js request APIs are unavailable outside a request; provide an in-memory cookie jar.
+const jar = new Map<string, string>();
+vi.mock("next/headers", () => ({
+  cookies: async () => ({
+    get: (k: string) => (jar.has(k) ? { name: k, value: jar.get(k)! } : undefined),
+    set: (k: string, v: string) => void jar.set(k, v),
+    delete: (k: string) => void jar.delete(k),
+    has: (k: string) => jar.has(k),
+  }),
+  headers: async () => new Headers({ "x-forwarded-for": "127.0.0.1", "user-agent": "vitest" }),
+}));

@@ -14,6 +14,9 @@ import { addDays, dateFromKey, formatDateKey, formatWindow } from "@/lib/dates";
 import { formatCents, formatGallons } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
+/** Download endpoint (an API route, not a page — a plain link is correct here). */
+const AGING_CSV = "/api/export/aging";
+
 export const metadata = { title: "Dashboard" };
 
 export default async function AdminDashboard() {
@@ -91,7 +94,7 @@ export default async function AdminDashboard() {
           </Card>
           {fin && (
             <Card>
-              <CardHeader title="Accounts receivable aging" action={<a href="/api/export/aging" className="text-[13px] font-medium text-brand hover:underline">CSV</a>} />
+              <CardHeader title="Accounts receivable aging" action={<a href={AGING_CSV} download className="text-[13px] font-medium text-brand hover:underline">CSV</a>} />
               <CardBody className="space-y-3">
                 {aging.map((a, i) => (
                   <div key={a.key} className="text-[13px]">

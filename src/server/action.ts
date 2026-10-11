@@ -35,6 +35,7 @@ export function formDataToObject(fd: FormData): Record<string, unknown> {
 export function toActionError(err: unknown): ActionResult<never> {
   unstable_rethrow(err);
   if (err instanceof AppError) return { ok: false, error: err.message };
+  if (err instanceof Error && err.name === "TransitionError") return { ok: false, error: err.message };
   if (err instanceof z.ZodError) {
     return { ok: false, error: "Please correct the highlighted fields.", fieldErrors: err.flatten().fieldErrors as Record<string, string[]> };
   }
