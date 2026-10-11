@@ -125,6 +125,17 @@ export async function sendAccessLinkAction(userId: string): Promise<ActionResult
   }
 }
 
+/** Saves coordinates found by the browser's address lookup. Never overwrites existing coordinates. */
+export async function saveLocationCoordinatesAction(locationId: string, latitude: number, longitude: number): Promise<ActionResult> {
+  return runAction(async () => {
+    const actor = await assertStaff("customers.write");
+    const input = z.object({ id, latitude: z.number().finite().min(-90).max(90), longitude: z.number().finite().min(-180).max(180) }).parse({ id: locationId, latitude, longitude });
+    const res = await prisma.serviceLocation.updateMany({ where: { id: input.id, latitude: null, longitude: null }, data: { latitude: input.latitude, longitude: input.longitude } });
+    if (res.count) await audit(prisma, { actorId: actor.userId, action: "location.geocoded", entityType: "ServiceLocation", entityId: input.id, after: { latitude: input.latitude, longitude: input.longitude } });
+    return res.count;
+  });
+}
+
 export async function setUserActiveAction(userId: string, active: boolean) {
   return runAction(async () => setUserActive(await assertStaff(), userId, active));
 }

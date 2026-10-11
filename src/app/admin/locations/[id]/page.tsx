@@ -22,6 +22,9 @@ import { ASSET_TYPE_LABEL, SERVICE_TYPE_LABEL } from "@/lib/status";
 import { formatAddress, titleCase } from "@/lib/utils";
 import { companyTimeZone } from "@/server/services/settings";
 import { AuditTrail } from "@/components/admin/audit-trail";
+import { StopsMap } from "@/components/maps/stops-map";
+import { AutoGeocode } from "@/components/maps/auto-geocode";
+import { integrations } from "@/server/env";
 
 export const metadata = { title: "Location" };
 
@@ -86,6 +89,15 @@ export default async function LocationDetail({ params, searchParams }: { params:
               { label: "Special requirements", value: loc.specialRequirements },
               { label: "Billing profile", value: loc.organization.billingProfiles.find((b) => b.id === loc.billingProfileId)?.name ?? "Customer default" },
             ]} />
+            {integrations.maps() && (
+              <div className="mt-5 space-y-2">
+                {loc.latitude === null || loc.longitude === null ? (
+                  <AutoGeocode items={[{ id: loc.id, name: loc.name, address: `${loc.addressLine1}, ${loc.city}, ${loc.state} ${loc.postalCode}` }]} />
+                ) : (
+                  <StopsMap label={`Map of ${loc.name}`} height={280} points={[{ id: loc.id, lat: loc.latitude, lng: loc.longitude, title: loc.name, subtitle: formatAddress(loc), color: "#002957" }]} />
+                )}
+              </div>
+            )}
           </CardBody>
         </Card>
       )}

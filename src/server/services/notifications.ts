@@ -5,6 +5,7 @@ import { env } from "../env";
 import { logger } from "../logger";
 import { renderEmailHtml, sendEmail } from "../integrations/email";
 import { sendSms } from "../integrations/sms";
+import { brand } from "@/config/brand";
 
 /**
  * Notification catalogue. `defaults` are used when a user has not stored a preference.
@@ -90,7 +91,8 @@ export async function notify(db: Db, input: NotifyInput): Promise<string[]> {
     });
     created.push(n.id);
     const wantsEmail = input.forceEmail || (pref ? pref.email : defaults.email);
-    const wantsSms = pref ? pref.sms : defaults.sms;
+    // Sign-in links (invitations, password resets) are never sent by text message.
+    const wantsSms = input.type !== "account.security" && (pref ? pref.sms : defaults.sms);
     const deliveries: { channel: NotificationChannel; destination: string }[] = [];
     if (wantsEmail) deliveries.push({ channel: "EMAIL", destination: user.email });
     if (wantsSms && user.phone) deliveries.push({ channel: "SMS", destination: user.phone });
@@ -151,7 +153,7 @@ export async function processDueDeliveries(limit = 25) {
             text: link ? `${d.notification.body}\n\n${link}` : d.notification.body,
             html: renderEmailHtml(d.notification.title, d.notification.body, link ? { label: "Open Sewer Squad", url: link } : undefined),
           })
-        : await sendSms(d.destination, `${d.notification.title}: ${d.notification.body}${link ? ` ${link}` : ""}`);
+        : await sendSms(d.destination, smsText(d.notification.title, d.notification.body, link));
 
     if (result.status === "sent") {
       sent++;
@@ -176,6 +178,14 @@ export async function processDueDeliveries(limit = 25) {
     }
   }
   return { processed: due.length, sent };
+}
+
+/** Carrier (A2P 10DLC) rules: identify the sender and include opt-out wording. */
+export function smsText(title: string, body: string, link?: string) {
+  const suffix = `${link ? ` ${link}` : ""} Reply STOP to opt out.`;
+  const main = `${brand.name}: ${title.replace(/[.!?:]+$/, "")}. ${body}`.replace(/\s+/g, " ").trim();
+  const room = 600 - suffix.length;
+  return (main.length > room ? `${main.slice(0, room - 1)}…` : main) + suffix;
 }
 
 export async function unreadCount(userId: string) {

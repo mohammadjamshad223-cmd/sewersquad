@@ -208,7 +208,12 @@ export async function updateLocation(actor: Actor, id: string, input: z.infer<ty
     const before = await tx.serviceLocation.findFirst({ where: { id, deletedAt: null } });
     if (!before) throw notFound();
     if (input.billingProfileId) await assertBillingProfile(tx, before.organizationId, input.billingProfileId);
-    const loc = await tx.serviceLocation.update({ where: { id }, data: { ...input, updatedById: actor.userId } });
+    // A new address invalidates the old map position unless coordinates were edited too;
+    // cleared coordinates are looked up again automatically from the address.
+    const addressChanged = (["addressLine1", "city", "state", "postalCode"] as const).some((k) => before[k] !== input[k]);
+    const coordsUntouched = (input.latitude ?? before.latitude) === before.latitude && (input.longitude ?? before.longitude) === before.longitude;
+    const coords = addressChanged && coordsUntouched ? { latitude: null, longitude: null } : {};
+    const loc = await tx.serviceLocation.update({ where: { id }, data: { ...input, ...coords, updatedById: actor.userId } });
     const d = diff(before as unknown as Record<string, unknown>, input);
     if (d.changed) await audit(tx, { actorId: actor.userId, action: "location.update", entityType: "ServiceLocation", entityId: id, organizationId: before.organizationId, before: d.before, after: d.after });
     return loc;
