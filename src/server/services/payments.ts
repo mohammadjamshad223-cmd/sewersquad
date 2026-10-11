@@ -1,7 +1,7 @@
 import "server-only";
 import type Stripe from "stripe";
 import { prisma, type Db } from "../db";
-import { env, integrations } from "../env";
+import { env, integrations, isLiveStripeKey } from "../env";
 import { audit } from "../audit";
 import { logger } from "../logger";
 import { badRequest, notConfigured, notFound } from "../errors";
@@ -27,7 +27,7 @@ async function stripe(): Promise<Stripe> {
 }
 
 export function stripeIsLiveKey() {
-  return Boolean(env().STRIPE_SECRET_KEY?.startsWith("sk_live_"));
+  return isLiveStripeKey(env().STRIPE_SECRET_KEY);
 }
 
 const PAYABLE = ["SENT", "VIEWED", "PARTIALLY_PAID", "OVERDUE"] as const;

@@ -31,7 +31,7 @@ const schema = z.object({
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
   STRIPE_ENABLE_ACH: z.enum(["true", "false"]).default("false"),
-  /** Live keys (sk_live_…) stay disabled until the test-mode checklist in docs/integrations.md is signed off. */
+  /** Live keys (sk_live_… or restricted rk_live_…) stay disabled until the test-mode checklist in docs/integrations.md is signed off. */
   STRIPE_LIVE_APPROVED: z.enum(["true", "false"]).default("false"),
 
   RESEND_API_KEY: z.string().optional(),
@@ -59,11 +59,16 @@ export function env(): Env {
   return cached;
 }
 
+/** Secret (sk_) and restricted (rk_) keys both come in test and live variants. */
+export function isLiveStripeKey(key: string | undefined) {
+  return /^(sk|rk)_live_/.test(key?.trim() ?? "");
+}
+
 export const integrations = {
   stripe: () => {
     const e = env();
     if (!e.STRIPE_SECRET_KEY || !e.STRIPE_WEBHOOK_SECRET) return false;
-    return !e.STRIPE_SECRET_KEY.startsWith("sk_live_") || e.STRIPE_LIVE_APPROVED === "true";
+    return !isLiveStripeKey(e.STRIPE_SECRET_KEY) || e.STRIPE_LIVE_APPROVED === "true";
   },
   email: () => Boolean(env().RESEND_API_KEY && env().EMAIL_FROM),
   sms: () => Boolean(env().TWILIO_ACCOUNT_SID && env().TWILIO_AUTH_TOKEN && env().TWILIO_FROM_NUMBER),

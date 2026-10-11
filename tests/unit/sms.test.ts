@@ -28,3 +28,15 @@ describe("smsText", () => {
     expect(long.endsWith("https://p.example.com/a Reply STOP to opt out.")).toBe(true);
   });
 });
+
+describe("isLiveStripeKey", () => {
+  it("treats secret and restricted live keys as live", async () => {
+    const { isLiveStripeKey } = await import("@/server/env");
+    expect(isLiveStripeKey("sk_live_abc")).toBe(true);
+    expect(isLiveStripeKey("rk_live_abc")).toBe(true);
+    expect(isLiveStripeKey(" sk_live_abc")).toBe(true);
+    expect(isLiveStripeKey("sk_test_abc")).toBe(false);
+    expect(isLiveStripeKey("rk_test_abc")).toBe(false);
+    expect(isLiveStripeKey(undefined)).toBe(false);
+  });
+});
