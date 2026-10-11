@@ -40,7 +40,7 @@ DATABASE_URL=<direct url> APP_URL=https://portal.example.com npm run db:bootstra
 ```
 
 **No terminal?** On Vercel the `vercel-build` script runs migrations automatically (using
-`DIRECT_DATABASE_URL` when set). Set `SETUP_TOKEN` and open `/setup` to create the first Super
+`DIRECT_DATABASE_URL`, or `DATABASE_URL_UNPOOLED` from Vercel's Neon integration, when set). Set `SETUP_TOKEN` and open `/setup` to create the first Super
 Admin in the browser. The page disables itself once that account exists. See [go-live.md](go-live.md).
 
 `db:deploy` applies the schema, including the Postgres triggers that make audit logs and

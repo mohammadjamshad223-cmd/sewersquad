@@ -63,7 +63,7 @@ characters**, letters and numbers only. Store them in the password manager.
    | Name | Value |
    |---|---|
    | `DATABASE_URL` | Neon **pooled** string |
-   | `DIRECT_DATABASE_URL` | Neon **direct** string |
+   | `DIRECT_DATABASE_URL` | Neon **direct** string (skip if Vercel's Neon integration already added `DATABASE_URL_UNPOOLED`) |
    | `APP_URL` | `https://portal.yourcompany.com` (or the `…vercel.app` address for now) |
    | `APP_ENCRYPTION_KEY` | secret #1 |
    | `CRON_SECRET` | secret #2 |
