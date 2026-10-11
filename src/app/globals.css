@@ -3,17 +3,20 @@
 @tailwind utilities;
 
 /*
- * Design tokens (HSL). The `--brand*` values are placeholders until official Sewer Squad colors are
- * provided — change them here and every surface in the product updates.
+ * Design tokens (HSL) — Sewer Squad brand: navy #002957, green #65AA27 (from the official logo).
+ * Green is an accent: as a fill it carries navy text (5.0:1); for green text on white use
+ * --accent-strong (5.2:1). White text on the bright green fails contrast, so it is never used.
  */
 @layer base {
   :root {
-    --brand: 205 73% 21%;            /* #0E3A5B */
-    --brand-strong: 206 74% 15%;     /* #0A2A42 */
-    --brand-soft: 205 60% 96%;
+    --brand: 212 100% 17%;           /* #002957 */
+    --brand-strong: 212 100% 12%;    /* #001D3F */
+    --brand-soft: 213 48% 95%;       /* #EEF3F9 */
     --brand-foreground: 0 0% 100%;
-    --accent: 153 54% 40%;           /* #2F9E6E */
-    --accent-foreground: 0 0% 100%;
+    --accent: 92 63% 41%;            /* #65AA27 */
+    --accent-foreground: 212 100% 17%;
+    --accent-strong: 94 74% 27%;     /* #3F7A12 */
+    --accent-soft: 90 50% 95%;       /* #F1F8EA */
 
     --background: 220 20% 98%;
     --surface: 0 0% 100%;
@@ -23,7 +26,7 @@
     --muted-foreground: 215 16% 42%;
     --border: 220 13% 90%;
     --input: 220 13% 86%;
-    --ring: 205 73% 35%;
+    --ring: 212 70% 40%;
 
     --danger: 0 72% 46%;
     --danger-soft: 0 86% 97%;

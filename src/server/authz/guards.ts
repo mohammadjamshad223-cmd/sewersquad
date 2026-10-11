@@ -3,8 +3,8 @@ import { redirect } from "next/navigation";
 import { getActor, type Actor } from "../auth/session";
 import { forbidden, unauthenticated } from "../errors";
 import type { Permission } from "./permissions";
-import { assertDriverActor, assertStaffActor, hasPermission } from "./check";
-export { assertDriverActor, assertStaffActor, hasPermission };
+import { assertDriverActor, assertStaffActor, canUseFieldPortal, hasPermission } from "./check";
+export { assertDriverActor, assertStaffActor, canUseFieldPortal, hasPermission };
 
 function mfaGate(actor: Actor): string | null {
   if (actor.mfaEnrollmentRequired) return "/mfa/setup";
@@ -32,8 +32,8 @@ export async function requireStaffPage(permission?: Permission | Permission[]): 
 
 export async function requireDriverPage(): Promise<Actor & { driverId: string }> {
   const actor = await requireSignedIn();
-  if (actor.kind !== "DRIVER" || !actor.driverId || !actor.permissions.has("driver.portal")) redirect("/");
-  return actor as Actor & { driverId: string };
+  if (!canUseFieldPortal(actor)) redirect("/");
+  return actor;
 }
 
 export async function requireCustomerPage(): Promise<Actor> {

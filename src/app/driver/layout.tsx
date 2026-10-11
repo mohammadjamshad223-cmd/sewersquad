@@ -10,7 +10,7 @@ export default async function DriverLayout({ children }: { children: React.React
     prisma.driver.findUnique({ where: { id: actor.driverId }, select: { defaultVehicle: { select: { unitNumber: true } } } }),
   ]);
   return (
-    <DriverShell driverName={actor.name} truck={driver?.defaultVehicle?.unitNumber ?? null} unread={unread}>
+    <DriverShell driverName={actor.name} truck={driver?.defaultVehicle?.unitNumber ?? null} unread={unread} officeHref={actor.kind === "STAFF" ? "/admin/dashboard" : undefined}>
       {children}
     </DriverShell>
   );

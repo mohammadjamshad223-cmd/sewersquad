@@ -31,7 +31,7 @@ export function useFieldError(name: string): string | undefined {
  * Success toast. A one-time sign-in link (returned when no email provider is configured) gets a
  * persistent toast with a copy button instead, so staff can hand it over.
  */
-function announceSuccess(state: ActionState, fallback?: string | false) {
+export function announceSuccess(state: ActionState, fallback?: string | false) {
   if (!state.ok) return;
   const msg = state.message ?? fallback;
   const data = state.data as { inviteLink?: string; linkNote?: string } | undefined;

@@ -7,7 +7,7 @@ import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Too
  * Chart tokens. Series colors come from the validated reference categorical palette
  * (the brand navy is too dark/desaturated to read as a data mark). Text uses ink tokens.
  */
-const SERIES_1 = "#2a78d6";
+const SERIES_1 = "#58981f"; // brand green, deepened to pass chart contrast (3:1) — validated
 const GRID = "#e8eaee";
 const INK_SECONDARY = "#52514e";
 

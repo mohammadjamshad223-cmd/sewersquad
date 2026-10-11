@@ -145,3 +145,29 @@ export async function resolveIssue(actor: Actor, issueId: string, status: "ACKNO
     await audit(tx, { actorId: actor.userId, action: `issue.${status.toLowerCase()}`, entityType: "IssueReport", entityId: issueId, reason: resolution ?? null });
   });
 }
+
+/**
+ * Field mode for office staff (e.g. an owner-operator who also runs jobs): gives a staff account
+ * a driver profile so it can be assigned jobs and use the driver portal. Turning it off marks the
+ * profile inactive; its job history is kept.
+ */
+export async function setStaffFieldProfile(actor: Actor, userId: string, enabled: boolean) {
+  assertStaffActor(actor, "staff.manage");
+  const user = await prisma.user.findUnique({ where: { id: userId }, include: { driver: true, role: true } });
+  if (!user || user.kind !== "STAFF") throw notFound("Staff member not found.");
+  if (user.role?.key === "super_admin" && actor.roleKey !== "super_admin") throw badRequest("Only a Super Admin can change another Super Admin.");
+  return prisma.$transaction(async (tx) => {
+    let driver = user.driver;
+    if (enabled) {
+      driver = driver
+        ? await tx.driver.update({ where: { id: driver.id }, data: { status: "ACTIVE" } })
+        : await tx.driver.create({ data: { userId, employeeNumber: await numbers.employee(tx) } });
+    } else if (driver) {
+      const open = await tx.job.count({ where: { driverId: driver.id, status: { in: ["ASSIGNED", "ACCEPTED", "EN_ROUTE", "ARRIVED", "IN_PROGRESS", "PENDING_DOCUMENTATION"] } } });
+      if (open) throw badRequest(`Reassign this person's ${open} open job${open > 1 ? "s" : ""} first.`);
+      driver = await tx.driver.update({ where: { id: driver.id }, data: { status: "INACTIVE" } });
+    }
+    await audit(tx, { actorId: actor.userId, action: enabled ? "staff.field_mode_on" : "staff.field_mode_off", entityType: "User", entityId: userId, after: { driverId: driver?.id ?? null } });
+    return driver;
+  });
+}

@@ -13,7 +13,7 @@ Stripe Checkout + webhooks · Resend (email) · Twilio (SMS, optional) · S3-com
 
 > **Status:** feature-complete against the brief and covered by unit, integration and end-to-end
 > tests. Stripe, Resend, Twilio and S3 credentials are **not configured** in this repository and
-> have **not been exercised against the live providers**. Brand assets are **placeholders**. See
+> have **not been exercised against the live providers**. The official logo and brand colors are applied. See
 > [docs/integrations.md](docs/integrations.md) for what must happen before go-live.
 
 ## Quick start (local)

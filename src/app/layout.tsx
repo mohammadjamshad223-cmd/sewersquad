@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   title: { default: `${brand.name} Portal`, template: `%s · ${brand.name}` },
   description: brand.tagline,
   manifest: "/manifest.webmanifest",
-  icons: { icon: brand.markPath, apple: "/brand/icon-192.png" },
+  icons: { icon: brand.markPath, apple: "/brand/apple-touch-icon.png" },
   robots: { index: false, follow: false },
 };
 

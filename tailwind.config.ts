@@ -2,7 +2,7 @@ import type { Config } from "tailwindcss";
 
 /**
  * All colors resolve to CSS variables defined in src/app/globals.css.
- * To apply official Sewer Squad brand colors, edit the `--brand-*` variables there
+ * Sewer Squad brand colors live in the `--brand-*` / `--accent-*` variables there
  * (and src/config/brand.ts for PDFs / emails). No component hardcodes brand hex values.
  */
 const config: Config = {
@@ -27,6 +27,8 @@ const config: Config = {
         accent: {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
+          strong: "hsl(var(--accent-strong))",
+          soft: "hsl(var(--accent-soft))",
         },
         muted: {
           DEFAULT: "hsl(var(--muted))",

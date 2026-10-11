@@ -50,7 +50,8 @@ export async function unallocatedLoads(vehicleId: string, driverId?: string) {
 export async function recordDisposal(actor: Actor, input: z.infer<typeof disposalSchema>, ticket: { bytes: Uint8Array; name: string } | null) {
   const isDriver = actor.kind === "DRIVER" && actor.driverId;
   if (!isDriver && !hasPermission(actor, "disposal.write")) throw forbidden();
-  const driverId = isDriver ? actor.driverId! : input.driverId;
+  // Drivers always record their own loads; office staff pick a driver (or default to their own field profile).
+  const driverId = isDriver ? actor.driverId! : input.driverId || actor.driverId;
   if (!driverId) throw badRequest("Select the driver.");
   if (input.adjustmentGallons !== 0 && (!input.adjustmentReason || input.adjustmentReason.length < 3)) throw badRequest("Explain the load adjustment.");
   const disposedAt = new Date(input.disposedAt);

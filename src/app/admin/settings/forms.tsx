@@ -6,7 +6,7 @@ import { Checkbox, Input, Select, Textarea } from "@/components/ui/input";
 import { FormDialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { sendAccessLinkAction } from "@/app/admin/_actions/customers";
-import { changeStaffRoleAction, inviteStaffAction, saveRolePermissionsAction, saveSettingsAction, saveTemplateAction, setStaffActiveAction } from "@/app/admin/_actions/settings";
+import { changeStaffRoleAction, inviteStaffAction, setStaffFieldModeAction, saveRolePermissionsAction, saveSettingsAction, saveTemplateAction, setStaffActiveAction } from "@/app/admin/_actions/settings";
 import { savePricingRuleAction } from "@/app/admin/_actions/billing";
 import { SERVICE_TYPE_LABEL } from "@/lib/status";
 
@@ -101,7 +101,7 @@ export function InviteStaffDialog({ canSuper }: { canSuper: boolean }) {
   );
 }
 
-export function StaffRow({ user, roles, canEdit, self }: { user: { id: string; roleKey: string | null; status: string }; roles: { key: string; name: string }[]; canEdit: boolean; self: boolean }) {
+export function StaffRow({ user, roles, canEdit, self }: { user: { id: string; roleKey: string | null; status: string; fieldMode: boolean }; roles: { key: string; name: string }[]; canEdit: boolean; self: boolean }) {
   return (
     <div className="flex items-center justify-end gap-2">
       <select aria-label="Role" className="h-8 rounded-md border border-input bg-surface px-2 text-[13px]" defaultValue={user.roleKey ?? ""} disabled={!canEdit || self} onChange={async (e) => {
@@ -111,6 +111,7 @@ export function StaffRow({ user, roles, canEdit, self }: { user: { id: string; r
       }}>
         {roles.map((r) => <option key={r.key} value={r.key}>{r.name}</option>)}
       </select>
+      {canEdit && user.status !== "DEACTIVATED" && <ActionButton size="sm" variant="ghost" action={() => setStaffFieldModeAction(user.id, !user.fieldMode)} title="Field mode lets office staff be assigned jobs and complete them on a phone">{user.fieldMode ? "Field mode: on" : "Enable field mode"}</ActionButton>}
       {canEdit && !self && user.status !== "DEACTIVATED" && <ActionButton size="sm" variant="ghost" action={() => sendAccessLinkAction(user.id)} refresh={false}>{user.status === "INVITED" ? "Resend invite" : "Send reset link"}</ActionButton>}
       {canEdit && !self && <ActionButton size="sm" variant="ghost" action={() => setStaffActiveAction(user.id, user.status === "DEACTIVATED")} confirm={user.status === "DEACTIVATED" ? undefined : "Deactivate this staff account? They'll be signed out immediately."} successMessage="Updated.">{user.status === "DEACTIVATED" ? "Reactivate" : "Deactivate"}</ActionButton>}
     </div>

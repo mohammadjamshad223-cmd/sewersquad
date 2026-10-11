@@ -14,7 +14,17 @@ export function assertStaffActor(actor: Actor, permission?: Permission | Permiss
   return actor;
 }
 
+/**
+ * Field (driver) portal access: driver accounts with the driver.portal permission, or staff
+ * members who also work in the field (an owner-operator) and have an active driver profile.
+ */
+export function canUseFieldPortal(actor: Actor): actor is Actor & { driverId: string } {
+  if (!actor.driverId) return false;
+  if (actor.kind === "DRIVER") return actor.permissions.has("driver.portal");
+  return actor.kind === "STAFF";
+}
+
 export function assertDriverActor(actor: Actor): Actor & { driverId: string } {
-  if (actor.kind !== "DRIVER" || !actor.driverId || !actor.permissions.has("driver.portal")) throw forbidden();
+  if (!canUseFieldPortal(actor)) throw forbidden();
   return actor as Actor & { driverId: string };
 }

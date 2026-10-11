@@ -110,7 +110,7 @@ export async function customerJob(locationIds: string[], jobId: string) {
       serviceRecord: { select: { arrivedAt: true, finishedAt: true, conditionAfter: true, followUpRecommendations: true, assetRecords: { select: { gallonsPumped: true, servicePerformed: true, asset: { select: { assetTag: true, type: true, capacityGallons: true, customTypeLabel: true } } } } } },
       manifest: { select: { id: true, manifestNumber: true, status: true, documents: { where: { visibility: "CUSTOMER", deletedAt: null }, select: { id: true, title: true, type: true } } } },
       invoices: { where: { status: { not: "DRAFT" } }, select: { id: true, invoiceNumber: true, status: true, totalCents: true, balanceCents: true } },
-      documents: { where: { visibility: "CUSTOMER", deletedAt: null, type: "SERVICE_PHOTO" }, select: { id: true, title: true, photoPhase: true } },
+      documents: { where: { visibility: "CUSTOMER", deletedAt: null, type: { in: ["SERVICE_PHOTO", "OTHER"] } }, select: { id: true, title: true, photoPhase: true, type: true } },
       emergencyRequest: { select: { id: true, requestNumber: true } },
     },
   });

@@ -75,8 +75,8 @@ export function AppShell({ portal, user, permissions, badges = {}, unread, topba
                     title={isCollapsed ? item.label : undefined}
                     aria-current={active ? "page" : undefined}
                     className={cn(
-                      "group flex h-9 items-center gap-3 rounded-md px-2.5 text-[13.5px] font-medium transition-colors",
-                      active ? "bg-brand-soft text-brand" : "text-muted-foreground hover:bg-subtle hover:text-foreground",
+                      "group relative flex h-9 items-center gap-3 rounded-md px-2.5 text-[13.5px] font-medium transition-colors",
+                      active ? "bg-brand-soft font-semibold text-brand before:absolute before:inset-y-1.5 before:left-0 before:w-[3px] before:rounded-full before:bg-accent" : "text-muted-foreground hover:bg-subtle hover:text-foreground",
                       isCollapsed && "justify-center px-0",
                     )}
                   >
@@ -107,9 +107,9 @@ export function AppShell({ portal, user, permissions, badges = {}, unread, topba
     <div className="flex min-h-screen">
       {/* Desktop sidebar */}
       <aside className={cn("sticky top-0 hidden h-screen shrink-0 flex-col border-r bg-surface transition-[width] duration-200 lg:flex", collapsed ? "w-[68px]" : "w-60")}>
-        <div className={cn("flex h-14 items-center border-b px-4", collapsed && "justify-center px-0")}>
+        <div className={cn("flex h-16 items-center border-b px-4", collapsed && "justify-center px-0")}>
           <Link href={portal === "admin" ? "/admin/dashboard" : "/customer/dashboard"} aria-label={`${brand.name} home`}>
-            {collapsed ? <Image src={brand.markPath} alt="" width={28} height={28} /> : <Image src={brand.logoPath} alt={brand.name} width={140} height={27} className="h-7 w-auto" />}
+            {collapsed ? <Image src={brand.markPath} alt="" width={32} height={32} /> : <Image src={brand.logoPath} alt={brand.name} width={brand.logoSize.width} height={brand.logoSize.height} priority className="h-12 w-auto" />}
           </Link>
         </div>
         {nav(collapsed)}
@@ -126,8 +126,8 @@ export function AppShell({ portal, user, permissions, badges = {}, unread, topba
         <div className="fixed inset-0 z-40 lg:hidden" role="dialog" aria-modal="true" aria-label="Navigation">
           <div className="absolute inset-0 bg-slate-900/40" onClick={() => setMobileOpen(false)} />
           <aside className="absolute inset-y-0 left-0 flex w-72 flex-col bg-surface shadow-pop">
-            <div className="flex h-14 items-center justify-between border-b px-4">
-              <Image src={brand.logoPath} alt={brand.name} width={140} height={27} className="h-7 w-auto" />
+            <div className="flex h-16 items-center justify-between border-b px-4">
+              <Image src={brand.logoPath} alt={brand.name} width={brand.logoSize.width} height={brand.logoSize.height} className="h-10 w-auto" />
               <button onClick={() => setMobileOpen(false)} className="rounded-md p-1.5 hover:bg-subtle" aria-label="Close navigation">
                 <X className="h-5 w-5" />
               </button>
@@ -138,10 +138,13 @@ export function AppShell({ portal, user, permissions, badges = {}, unread, topba
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b bg-surface/90 px-4 backdrop-blur sm:px-6">
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b bg-surface/90 px-4 backdrop-blur sm:px-6">
           <button onClick={() => setMobileOpen(true)} className="-ml-1 rounded-md p-1.5 hover:bg-subtle lg:hidden" aria-label="Open navigation">
             <Menu className="h-5 w-5" />
           </button>
+          <Link href={portal === "admin" ? "/admin/dashboard" : "/customer/dashboard"} className="shrink-0 lg:hidden" aria-label={`${brand.name} home`}>
+            <Image src={brand.markPath} alt="" width={32} height={32} />
+          </Link>
           <div className="flex min-w-0 flex-1 items-center gap-3">{portal === "admin" ? <GlobalSearch /> : topbarSlot}</div>
           <Link href={notificationsHref} className="relative rounded-md p-2 text-muted-foreground hover:bg-subtle hover:text-foreground" aria-label={`Notifications${unread ? `, ${unread} unread` : ""}`}>
             <Bell className="h-[18px] w-[18px]" />

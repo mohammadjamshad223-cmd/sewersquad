@@ -35,7 +35,8 @@ export default async function ServiceDetail({ params }: { params: Promise<{ id: 
   const stepIdx = STEPS.indexOf(current);
   const gallons = job.serviceRecord?.assetRecords.reduce((s, a) => s + a.gallonsPumped, 0) ?? null;
   const manifestPdf = job.manifest?.documents.find((d) => d.type === "MANIFEST");
-  const photos = job.documents;
+  const photos = job.documents.filter((d) => d.type === "SERVICE_PHOTO");
+  const otherDocs = job.documents.filter((d) => d.type === "OTHER");
 
   return (
     <div className="space-y-6">
@@ -142,13 +143,19 @@ export default async function ServiceDetail({ params }: { params: Promise<{ id: 
                   <DocLink id={d.id} />
                 </div>
               ))}
+              {otherDocs.map((d) => (
+                <div key={d.id} className="flex items-center justify-between gap-2">
+                  <span className="flex min-w-0 items-center gap-2"><FileText className="h-4 w-4 shrink-0 text-muted-foreground" /> <span className="truncate">{d.title.split(" — ")[0]}</span></span>
+                  <DocLink id={d.id} />
+                </div>
+              ))}
               {job.invoices.map((i) => (
                 <div key={i.id} className="flex items-center justify-between gap-2">
                   <Link href={`/customer/invoices/${i.id}`} className="font-medium text-brand hover:underline">Invoice {i.invoiceNumber}</Link>
                   <span className="flex items-center gap-2 text-[13px]">{formatCents(i.totalCents)} <StatusBadge kind="invoice" status={i.status} /></span>
                 </div>
               ))}
-              {photos.length === 0 && !job.manifest && job.invoices.length === 0 && <p className="text-muted-foreground"><ImageIcon className="mr-1 inline h-4 w-4" />Documents appear after the visit is completed and reviewed.</p>}
+              {photos.length === 0 && otherDocs.length === 0 && !job.manifest && job.invoices.length === 0 && <p className="text-muted-foreground"><ImageIcon className="mr-1 inline h-4 w-4" />Documents appear after the visit is completed and reviewed.</p>}
             </CardBody>
           </Card>
           <Card>

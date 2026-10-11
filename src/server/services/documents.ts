@@ -176,3 +176,49 @@ export async function readUploadedFile(file: FormDataEntryValue | null): Promise
   if (file.size === 0) return null;
   return { bytes: new Uint8Array(await file.arrayBuffer()), name: file.name || "upload" };
 }
+
+export type JobAttachmentKind = "BEFORE" | "AFTER" | "MANIFEST" | "DOCUMENT";
+
+/**
+ * Office uploads onto a job: before/after photos, a scanned or signed paper manifest, or any
+ * other job document. Before/after photos follow the normal rule (published to the customer when
+ * the job is approved) unless the job is already completed, in which case the toggle applies now.
+ */
+export async function attachJobFiles(actor: Actor, jobId: string, input: { kind: JobAttachmentKind; title?: string; visibleToCustomer: boolean }, files: { bytes: Uint8Array; name: string }[]) {
+  if (actor.kind !== "STAFF" || !hasPermission(actor, "documents.write")) throw forbidden();
+  if (files.length === 0) throw badRequest("Choose at least one file.");
+  if (files.length > 10) throw badRequest("Upload up to 10 files at a time.");
+  const job = await prisma.job.findUnique({ where: { id: jobId }, include: { manifest: true } });
+  if (!job) throw notFound();
+  if (input.kind === "MANIFEST" && !job.manifest && !["IN_PROGRESS", "PENDING_DOCUMENTATION", "SUBMITTED", "COMPLETED"].includes(job.status)) {
+    throw badRequest("A manifest can be attached once the service has been performed.");
+  }
+  const isPhoto = input.kind === "BEFORE" || input.kind === "AFTER";
+  const visibility: DocumentVisibility = input.visibleToCustomer && (!isPhoto || job.status === "COMPLETED") ? "CUSTOMER" : "INTERNAL";
+
+  return prisma.$transaction(async (tx) => {
+    const manifestId = input.kind === "MANIFEST" ? (job.manifest ?? (await (await import("./manifests")).ensureManifest(tx, jobId))).id : null;
+    const docs = [];
+    for (const [i, f] of files.entries()) {
+      const label = input.title?.trim() || (isPhoto ? `${input.kind === "BEFORE" ? "Before" : "After"} photo` : input.kind === "MANIFEST" ? "Signed manifest (scan)" : "Job document");
+      docs.push(
+        await storeDocument(tx, {
+          bytes: f.bytes,
+          fileName: f.name,
+          title: `${label}${files.length > 1 ? ` (${i + 1})` : ""} — ${job.jobNumber}`,
+          type: isPhoto ? "SERVICE_PHOTO" : input.kind === "MANIFEST" ? "MANIFEST_OFFICIAL" : "OTHER",
+          photoPhase: isPhoto ? input.kind as PhotoPhase : null,
+          imagesOnly: isPhoto,
+          visibility,
+          organizationId: job.organizationId,
+          locationId: job.locationId,
+          jobId,
+          manifestId,
+          uploadedById: actor.userId,
+        }),
+      );
+    }
+    await audit(tx, { actorId: actor.userId, action: "job.files_attached", entityType: "Job", entityId: jobId, organizationId: job.organizationId, after: { kind: input.kind, count: docs.length, visibility, documentIds: docs.map((d) => d.id) } });
+    return docs;
+  }, { timeout: 60_000 });
+}

@@ -44,7 +44,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         <div className="space-y-6">
           <Card><CardHeader title="Company" /><CardBody><SettingsForm section="company" disabled={!canWrite} fields={[f("name", "Company name", "text", s.company.name), f("phone", "Main phone", "text", s.company.phone), f("email", "Office email", "text", s.company.email), f("website", "Website", "text", s.company.website), f("addressLine1", "Address", "text", s.company.addressLine1), f("city", "City", "text", s.company.city), f("state", "State", "text", s.company.state), f("postalCode", "ZIP", "text", s.company.postalCode), f("timeZone", "Operating time zone", "text", s.company.timeZone, "IANA name. Timestamps are stored in UTC and displayed in this zone.")]} /></CardBody></Card>
           <Card><CardHeader title="Hauler / transporter details" description="Printed on manifests. Leave blank rather than guessing — missing values are shown as blank, never invented." /><CardBody><SettingsForm section="hauler" disabled={!canWrite} fields={[f("legalName", "Hauler legal name", "text", s.hauler.legalName), f("transporterPermitNumber", "Transporter permit / license #", "text", s.hauler.transporterPermitNumber), f("registrationNumber", "Registration #", "text", s.hauler.registrationNumber), f("certificationStatement", "Hauler certification statement", "textarea", s.hauler.certificationStatement)]} /></CardBody></Card>
-          <Alert tone="info" title="Logo & brand colors">The logo files live in <code>public/brand/</code> and colors in <code>src/config/brand.ts</code> + <code>src/app/globals.css</code>. Replace the placeholder assets with the official Sewer Squad files and redeploy.</Alert>
+          <Alert tone="info" title="Logo & brand colors">The official Sewer Squad logo and brand colors (navy #002957, green #65AA27) are applied across the portal, documents and emails. To change them, replace the files in <code>public/brand/</code> and the colors in <code>src/config/brand.ts</code> and <code>src/app/globals.css</code>, then redeploy.</Alert>
         </div>
       )}
       {tab === "operations" && (
@@ -129,12 +129,12 @@ async function Templates({ canWrite }: { canWrite: boolean }) {
 }
 
 async function Staff({ actor }: { actor: { userId: string; roleKey: string | null } }) {
-  const [users, roles] = await Promise.all([prisma.user.findMany({ where: { kind: "STAFF" }, include: { role: true }, orderBy: { name: "asc" } }), prisma.role.findMany({ where: { key: { not: "driver" } }, orderBy: { name: "asc" } })]);
+  const [users, roles] = await Promise.all([prisma.user.findMany({ where: { kind: "STAFF" }, include: { role: true, driver: { select: { status: true } } }, orderBy: { name: "asc" } }), prisma.role.findMany({ where: { key: { not: "driver" } }, orderBy: { name: "asc" } })]);
   return (
     <Card>
       <CardHeader title="Staff users" description="Changing a role signs the user out so new permissions (and MFA requirements) apply immediately." action={<InviteStaffDialog canSuper={actor.roleKey === "super_admin"} />} />
       <Table>
-        <THead><tr><TH>Name</TH><TH>MFA</TH><TH>Status</TH><TH>Last sign-in</TH><TH className="text-right">Role</TH></tr></THead>
+        <THead><tr><TH>Name</TH><TH>MFA</TH><TH>Status</TH><TH>Last sign-in</TH><TH className="text-right">Access &amp; role</TH></tr></THead>
         <TBody>
           {users.map((u) => (
             <TR key={u.id}>
@@ -142,7 +142,7 @@ async function Staff({ actor }: { actor: { userId: string; roleKey: string | nul
               <TD><Badge tone={u.mfaEnabledAt ? "success" : "warning"}>{u.mfaEnabledAt ? "Enabled" : "Off"}</Badge></TD>
               <TD><Badge tone={u.status === "ACTIVE" ? "success" : "neutral"}>{titleCase(u.status)}</Badge></TD>
               <TD className="text-[13px]">{u.lastLoginAt ? formatInstant(u.lastLoginAt) : "Never"}</TD>
-              <TD><StaffRow user={{ id: u.id, roleKey: u.role?.key ?? null, status: u.status }} roles={roles.filter((r) => r.key !== "super_admin" || actor.roleKey === "super_admin" || u.role?.key === "super_admin").map((r) => ({ key: r.key, name: r.name }))} canEdit={u.role?.key !== "super_admin" || actor.roleKey === "super_admin"} self={u.id === actor.userId} /></TD>
+              <TD><StaffRow user={{ id: u.id, roleKey: u.role?.key ?? null, status: u.status, fieldMode: !!u.driver && u.driver.status !== "INACTIVE" }} roles={roles.filter((r) => r.key !== "super_admin" || actor.roleKey === "super_admin" || u.role?.key === "super_admin").map((r) => ({ key: r.key, name: r.name }))} canEdit={u.role?.key !== "super_admin" || actor.roleKey === "super_admin"} self={u.id === actor.userId} /></TD>
             </TR>
           ))}
         </TBody>

@@ -34,6 +34,7 @@ function escapeHtml(s: string) {
 }
 
 export function renderEmailHtml(title: string, text: string, cta?: { label: string; url: string }) {
+  const logoUrl = `${env().APP_URL.replace(/\/$/, "")}${brand.logoPath}`;
   const paragraphs = text
     .split(/\n{2,}/)
     .map((p) => `<p style="margin:0 0 14px;line-height:1.55">${escapeHtml(p).replace(/\n/g, "<br>")}</p>`)
@@ -44,7 +45,8 @@ export function renderEmailHtml(title: string, text: string, cta?: { label: stri
   return `<!doctype html><html><body style="margin:0;background:#f6f7f9;font-family:Inter,Segoe UI,Arial,sans-serif;color:${brand.colors.text}">
   <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:32px 16px">
   <table width="560" cellpadding="0" cellspacing="0" style="background:#fff;border:1px solid ${brand.colors.border};border-radius:12px">
-  <tr><td style="padding:22px 28px;border-bottom:1px solid ${brand.colors.border};font-weight:700;color:${brand.colors.primary}">${escapeHtml(brand.name)}</td></tr>
+  <tr><td style="height:4px;background:${brand.colors.accent};border-radius:12px 12px 0 0;font-size:0;line-height:0">&nbsp;</td></tr>
+  <tr><td style="padding:18px 28px;border-bottom:1px solid ${brand.colors.border}"><img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(brand.name)}" width="157" height="48" style="display:block;border:0;height:48px;width:auto;color:${brand.colors.primary};font-weight:700;font-size:18px"></td></tr>
   <tr><td style="padding:28px"><h1 style="font-size:18px;margin:0 0 16px">${escapeHtml(title)}</h1>${paragraphs}${button}</td></tr>
   <tr><td style="padding:16px 28px;border-top:1px solid ${brand.colors.border};font-size:12px;color:${brand.colors.muted}">You are receiving this because you have an account with ${escapeHtml(brand.name)}. Manage notification preferences in your account settings.</td></tr>
   </table></td></tr></table></body></html>`;

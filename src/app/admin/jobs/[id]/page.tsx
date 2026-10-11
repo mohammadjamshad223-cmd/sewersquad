@@ -11,6 +11,7 @@ import { Alert, DescriptionList, PageHeader } from "@/components/ui/misc";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { ActionButton } from "@/components/ui/form";
+import { JobFilesForm } from "@/components/admin/job-files-form";
 import { ReasonDialog, FieldInput } from "@/components/admin/dialogs";
 import { AssignControl } from "@/components/admin/assign-control";
 import { DocLink } from "@/components/portal/doc-link";
@@ -156,6 +157,13 @@ export default async function AdminJobDetail({ params, searchParams }: { params:
             </Card>
           )}
 
+          {hasPermission(actor, "documents.write") && !["CANCELLED"].includes(job.status) && (
+            <Card>
+              <CardHeader title="Add photos & files" description="Upload photos from your phone or camera roll, a signed paper manifest, or any other document for this job." />
+              <CardBody><JobFilesForm jobId={job.id} completed={job.status === "COMPLETED"} /></CardBody>
+            </Card>
+          )}
+
           {job.charges.length > 0 && (
             <Card>
               <CardHeader title="Additional charges" description="Added in the field; only approved charges are invoiced." />
@@ -196,7 +204,7 @@ export default async function AdminJobDetail({ params, searchParams }: { params:
                 <span>Manifest</span>
                 {job.manifest ? <Link href={`/admin/manifests/${job.manifest.id}`} className="flex items-center gap-2 font-medium text-brand hover:underline">{job.manifest.manifestNumber} <StatusBadge kind="manifest" status={job.manifest.status} /></Link> : <span className="text-muted-foreground">Created on submission</span>}
               </div>
-              {job.documents.filter((d) => d.type === "MANIFEST").map((d) => <div key={d.id} className="flex justify-between"><span className="text-muted-foreground">{d.title}</span><DocLink id={d.id} /></div>)}
+              {job.documents.filter((d) => ["MANIFEST", "MANIFEST_OFFICIAL", "OTHER", "DISPOSAL_TICKET"].includes(d.type)).map((d) => <div key={d.id} className="flex items-center justify-between gap-3"><span className="min-w-0 truncate text-muted-foreground">{d.title}{d.visibility === "INTERNAL" && <span className="ml-1.5 text-[11px] uppercase tracking-wide">· internal</span>}</span><DocLink id={d.id} /></div>)}
               <div className="flex items-center justify-between">
                 <span>Invoice</span>
                 {job.invoices[0] ? <Link href={`/admin/invoices/${job.invoices[0].id}`} className="flex items-center gap-2 font-medium text-brand hover:underline">{job.invoices[0].invoiceNumber} <StatusBadge kind="invoice" status={job.invoices[0].status} /></Link>

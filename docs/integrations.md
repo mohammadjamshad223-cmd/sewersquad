@@ -11,7 +11,7 @@ explicit **"not configured"** state; it never pretends to work. Current state is
 | SMS (Twilio) | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` | **Not configured.** | SMS preferences remain, and sends are recorded as `SKIPPED`. |
 | Object storage (S3 / R2 / MinIO) | `STORAGE_DRIVER=s3`, `S3_*` | **Not exercised against a real bucket.** Local driver tested. | Development uses `./storage`. Production refuses to start file operations on local storage unless `ALLOW_LOCAL_STORAGE=true`. |
 | Maps | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | **No basemap/geocoding implemented.** | Dispatch "map" is a schematic plot from stored lat/lng. Navigation links open Google/Apple Maps (no key needed). Locations need lat/lng entered for the plot. |
-| Brand assets | `public/brand/*`, `src/config/brand.ts` | **Placeholders.** No official logo or colors were in the repository. | Generic "SS" mark. Replace `logo.svg`, `logo-mark.svg`, `icon-192.png`, `icon-512.png` and the brand tokens. |
+| Brand assets | `public/brand/*`, `src/config/brand.ts` | **Done.** Official logo, navy `#002957` and green `#65AA27`. | — |
 
 ## Stripe — test mode first (required before any live use)
 

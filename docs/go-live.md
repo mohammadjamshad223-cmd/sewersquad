@@ -129,5 +129,4 @@ job, complete it on a phone, approve it, and check the manifest and invoice the 
   automatically. Keep scanned PDFs under 4 MB, or host on your own server to allow larger files.
 - **Backups:** Neon keeps point-in-time history. Also follow [backups.md](backups.md) for a nightly copy and for R2 versioning.
 - **Monitoring:** point an uptime monitor (UptimeRobot, Better Stack) at `https://portal.yourcompany.com/api/health`.
-- **Replace the placeholder logo** before inviting clients. Send the official logo files to whoever maintains the code (see `public/brand/`).
 - **Never** run the demo seed (`npm run db:seed`) against the live database. It erases everything.

@@ -65,6 +65,14 @@ export async function setStaffActiveAction(userId: string, active: boolean) {
 }
 
 /** Edit a role's permission grants. Super admin is fixed; changes are audited. */
+export async function setStaffFieldModeAction(userId: string, enabled: boolean): Promise<ActionResult> {
+  const res = await runAction(async () => {
+    const { setStaffFieldProfile } = await import("@/server/services/fleet");
+    await setStaffFieldProfile(await assertStaff("staff.manage"), z.string().uuid().parse(userId), enabled);
+  });
+  return res.ok ? { ok: true, message: enabled ? "Field mode on: this person can now be assigned jobs and use the driver screens." : "Field mode off." } : res;
+}
+
 export async function saveRolePermissionsAction(p: ActionResult, fd: FormData): Promise<ActionResult> {
   return runAction(async () => {
     const actor = await assertStaff("staff.manage");

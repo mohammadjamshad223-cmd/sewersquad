@@ -133,6 +133,20 @@ export async function uploadOfficialManifestAction(p: ActionResult, fd: FormData
   }).then((r) => (r.ok ? { ok: true, message: "Official manifest uploaded." } : r));
 }
 
+export async function attachJobFilesAction(p: ActionResult, fd: FormData): Promise<ActionResult> {
+  return runAction(async () => {
+    const files = [];
+    for (const entry of fd.getAll("files")) {
+      const f = await readUploadedFile(entry);
+      if (f) files.push(f);
+    }
+    const kind = z.enum(["BEFORE", "AFTER", "MANIFEST", "DOCUMENT"]).parse(fd.get("kind"));
+    const { attachJobFiles } = await import("@/server/services/documents");
+    const docs = await attachJobFiles(await assertStaff("documents.write"), z.string().uuid().parse(fd.get("jobId")), { kind, title: String(fd.get("title") ?? ""), visibleToCustomer: fd.get("visible") === "on" }, files);
+    return docs.length;
+  }).then((r) => (r.ok ? { ok: true, message: `${r.data} file${r.data === 1 ? "" : "s"} added to the job.` } : r));
+}
+
 // ── Documents ──
 const DOC_TYPES = ["CONTRACT", "AGREEMENT", "PERMIT", "INSPECTION", "EQUIPMENT_PHOTO", "DISPOSAL_TICKET", "OTHER", "MANIFEST_OFFICIAL"] as const;
 export async function uploadDocumentAction(p: ActionResult, fd: FormData): Promise<ActionResult> {

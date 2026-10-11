@@ -45,6 +45,19 @@ Tell the customer what they will see: upcoming services, service history with ph
 manifests (PDF/ZIP/CSV), invoices and online payment (when Stripe is enabled), emergency
 requests, documents and support.
 
+## Working as owner-operator
+
+You can run the business and do the jobs yourself from the same login:
+
+- **Field mode:** go to **Settings → Staff** and click **Enable field mode** on your own row.
+  - You can then be assigned jobs on the Dispatch Board like any driver.
+  - **My Route (field mode)** in the sidebar opens the phone-friendly driver screens: before and after photos, gallons, signatures, and offline saving.
+  - The **Office** button takes you back.
+- **Adding files after the fact:** open any job and use **Add photos & files**.
+  - You can add before or after photos from your camera roll, a signed or scanned paper manifest, or any other document such as an inspection report.
+  - Untick **Visible to the customer** for internal-only files.
+  - Before and after photos on jobs that aren't approved yet are shared with the customer when you approve the job.
+
 ## Daily operations
 
 | Who | Where | What |
@@ -59,7 +72,7 @@ requests, documents and support.
 ## Driver onboarding (hand this to drivers)
 
 1. Open the invitation link on your phone and set a password.
-2. Add the portal to your home screen. In Safari use Share → Add to Home Screen; in Chrome use ⋮ → Install app.
+2. Optional: it is a normal website, so a browser bookmark works. For one-tap access you can also add it to your home screen (Safari: Share → Add to Home Screen; Chrome: ⋮ → Add to Home screen).
 3. Allow the camera when asked, and allow location if you want arrival times recorded.
 4. Each morning, open **Inspect** and complete the pre-trip inspection for your truck.
 5. On a job, tap **Accept**, then **Start — en route** (the customer is notified), then **I've arrived**, and follow the service steps.

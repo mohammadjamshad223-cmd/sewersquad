@@ -7,7 +7,7 @@ import { SYSTEM_ROLES } from "@/server/authz/permissions";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const actor = await requireStaffPage();
-  const perms = [...actor.permissions];
+  const perms: string[] = [...actor.permissions, ...(actor.driverId ? ["field.mode"] : [])];
   const [unread, emergencies, review, support] = await Promise.all([
     unreadCount(actor.userId),
     perms.includes("emergencies.manage") ? prisma.emergencyRequest.count({ where: { status: { in: ["SUBMITTED", "ACKNOWLEDGED", "CONTACTING_CUSTOMER", "AWAITING_APPROVAL"] } } }) : 0,

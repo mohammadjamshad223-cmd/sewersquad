@@ -1,6 +1,7 @@
 import "server-only";
-import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage, type RGB } from "pdf-lib";
+import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFImage, type PDFPage, type RGB } from "pdf-lib";
 import { brand } from "@/config/brand";
+import { LOGO_PNG_BASE64, LOGO_SIZE } from "./logo-data";
 
 const PAGE = { w: 612, h: 792, margin: 48 }; // US Letter
 
@@ -9,7 +10,7 @@ function hex(c: string): RGB {
   return rgb(((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255);
 }
 
-export const colors = { primary: hex(brand.colors.primary), text: hex(brand.colors.text), muted: hex(brand.colors.muted), border: hex(brand.colors.border), subtle: rgb(0.965, 0.97, 0.98), danger: rgb(0.75, 0.1, 0.1) };
+export const colors = { primary: hex(brand.colors.primary), accent: hex(brand.colors.accent), text: hex(brand.colors.text), muted: hex(brand.colors.muted), border: hex(brand.colors.border), subtle: rgb(0.965, 0.97, 0.98), danger: rgb(0.75, 0.1, 0.1) };
 
 /** Standard PDF fonts only support WinAnsi; replace characters outside it. */
 export function pdfSafe(s: string | null | undefined): string {
@@ -26,6 +27,7 @@ export class PdfWriter {
   page!: PDFPage;
   font!: PDFFont;
   bold!: PDFFont;
+  logo!: PDFImage;
   y = 0;
   pageNo = 0;
   private footer: string;
@@ -42,6 +44,7 @@ export class PdfWriter {
     w.doc.setCreator(brand.name);
     w.font = await w.doc.embedFont(StandardFonts.Helvetica);
     w.bold = await w.doc.embedFont(StandardFonts.HelveticaBold);
+    w.logo = await w.doc.embedPng(Buffer.from(LOGO_PNG_BASE64, "base64"));
     w.newPage();
     return w;
   }
@@ -100,9 +103,12 @@ export class PdfWriter {
 
   header(docTitle: string, subtitle: string, rightLines: string[]) {
     this.page.drawRectangle({ x: 0, y: PAGE.h - 6, width: PAGE.w, height: 6, color: colors.primary });
-    this.page.drawText(pdfSafe(brand.name), { x: this.left, y: this.y - 16, size: 16, font: this.bold, color: colors.primary });
-    this.page.drawText(pdfSafe(docTitle), { x: this.left, y: this.y - 34, size: 11, font: this.bold, color: colors.text });
-    this.page.drawText(pdfSafe(subtitle), { x: this.left, y: this.y - 47, size: 8.5, font: this.font, color: colors.muted });
+    this.page.drawRectangle({ x: 0, y: PAGE.h - 8, width: PAGE.w, height: 2, color: colors.accent });
+    const logoH = 36;
+    const logoW = (LOGO_SIZE.width / LOGO_SIZE.height) * logoH;
+    this.page.drawImage(this.logo, { x: this.left, y: this.y - logoH + 4, width: logoW, height: logoH });
+    this.page.drawText(pdfSafe(docTitle), { x: this.left, y: this.y - logoH - 12, size: 11, font: this.bold, color: colors.text });
+    this.page.drawText(pdfSafe(subtitle), { x: this.left, y: this.y - logoH - 25, size: 8.5, font: this.font, color: colors.muted });
     let ry = this.y - 12;
     for (const [i, l] of rightLines.entries()) {
       const f = i === 0 ? this.bold : this.font;
@@ -111,7 +117,7 @@ export class PdfWriter {
       this.page.drawText(t, { x: PAGE.w - PAGE.margin - f.widthOfTextAtSize(t, size), y: ry - size, size, font: f, color: i === 0 ? colors.text : colors.muted });
       ry -= size + 4;
     }
-    this.y -= 66;
+    this.y -= Math.max(logoH + 34, 12 + rightLines.length * 13);
     this.rule();
   }
 

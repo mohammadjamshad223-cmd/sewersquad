@@ -99,8 +99,8 @@ export default async function AdminDashboard() {
                 {aging.map((a, i) => (
                   <div key={a.key} className="text-[13px]">
                     <div className="flex justify-between"><span>{a.label}</span><span className="tabular-nums">{formatCents(a.cents)}</span></div>
-                    {/* Sequential single hue: older buckets darker. */}
-                    <div className="mt-1 h-2 rounded-full bg-subtle"><div className="h-2 rounded-full" style={{ width: `${Math.max(a.cents ? 2 : 0, (a.cents / agingMax) * 100)}%`, background: ["#9ec5f4", "#6aa5ec", "#2a78d6", "#1f5aa3", "#163f73"][i] }} /></div>
+                    {/* Sequential single hue (brand green), older buckets darker. */}
+                    <div className="mt-1 h-2 rounded-full bg-subtle"><div className="h-2 rounded-full" style={{ width: `${Math.max(a.cents ? 2 : 0, (a.cents / agingMax) * 100)}%`, background: ["#b7dc8f", "#8dc35a", "#65aa27", "#4a841b", "#2f5a10"][i] }} /></div>
                   </div>
                 ))}
               </CardBody>

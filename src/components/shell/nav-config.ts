@@ -1,4 +1,5 @@
 import {
+  Smartphone,
   AlertTriangle,
   BarChart3,
   Bell,
@@ -36,6 +37,8 @@ export const ADMIN_NAV: NavGroup[] = [
       { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
       { href: "/admin/dispatch", label: "Dispatch Board", icon: Route, permission: "jobs.read" },
       { href: "/admin/calendar", label: "Service Calendar", icon: CalendarDays, permission: "jobs.read" },
+      // Shown only to staff with field mode on (pseudo-permission added by the admin layout).
+      { href: "/driver/dashboard", label: "My Route (field mode)", icon: Smartphone, permission: "field.mode" },
     ],
   },
   {
