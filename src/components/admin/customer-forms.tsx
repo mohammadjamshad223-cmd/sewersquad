@@ -43,7 +43,7 @@ export function OrganizationForm({ org, reps, onDone }: { org?: { id: string; na
   );
 }
 
-type Loc = { id: string; name: string; addressLine1: string; addressLine2: string | null; city: string; state: string; postalCode: string; county: string | null; siteContactName: string | null; siteContactPhone: string | null; siteContactEmail: string | null; accessInstructions: string | null; specialRequirements: string | null; territory: string | null; defaultWindowStart: string | null; defaultWindowEnd: string | null; latitude: number | null; longitude: number | null; billingProfileId: string | null };
+type Loc = { id: string; name: string; addressLine1: string; addressLine2: string | null; city: string; state: string; postalCode: string; county: string | null; siteContactName: string | null; siteContactPhone: string | null; siteContactEmail: string | null; accessInstructions: string | null; specialRequirements: string | null; territory: string | null; defaultWindowStart: string | null; defaultWindowEnd: string | null; latitude: number | null; longitude: number | null; billingProfileId: string | null; manifestFee?: string };
 
 export function LocationForm({ organizationId, loc, billingProfiles, onDone }: { organizationId?: string; loc?: Loc; billingProfiles: { id: string; name: string }[]; onDone?: () => void }) {
   return (
@@ -64,6 +64,7 @@ export function LocationForm({ organizationId, loc, billingProfiles, onDone }: {
       <Field label="Default window start" name="defaultWindowStart" className="sm:col-span-2"><Input type="time" defaultValue={loc?.defaultWindowStart ?? ""} /></Field>
       <Field label="Default window end" name="defaultWindowEnd" className="sm:col-span-2"><Input type="time" defaultValue={loc?.defaultWindowEnd ?? ""} /></Field>
       <Field label="Territory / route" name="territory" className="sm:col-span-2"><Input defaultValue={loc?.territory ?? ""} placeholder="Houston Central" /></Field>
+      <Field label="Manifest fee on invoices" name="manifestFee" hint="A percentage of the trap service (Settings → Billing)."><Select defaultValue={loc?.manifestFee ?? "NONE"}><option value="NONE">None</option><option value="CITY_OF_HOUSTON">City of Houston manifest fee</option><option value="STANDARD">Manifest fee</option><option value="WAIVED">Waived</option></Select></Field>
       <Field label="Access instructions" name="accessInstructions" className="sm:col-span-3"><Textarea rows={3} defaultValue={loc?.accessInstructions ?? ""} /></Field>
       <Field label="Special requirements" name="specialRequirements" className="sm:col-span-3"><Textarea rows={3} defaultValue={loc?.specialRequirements ?? ""} /></Field>
       <Field label="Billing profile" name="billingProfileId" className="sm:col-span-3"><Select defaultValue={loc?.billingProfileId ?? ""}><option value="">Customer default</option>{billingProfiles.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}</Select></Field>

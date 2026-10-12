@@ -145,6 +145,9 @@ export const facilitySchema = z.object({
   ratePerGallon: z.string().optional(),
   status: z.enum(["ACTIVE", "INACTIVE"]).default("ACTIVE"),
   notes: z.string().trim().max(2000).optional(),
+  vendorAccountNumber: z.string().trim().max(80).optional(),
+  remitTo: z.string().trim().max(500).optional(),
+  billingPhone: z.string().trim().max(40).optional(),
 });
 
 export async function upsertFacility(actor: Actor, id: string | null, input: z.infer<typeof facilitySchema>) {
@@ -153,7 +156,7 @@ export async function upsertFacility(actor: Actor, id: string | null, input: z.i
   if (input.ratePerGallon && rate === null) throw badRequest("Enter a rate such as 0.06");
   const { ratePerGallon: _r, ...rest } = input;
   void _r;
-  const data = { ...rest, phone: rest.phone || null, permitNumber: rest.permitNumber || null, notes: rest.notes || null, ratePerGallonCents: rate ? new Prisma.Decimal(rate) : null };
+  const data = { ...rest, phone: rest.phone || null, permitNumber: rest.permitNumber || null, notes: rest.notes || null, vendorAccountNumber: rest.vendorAccountNumber || null, remitTo: rest.remitTo || null, billingPhone: rest.billingPhone || null, ratePerGallonCents: rate ? new Prisma.Decimal(rate) : null };
   return prisma.$transaction(async (tx) => {
     const f = id ? await tx.disposalFacility.update({ where: { id }, data }) : await tx.disposalFacility.create({ data });
     await audit(tx, { actorId: actor.userId, action: id ? "facility.update" : "facility.create", entityType: "DisposalFacility", entityId: f.id, after: data });

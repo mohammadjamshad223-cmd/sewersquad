@@ -1,0 +1,3545 @@
+{
+ "organizations": [
+  {
+   "key": "PIT STOP EXPRESS",
+   "name": "Pit Stop Express",
+   "locations": [
+    {
+     "key": "PIT STOP EXPRESS|22323 SW FREEWAY",
+     "name": "Pit Stop Express #31",
+     "addressLine1": "22323 SW Freeway",
+     "city": "Richmond",
+     "state": "TX",
+     "postalCode": "77469",
+     "manifestFee": "STANDARD"
+    },
+    {
+     "key": "PIT STOP EXPRESS|7610 N WAYSIDE DR",
+     "name": "Pit Stop Express",
+     "addressLine1": "7610 N Wayside Dr",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77028",
+     "manifestFee": "CITY_OF_HOUSTON"
+    },
+    {
+     "key": "PIT STOP EXPRESS|7755 N WAYSIDE DR",
+     "name": "Pit Stop Express",
+     "addressLine1": "7755 N Wayside Dr",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77028",
+     "manifestFee": "CITY_OF_HOUSTON"
+    },
+    {
+     "key": "PIT STOP EXPRESS|990 LOCKWOOD DR",
+     "name": "Pit Stop Express",
+     "addressLine1": "990 Lockwood Dr",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77020",
+     "manifestFee": "CITY_OF_HOUSTON"
+    }
+   ],
+   "type": "OTHER"
+  },
+  {
+   "key": "JORDYNS SOUL CAFE",
+   "name": "Jordyns Soul Cafe",
+   "locations": [
+    {
+     "key": "JORDYNS SOUL CAFE|4319 MONTROSE BLVD",
+     "name": "Jordyns Soul Cafe",
+     "addressLine1": "4319 Montrose Blvd",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77006",
+     "manifestFee": "CITY_OF_HOUSTON"
+    },
+    {
+     "key": "JORDYNS SOUL CAFE|2802 S SHEPHERD DR",
+     "name": "Jordyns Soul Cafe",
+     "addressLine1": "2802 S Shepherd Dr",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77098",
+     "manifestFee": "CITY_OF_HOUSTON"
+    }
+   ],
+   "type": "RESTAURANT"
+  },
+  {
+   "key": "LEIGHTONS",
+   "name": "Leighton's",
+   "locations": [
+    {
+     "key": "LEIGHTONS|4405 EMANCIPATION AVE",
+     "name": "Leighton's",
+     "addressLine1": "4405 Emancipation Ave",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77004",
+     "manifestFee": "CITY_OF_HOUSTON"
+    }
+   ],
+   "type": "RESTAURANT"
+  },
+  {
+   "key": "BULLDOG EXPRESS",
+   "name": "Bulldog Express",
+   "locations": [
+    {
+     "key": "BULLDOG EXPRESS|1113 N TWIN CITY HWY",
+     "name": "Bulldog Express",
+     "addressLine1": "1113 N Twin City Hwy",
+     "city": "Nederland",
+     "state": "TX",
+     "postalCode": "77627",
+     "manifestFee": "STANDARD"
+    }
+   ],
+   "type": "OTHER"
+  },
+  {
+   "key": "SHARK EXPRESS",
+   "name": "Shark Express",
+   "locations": [
+    {
+     "key": "SHARK EXPRESS|5100 S GULFWAY DR",
+     "name": "Shark Express",
+     "addressLine1": "5100 S Gulfway Dr",
+     "city": "Sabine Pass",
+     "state": "TX",
+     "postalCode": "77655",
+     "manifestFee": "STANDARD"
+    }
+   ],
+   "type": "OTHER"
+  },
+  {
+   "key": "HUNCHOS TACOS",
+   "name": "Hunchos Tacos",
+   "locations": [
+    {
+     "key": "HUNCHOS TACOS|8559 S TEXAS 6, STE B",
+     "name": "Hunchos Tacos",
+     "addressLine1": "8559 S Texas 6, Ste B",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77083",
+     "manifestFee": "CITY_OF_HOUSTON"
+    }
+   ],
+   "type": "RESTAURANT"
+  },
+  {
+   "key": "MAKS GAS STATION",
+   "name": "Maks Gas Station",
+   "locations": [
+    {
+     "key": "MAKS GAS STATION|2116 SPEARS RD",
+     "name": "Maks Gas Station",
+     "addressLine1": "2116 Spears Rd",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77067",
+     "manifestFee": "STANDARD"
+    },
+    {
+     "key": "MAKS GAS STATION|10402 ANTOINE DR",
+     "name": "Maks Gas Station",
+     "addressLine1": "10402 Antoine Dr",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77088",
+     "manifestFee": "STANDARD"
+    },
+    {
+     "key": "MAKS GAS STATION|14422 STUEBNER AIRLINE DR",
+     "name": "Maks Gas Station",
+     "addressLine1": "14422 Stuebner Airline Dr",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77069",
+     "manifestFee": "STANDARD"
+    }
+   ],
+   "type": "OTHER"
+  },
+  {
+   "key": "DICKEYS BBQ PIT",
+   "name": "Dickey's BBQ Pit",
+   "locations": [
+    {
+     "key": "DICKEYS BBQ PIT|2710 N MASON RD, STE 110",
+     "name": "Dickey's BBQ Pit",
+     "addressLine1": "2710 N Mason Rd, Ste 110",
+     "city": "Katy",
+     "state": "TX",
+     "postalCode": "77449",
+     "manifestFee": "STANDARD"
+    }
+   ],
+   "type": "RESTAURANT"
+  },
+  {
+   "key": "MINIS RASPAS XPRESS",
+   "name": "Minis Raspas Xpress",
+   "locations": [
+    {
+     "key": "MINIS RASPAS XPRESS|7303 BREEN DR, SUITE H",
+     "name": "Minis Raspas Xpress",
+     "addressLine1": "7303 Breen Dr, Suite H",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77086",
+     "manifestFee": "STANDARD"
+    }
+   ],
+   "type": "OTHER"
+  },
+  {
+   "key": "TITANS XPRESS",
+   "name": "Titans Xpress",
+   "locations": [
+    {
+     "key": "TITANS XPRESS|2800 W FM 365",
+     "name": "Titans Xpress",
+     "addressLine1": "2800 W FM 365",
+     "city": "Port Arthur",
+     "state": "TX",
+     "postalCode": "77640",
+     "manifestFee": "STANDARD"
+    }
+   ],
+   "type": "OTHER"
+  },
+  {
+   "key": "SAHIL",
+   "name": "Sahil",
+   "locations": [
+    {
+     "key": "SAHIL|439 HWY 62",
+     "name": "Sahil",
+     "addressLine1": "439 Hwy 62",
+     "city": "Buna",
+     "state": "TX",
+     "postalCode": "77612",
+     "manifestFee": "STANDARD"
+    }
+   ],
+   "type": "RESTAURANT"
+  },
+  {
+   "key": "ROMEROS",
+   "name": "Romeros",
+   "locations": [
+    {
+     "key": "ROMEROS|9101 LONG POINT RD",
+     "name": "Romeros",
+     "addressLine1": "9101 Long Point Rd",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77055",
+     "manifestFee": "STANDARD"
+    }
+   ],
+   "type": "RESTAURANT"
+  },
+  {
+   "key": "DRIP DESSERT LOUNGE",
+   "name": "Drip Dessert Lounge",
+   "locations": [
+    {
+     "key": "DRIP DESSERT LOUNGE|18321 W AIRPORT BLVD, SUITE 108",
+     "name": "Drip Dessert Lounge",
+     "addressLine1": "18321 W Airport Blvd, Suite 108",
+     "city": "Richmond",
+     "state": "TX",
+     "postalCode": "77407",
+     "manifestFee": "NONE"
+    }
+   ],
+   "type": "RESTAURANT"
+  },
+  {
+   "key": "LEIGHTONS MONTROSE",
+   "name": "Leightons Montrose",
+   "locations": [
+    {
+     "key": "LEIGHTONS MONTROSE|4315 MONTROSE BLVD",
+     "name": "Leightons Montrose",
+     "addressLine1": "4315 Montrose Blvd",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77006",
+     "manifestFee": "CITY_OF_HOUSTON"
+    }
+   ],
+   "type": "RESTAURANT"
+  },
+  {
+   "key": "KROOZIN MARKET",
+   "name": "Kroozin Market",
+   "locations": [
+    {
+     "key": "KROOZIN MARKET|8430 PHELAN BLVD",
+     "name": "Kroozin Market",
+     "addressLine1": "8430 Phelan Blvd",
+     "city": "Beaumont",
+     "state": "TX",
+     "postalCode": "77706",
+     "manifestFee": "STANDARD"
+    }
+   ],
+   "type": "OTHER"
+  },
+  {
+   "key": "ORU",
+   "name": "ORU",
+   "locations": [
+    {
+     "key": "ORU|746 W 24TH ST",
+     "name": "ORU",
+     "addressLine1": "746 W 24th St",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77008",
+     "manifestFee": "CITY_OF_HOUSTON"
+    }
+   ],
+   "type": "RESTAURANT"
+  },
+  {
+   "key": "VIVEK LAUNDRY",
+   "name": "Vivek Laundry",
+   "locations": [
+    {
+     "key": "VIVEK LAUNDRY|6418 WINDSWEPT LN",
+     "name": "Vivek Laundry",
+     "addressLine1": "6418 Windswept Ln",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77057",
+     "manifestFee": "STANDARD"
+    }
+   ],
+   "type": "OTHER"
+  },
+  {
+   "key": "LUCERO BAKERY",
+   "name": "Lucero Bakery",
+   "locations": [
+    {
+     "key": "LUCERO BAKERY|1117 COLLINGSWORTH ST",
+     "name": "Lucero Bakery",
+     "addressLine1": "1117 Collingsworth St",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77009",
+     "manifestFee": "STANDARD"
+    }
+   ],
+   "type": "RESTAURANT"
+  },
+  {
+   "key": "NOW & FOREVER GAS STATION",
+   "name": "Now & Forever Gas Station",
+   "locations": [
+    {
+     "key": "NOW & FOREVER GAS STATION|251 W PARKER RD",
+     "name": "Now & Forever Gas Station",
+     "addressLine1": "251 W Parker Rd",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77076",
+     "manifestFee": "CITY_OF_HOUSTON"
+    },
+    {
+     "key": "NOW & FOREVER GAS STATION|8103 SW FREEWAY",
+     "name": "Now & Forever Gas Station",
+     "addressLine1": "8103 SW Freeway",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77074",
+     "manifestFee": "CITY_OF_HOUSTON"
+    },
+    {
+     "key": "NOW & FOREVER GAS STATION|11660 W BELLFORT AVE",
+     "name": "Now & Forever Gas Station",
+     "addressLine1": "11660 W Bellfort Ave",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77099",
+     "manifestFee": "CITY_OF_HOUSTON"
+    },
+    {
+     "key": "NOW & FOREVER GAS STATION|13905 WESTHEIMER RD",
+     "name": "Now & Forever Gas Station",
+     "addressLine1": "13905 Westheimer Rd",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77077",
+     "manifestFee": "CITY_OF_HOUSTON"
+    },
+    {
+     "key": "NOW & FOREVER GAS STATION|13600 BEECHNUT ST",
+     "name": "Now & Forever Gas Station",
+     "addressLine1": "13600 Beechnut St",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77083",
+     "manifestFee": "CITY_OF_HOUSTON"
+    },
+    {
+     "key": "NOW & FOREVER GAS STATION|13629 ADDICKS CLODINE RD",
+     "name": "Now & Forever Gas Station",
+     "addressLine1": "13629 Addicks Clodine Rd",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77082",
+     "manifestFee": "CITY_OF_HOUSTON"
+    },
+    {
+     "key": "NOW & FOREVER GAS STATION|22550 HWY 6",
+     "name": "Now & Forever Gas Station",
+     "addressLine1": "22550 Hwy 6",
+     "city": "Alvin",
+     "state": "TX",
+     "postalCode": "77511",
+     "manifestFee": "STANDARD"
+    },
+    {
+     "key": "NOW & FOREVER GAS STATION|6225 CHIMNEY ROCK RD",
+     "name": "Now & Forever Gas Station",
+     "addressLine1": "6225 Chimney Rock Rd",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77081",
+     "manifestFee": "CITY_OF_HOUSTON"
+    },
+    {
+     "key": "NOW & FOREVER GAS STATION|4223 S MAIN ST",
+     "name": "Now & Forever Gas Station",
+     "addressLine1": "4223 S Main St",
+     "city": "Stafford",
+     "state": "TX",
+     "postalCode": "77477",
+     "manifestFee": "STANDARD"
+    },
+    {
+     "key": "NOW & FOREVER GAS STATION|13450 WESTHEIMER RD",
+     "name": "Now & Forever Gas Station",
+     "addressLine1": "13450 Westheimer Rd",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77077",
+     "manifestFee": "CITY_OF_HOUSTON"
+    },
+    {
+     "key": "NOW & FOREVER GAS STATION|14531 WESTHEIMER RD",
+     "name": "Now & Forever Gas Station",
+     "addressLine1": "14531 Westheimer Rd",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77077",
+     "manifestFee": "CITY_OF_HOUSTON"
+    }
+   ],
+   "type": "OTHER"
+  },
+  {
+   "key": "LANKAMEX FOOD MART",
+   "name": "Lankamex Food Mart",
+   "locations": [
+    {
+     "key": "LANKAMEX FOOD MART|9025 WINKLER RD",
+     "name": "Lankamex Food Mart",
+     "addressLine1": "9025 Winkler Rd",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77017",
+     "manifestFee": "CITY_OF_HOUSTON"
+    }
+   ],
+   "type": "OTHER"
+  },
+  {
+   "key": "SENOR TACOS",
+   "name": "Senor Tacos",
+   "locations": [
+    {
+     "key": "SENOR TACOS|8607 LONG POINT RD",
+     "name": "Senor Tacos",
+     "addressLine1": "8607 Long Point Rd",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77055",
+     "manifestFee": "CITY_OF_HOUSTON"
+    }
+   ],
+   "type": "RESTAURANT"
+  },
+  {
+   "key": "BEEZ KNEEZ",
+   "name": "Beez Kneez",
+   "locations": [
+    {
+     "key": "BEEZ KNEEZ|1015 W 19TH ST",
+     "name": "Beez Kneez",
+     "addressLine1": "1015 W 19th St",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77008",
+     "manifestFee": "NONE"
+    }
+   ],
+   "type": "RESTAURANT"
+  },
+  {
+   "key": "BETTYS RESTAURANT",
+   "name": "Bettys Restaurant",
+   "locations": [
+    {
+     "key": "BETTYS RESTAURANT|10101 BISSONET ST, SUITE F",
+     "name": "Bettys Restaurant",
+     "addressLine1": "10101 Bissonet St, Suite F",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77036",
+     "manifestFee": "CITY_OF_HOUSTON"
+    }
+   ],
+   "type": "RESTAURANT"
+  },
+  {
+   "key": "GHOST BAR",
+   "name": "Ghost Bar",
+   "locations": [
+    {
+     "key": "GHOST BAR|5600 RICHMOND AVE",
+     "name": "Ghost Bar",
+     "addressLine1": "5600 Richmond Ave",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77057",
+     "manifestFee": "CITY_OF_HOUSTON"
+    }
+   ],
+   "type": "RESTAURANT"
+  },
+  {
+   "key": "UPSCALE DETAIL",
+   "name": "Upscale Detail",
+   "locations": [
+    {
+     "key": "UPSCALE DETAIL|8625 W MONTGOMERY RD",
+     "name": "Upscale Detail",
+     "addressLine1": "8625 W Montgomery Rd",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77088",
+     "manifestFee": "CITY_OF_HOUSTON"
+    }
+   ],
+   "type": "OTHER"
+  },
+  {
+   "key": "THE KENNEDY",
+   "name": "The Kennedy",
+   "locations": [
+    {
+     "key": "THE KENNEDY|3210 W DALLAS ST",
+     "name": "The Kennedy",
+     "addressLine1": "3210 W Dallas St",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77019",
+     "manifestFee": "CITY_OF_HOUSTON"
+    }
+   ],
+   "type": "RESTAURANT"
+  },
+  {
+   "key": "THE AFROEATERY",
+   "name": "The AfroEatery",
+   "locations": [
+    {
+     "key": "THE AFROEATERY|2352 S DAIRY ASHFORD RD",
+     "name": "The AfroEatery",
+     "addressLine1": "2352 S Dairy Ashford Rd",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77077",
+     "manifestFee": "CITY_OF_HOUSTON"
+    }
+   ],
+   "type": "RESTAURANT"
+  },
+  {
+   "key": "PLATR",
+   "name": "PLATR",
+   "locations": [
+    {
+     "key": "PLATR|3801 JEANETTA RD",
+     "name": "PLATR",
+     "addressLine1": "3801 Jeanetta Rd",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77063",
+     "manifestFee": "CITY_OF_HOUSTON"
+    }
+   ],
+   "type": "RESTAURANT"
+  },
+  {
+   "key": "JORDYNS BRUNCH CAFE",
+   "name": "Jordyns Brunch Cafe",
+   "locations": [
+    {
+     "key": "JORDYNS BRUNCH CAFE|191 HEIGHTS BLVD",
+     "name": "Jordyns Brunch Cafe",
+     "addressLine1": "191 Heights Blvd",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77007",
+     "manifestFee": "CITY_OF_HOUSTON"
+    }
+   ],
+   "type": "RESTAURANT"
+  },
+  {
+   "key": "LEEMOO HEALTH BAR",
+   "name": "Leemoo Health Bar",
+   "locations": [
+    {
+     "key": "LEEMOO HEALTH BAR|2720 BISSONNET ST, STE B",
+     "name": "Leemoo Health Bar",
+     "addressLine1": "2720 Bissonnet St, Ste B",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77005",
+     "manifestFee": "CITY_OF_HOUSTON"
+    }
+   ],
+   "type": "RESTAURANT"
+  },
+  {
+   "key": "SRI SHIRDI SAI JALARAM MANDIR",
+   "name": "Sri Shirdi Sai Jalaram Mandir",
+   "locations": [
+    {
+     "key": "SRI SHIRDI SAI JALARAM MANDIR|13845 W BELLFORT",
+     "name": "Sri Shirdi Sai Jalaram Mandir",
+     "addressLine1": "13845 W Bellfort",
+     "city": "Sugar Land",
+     "state": "TX",
+     "postalCode": "77498",
+     "manifestFee": "NONE"
+    }
+   ],
+   "type": "INSTITUTIONAL"
+  },
+  {
+   "key": "NOW & FOREVER CAR WASH",
+   "name": "Now & Forever Car Wash",
+   "locations": [
+    {
+     "key": "NOW & FOREVER CAR WASH|251 W PARKER RD",
+     "name": "Now & Forever Car Wash",
+     "addressLine1": "251 W Parker Rd",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77076",
+     "manifestFee": "CITY_OF_HOUSTON"
+    }
+   ],
+   "type": "OTHER"
+  },
+  {
+   "key": "THE DISTRICT CAR WASH",
+   "name": "The District Car Wash",
+   "locations": [
+    {
+     "key": "THE DISTRICT CAR WASH|8001 BRAESMAIN DR",
+     "name": "The District Car Wash",
+     "addressLine1": "8001 Braesmain Dr",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77025",
+     "manifestFee": "CITY_OF_HOUSTON"
+    }
+   ],
+   "type": "OTHER"
+  },
+  {
+   "key": "ROSEHILL ASSISTED LIVING",
+   "name": "Rosehill Assisted Living",
+   "locations": [
+    {
+     "key": "ROSEHILL ASSISTED LIVING|513 FM 359",
+     "name": "Rosehill Assisted Living",
+     "addressLine1": "513 FM 359",
+     "city": "Richmond",
+     "state": "TX",
+     "postalCode": "77406",
+     "manifestFee": "STANDARD"
+    }
+   ],
+   "type": "INSTITUTIONAL"
+  },
+  {
+   "key": "HARDIN STORE EXPRESS",
+   "name": "Hardin Store Express",
+   "locations": [
+    {
+     "key": "HARDIN STORE EXPRESS|28303 DOBBIN HUFFSMITH RD",
+     "name": "Hardin Store Express",
+     "addressLine1": "28303 Dobbin Huffsmith Rd",
+     "city": "Magnolia",
+     "state": "TX",
+     "postalCode": "77354",
+     "manifestFee": "STANDARD"
+    }
+   ],
+   "type": "OTHER"
+  },
+  {
+   "key": "KROOZIN CLAY",
+   "name": "Kroozin Clay",
+   "locations": [
+    {
+     "key": "KROOZIN CLAY|19533 CLAY RD",
+     "name": "Kroozin Clay",
+     "addressLine1": "19533 Clay Rd",
+     "city": "Katy",
+     "state": "TX",
+     "postalCode": "77449",
+     "manifestFee": "STANDARD"
+    }
+   ],
+   "type": "OTHER"
+  },
+  {
+   "key": "KOMCHOP",
+   "name": "KomChop",
+   "locations": [
+    {
+     "key": "KOMCHOP|14144 WESTHEIMER RD, STE 120",
+     "name": "KomChop",
+     "addressLine1": "14144 Westheimer Rd, Ste 120",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77077",
+     "manifestFee": "CITY_OF_HOUSTON"
+    }
+   ],
+   "type": "RESTAURANT"
+  },
+  {
+   "key": "KARAHI POINT",
+   "name": "Karahi Point",
+   "locations": [
+    {
+     "key": "KARAHI POINT|12000 SW FREEWAY",
+     "name": "Karahi Point",
+     "addressLine1": "12000 SW Freeway",
+     "city": "Stafford",
+     "state": "TX",
+     "postalCode": "77477",
+     "manifestFee": "STANDARD"
+    }
+   ],
+   "type": "RESTAURANT"
+  },
+  {
+   "key": "KWIK HOT CHICKEN",
+   "name": "Kwik Hot Chicken",
+   "locations": [
+    {
+     "key": "KWIK HOT CHICKEN|1636 MENNONITE RD, STE 1000",
+     "name": "Kwik Hot Chicken",
+     "addressLine1": "1636 Mennonite Rd, Ste 1000",
+     "city": "Rosenberg",
+     "state": "TX",
+     "postalCode": "77469",
+     "manifestFee": "STANDARD"
+    }
+   ],
+   "type": "RESTAURANT"
+  },
+  {
+   "key": "BETTER TIRES & AUTOMOTIVE",
+   "name": "Better Tires & Automotive",
+   "locations": [
+    {
+     "key": "BETTER TIRES & AUTOMOTIVE|3134 E CROSSTIMBERS ST",
+     "name": "Better Tires & Automotive",
+     "addressLine1": "3134 E Crosstimbers St",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77093",
+     "manifestFee": "WAIVED"
+    }
+   ],
+   "type": "OTHER"
+  },
+  {
+   "key": "LAVA LOUNGE",
+   "name": "Lava Lounge",
+   "locations": [
+    {
+     "key": "LAVA LOUNGE|9705 WESTHEIMER RD",
+     "name": "Lava Lounge",
+     "addressLine1": "9705 Westheimer Rd",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77042",
+     "manifestFee": "CITY_OF_HOUSTON"
+    }
+   ],
+   "type": "RESTAURANT"
+  },
+  {
+   "key": "PHO CHOPSTIX",
+   "name": "Pho Chopstix",
+   "locations": [
+    {
+     "key": "PHO CHOPSTIX|1829 N MASON RD",
+     "name": "Pho Chopstix",
+     "addressLine1": "1829 N Mason Rd",
+     "city": "Katy",
+     "state": "TX",
+     "postalCode": "77449",
+     "manifestFee": "STANDARD"
+    }
+   ],
+   "type": "RESTAURANT"
+  },
+  {
+   "key": "LA SIPOTA",
+   "name": "La Sipota",
+   "locations": [
+    {
+     "key": "LA SIPOTA|4407 W FUQUA ST",
+     "name": "La Sipota",
+     "addressLine1": "4407 W Fuqua St",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77045",
+     "manifestFee": "CITY_OF_HOUSTON"
+    }
+   ],
+   "type": "RESTAURANT"
+  },
+  {
+   "key": "HTOWN HIBACHI",
+   "name": "H-Town Hibachi",
+   "locations": [
+    {
+     "key": "HTOWN HIBACHI|3920 CANAL ST",
+     "name": "H-Town Hibachi",
+     "addressLine1": "3920 Canal St",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77003",
+     "manifestFee": "CITY_OF_HOUSTON"
+    }
+   ],
+   "type": "RESTAURANT"
+  },
+  {
+   "key": "HOLLANDS COFFEE",
+   "name": "Hollands Coffee",
+   "locations": [
+    {
+     "key": "HOLLANDS COFFEE|210 FM 1942",
+     "name": "Hollands Coffee",
+     "addressLine1": "210 FM 1942",
+     "city": "Crosby",
+     "state": "TX",
+     "postalCode": "77532",
+     "manifestFee": "NONE"
+    }
+   ],
+   "type": "RESTAURANT"
+  },
+  {
+   "key": "REVOLUTIONS GAS STATION",
+   "name": "Revolutions Gas Station",
+   "locations": [
+    {
+     "key": "REVOLUTIONS GAS STATION|12675 VETERANS MEMORIAL DR",
+     "name": "Revolutions Gas Station",
+     "addressLine1": "12675 Veterans Memorial Dr",
+     "city": "Houston",
+     "state": "TX",
+     "postalCode": "77014",
+     "manifestFee": "CITY_OF_HOUSTON"
+    }
+   ],
+   "type": "OTHER"
+  },
+  {
+   "key": "SPARK GAS STATION & KARE MARKET",
+   "name": "Spark Gas Station & Kare Market",
+   "locations": [
+    {
+     "key": "SPARK GAS STATION & KARE MARKET|12303 MURPHY RD",
+     "name": "Spark Gas Station & Kare Market",
+     "addressLine1": "12303 Murphy Rd",
+     "city": "Stafford",
+     "state": "TX",
+     "postalCode": "77477",
+     "manifestFee": "STANDARD"
+    }
+   ],
+   "type": "OTHER"
+  }
+ ],
+ "invoices": [
+  {
+   "number": "002",
+   "date": "2026-06-15",
+   "nextServiceDate": "2026-09-13",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 1000,
+   "rate": "0.89",
+   "manifestFee": "CITY_OF_HOUSTON",
+   "totalCents": 92560,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "1000",
+     "unitPriceCents": "89",
+     "amountCents": 89000
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "City of Houston manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "3560",
+     "amountCents": 3560
+    }
+   ],
+   "source": "Sewer Squad Invoice 002 - Pit Stop Express 31.pdf",
+   "hasDiscount": false,
+   "location": "PIT STOP EXPRESS|22323 SW FREEWAY",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "004",
+   "date": "2026-06-24",
+   "nextServiceDate": "2026-09-22",
+   "serviceTitle": "Grit Trap Pumping & Disposal",
+   "serviceType": "GRIT_TRAP_CLEANING",
+   "assetType": "GRIT_TRAP",
+   "gallons": 800,
+   "rate": "1.00",
+   "manifestFee": "CITY_OF_HOUSTON",
+   "totalCents": 83200,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grit trap pumping & disposal",
+     "quantity": "800",
+     "unitPriceCents": "100",
+     "amountCents": 80000
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "City of Houston manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "3200",
+     "amountCents": 3200
+    }
+   ],
+   "source": "Sewer Squad Invoice 004 - Pit Stop Express 31.pdf",
+   "hasDiscount": false,
+   "location": "PIT STOP EXPRESS|22323 SW FREEWAY",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "005",
+   "date": "2026-07-03",
+   "nextServiceDate": "2026-10-01",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 1000,
+   "rate": "0.39",
+   "manifestFee": "CITY_OF_HOUSTON",
+   "totalCents": 40560,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "1000",
+     "unitPriceCents": "39",
+     "amountCents": 39000
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "City of Houston manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "1560",
+     "amountCents": 1560
+    }
+   ],
+   "source": "Sewer Squad Invoice 005 - Jordyns Soul Cafe.pdf",
+   "hasDiscount": false,
+   "location": "JORDYNS SOUL CAFE|4319 MONTROSE BLVD",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "006",
+   "date": "2026-07-03",
+   "nextServiceDate": "2026-10-01",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 1000,
+   "rate": "0.39",
+   "manifestFee": "CITY_OF_HOUSTON",
+   "totalCents": 40560,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "1000",
+     "unitPriceCents": "39",
+     "amountCents": 39000
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "City of Houston manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "1560",
+     "amountCents": 1560
+    }
+   ],
+   "source": "Sewer Squad Invoice 006 - Leightons.pdf",
+   "hasDiscount": false,
+   "location": "LEIGHTONS|4405 EMANCIPATION AVE",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "007",
+   "date": "2026-07-03",
+   "nextServiceDate": "2026-10-01",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 1500,
+   "rate": "0.39",
+   "manifestFee": "CITY_OF_HOUSTON",
+   "totalCents": 60840,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "1500",
+     "unitPriceCents": "39",
+     "amountCents": 58500
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "City of Houston manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "2340",
+     "amountCents": 2340
+    }
+   ],
+   "source": "Sewer Squad Invoice 007 - Jordyns Soul Cafe (S Shepherd).pdf",
+   "hasDiscount": false,
+   "location": "JORDYNS SOUL CAFE|2802 S SHEPHERD DR",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "008",
+   "date": "2026-07-03",
+   "nextServiceDate": "2026-10-01",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 1000,
+   "rate": "0.35",
+   "manifestFee": "STANDARD",
+   "totalCents": 36400,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "1000",
+     "unitPriceCents": "35",
+     "amountCents": 35000
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "Manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "1400",
+     "amountCents": 1400
+    }
+   ],
+   "source": "Sewer Squad Invoice 008 - Bulldog Express.pdf",
+   "hasDiscount": false,
+   "location": "BULLDOG EXPRESS|1113 N TWIN CITY HWY",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "009",
+   "date": "2026-07-03",
+   "nextServiceDate": "2026-10-01",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 1000,
+   "rate": "0.35",
+   "manifestFee": "STANDARD",
+   "totalCents": 36400,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "1000",
+     "unitPriceCents": "35",
+     "amountCents": 35000
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "Manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "1400",
+     "amountCents": 1400
+    }
+   ],
+   "source": "Sewer Squad Invoice 009 - Shark Express.pdf",
+   "hasDiscount": false,
+   "location": "SHARK EXPRESS|5100 S GULFWAY DR",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "010",
+   "date": "2026-06-12",
+   "nextServiceDate": "2026-09-10",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 1000,
+   "rate": "0.42",
+   "manifestFee": "CITY_OF_HOUSTON",
+   "totalCents": 43680,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "1000",
+     "unitPriceCents": "42",
+     "amountCents": 42000
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "City of Houston manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "1680",
+     "amountCents": 1680
+    }
+   ],
+   "source": "Sewer Squad Invoice 010 - Hunchos Tacos.pdf",
+   "hasDiscount": false,
+   "location": "HUNCHOS TACOS|8559 S TEXAS 6, STE B",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "011",
+   "date": "2026-07-10",
+   "nextServiceDate": "2026-10-08",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 1200,
+   "rate": "0.25",
+   "manifestFee": "STANDARD",
+   "totalCents": 31200,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "1200",
+     "unitPriceCents": "25",
+     "amountCents": 30000
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "Manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "1200",
+     "amountCents": 1200
+    }
+   ],
+   "source": "Sewer Squad Invoice 011 - Maks Gas Station.pdf",
+   "hasDiscount": false,
+   "location": "MAKS GAS STATION|2116 SPEARS RD",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "012",
+   "date": "2026-07-10",
+   "nextServiceDate": "2026-10-08",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 1000,
+   "rate": "0.28",
+   "manifestFee": "CITY_OF_HOUSTON",
+   "totalCents": 29120,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "1000",
+     "unitPriceCents": "28",
+     "amountCents": 28000
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "City of Houston manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "1120",
+     "amountCents": 1120
+    }
+   ],
+   "source": "Sewer Squad Invoice 012 - Pit Stop Express.pdf",
+   "hasDiscount": false,
+   "location": "PIT STOP EXPRESS|7610 N WAYSIDE DR",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "013",
+   "date": "2026-07-14",
+   "nextServiceDate": "2026-10-12",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 1000,
+   "rate": "0.28",
+   "manifestFee": "CITY_OF_HOUSTON",
+   "totalCents": 29120,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "1000",
+     "unitPriceCents": "28",
+     "amountCents": 28000
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "City of Houston manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "1120",
+     "amountCents": 1120
+    }
+   ],
+   "source": "Sewer Squad Invoice 013 - Pit Stop Express (7755 N Wayside).pdf",
+   "hasDiscount": false,
+   "location": "PIT STOP EXPRESS|7755 N WAYSIDE DR",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "014",
+   "date": "2026-07-14",
+   "nextServiceDate": "2026-10-12",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 1000,
+   "rate": "0.28",
+   "manifestFee": "CITY_OF_HOUSTON",
+   "totalCents": 29120,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "1000",
+     "unitPriceCents": "28",
+     "amountCents": 28000
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "City of Houston manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "1120",
+     "amountCents": 1120
+    }
+   ],
+   "source": "Sewer Squad Invoice 014 - Pit Stop Express (Lockwood).pdf",
+   "hasDiscount": false,
+   "location": "PIT STOP EXPRESS|990 LOCKWOOD DR",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "015",
+   "date": "2026-07-14",
+   "nextServiceDate": "2026-10-12",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 750,
+   "rate": "0.43",
+   "manifestFee": "STANDARD",
+   "totalCents": 33540,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "750",
+     "unitPriceCents": "43",
+     "amountCents": 32250
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "Manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "1290",
+     "amountCents": 1290
+    }
+   ],
+   "source": "Sewer Squad Invoice 015 - Dickeys BBQ Pit.pdf",
+   "hasDiscount": false,
+   "location": "DICKEYS BBQ PIT|2710 N MASON RD, STE 110",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "016",
+   "date": "2026-07-14",
+   "nextServiceDate": "2026-10-12",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 1000,
+   "rate": "0.28",
+   "manifestFee": "STANDARD",
+   "totalCents": 29120,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "1000",
+     "unitPriceCents": "28",
+     "amountCents": 28000
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "Manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "1120",
+     "amountCents": 1120
+    }
+   ],
+   "source": "Sewer Squad Invoice 016 - Pit Stop Express 31.pdf",
+   "hasDiscount": false,
+   "location": "PIT STOP EXPRESS|22323 SW FREEWAY",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "017",
+   "date": "2026-07-16",
+   "nextServiceDate": "2026-10-14",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 2000,
+   "rate": "0.25",
+   "manifestFee": "STANDARD",
+   "totalCents": 61950,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "2000",
+     "unitPriceCents": "25",
+     "amountCents": 50000
+    },
+    {
+     "kind": "OTHER",
+     "description": "Additional services (itemized on the original invoice)",
+     "quantity": "1",
+     "unitPriceCents": "9950",
+     "amountCents": 9950
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "Manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "2000",
+     "amountCents": 2000
+    }
+   ],
+   "source": "Sewer Squad Invoice 017 - Maks (Antoine Dr).pdf",
+   "hasDiscount": true,
+   "location": "MAKS GAS STATION|10402 ANTOINE DR",
+   "status": "ISSUED",
+   "reconstructed": true
+  },
+  {
+   "number": "018",
+   "date": "2026-07-18",
+   "nextServiceDate": "2026-10-16",
+   "serviceTitle": "Grease Trap Cleaning",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": null,
+   "rate": null,
+   "manifestFee": "STANDARD",
+   "totalCents": 15599,
+   "lines": [
+    {
+     "kind": "FLAT_RATE",
+     "description": "Grease trap cleaning",
+     "quantity": "1",
+     "unitPriceCents": "14999",
+     "amountCents": 14999
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "Manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "600",
+     "amountCents": 600
+    }
+   ],
+   "source": "Sewer Squad Invoice 018 - Minis Raspas Xpress.pdf",
+   "hasDiscount": false,
+   "location": "MINIS RASPAS XPRESS|7303 BREEN DR, SUITE H",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "019",
+   "date": "2026-07-19",
+   "nextServiceDate": "2026-10-17",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 1000,
+   "rate": "0.25",
+   "manifestFee": "STANDARD",
+   "totalCents": 26000,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "1000",
+     "unitPriceCents": "25",
+     "amountCents": 25000
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "Manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "1000",
+     "amountCents": 1000
+    }
+   ],
+   "source": "Sewer Squad Invoice 019 - Maks (Stuebner Airline).pdf",
+   "hasDiscount": false,
+   "location": "MAKS GAS STATION|14422 STUEBNER AIRLINE DR",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "020",
+   "date": "2026-07-21",
+   "nextServiceDate": "2026-10-19",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 750,
+   "rate": "0.38",
+   "manifestFee": "STANDARD",
+   "totalCents": 34639,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "750",
+     "unitPriceCents": "38",
+     "amountCents": 28500
+    },
+    {
+     "kind": "OTHER",
+     "description": "Additional services (itemized on the original invoice)",
+     "quantity": "1",
+     "unitPriceCents": "4999",
+     "amountCents": 4999
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "Manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "1140",
+     "amountCents": 1140
+    }
+   ],
+   "source": "Sewer Squad Invoice 020 - Titans Xpress.pdf",
+   "hasDiscount": false,
+   "location": "TITANS XPRESS|2800 W FM 365",
+   "status": "ISSUED",
+   "reconstructed": true
+  },
+  {
+   "number": "021",
+   "date": "2026-07-22",
+   "nextServiceDate": "2026-10-20",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 500,
+   "rate": "0.42",
+   "manifestFee": "STANDARD",
+   "totalCents": 26839,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "500",
+     "unitPriceCents": "42",
+     "amountCents": 21000
+    },
+    {
+     "kind": "OTHER",
+     "description": "Additional services (itemized on the original invoice)",
+     "quantity": "1",
+     "unitPriceCents": "4999",
+     "amountCents": 4999
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "Manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "840",
+     "amountCents": 840
+    }
+   ],
+   "source": "Sewer Squad Invoice 021 - Sahil.pdf",
+   "hasDiscount": false,
+   "location": "SAHIL|439 HWY 62",
+   "status": "ISSUED",
+   "reconstructed": true
+  },
+  {
+   "number": "022",
+   "date": "2026-07-22",
+   "nextServiceDate": "2026-10-20",
+   "serviceTitle": "Grease Trap Cleaning",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": null,
+   "rate": null,
+   "manifestFee": "STANDARD",
+   "totalCents": 15600,
+   "lines": [
+    {
+     "kind": "FLAT_RATE",
+     "description": "Grease trap cleaning",
+     "quantity": "1",
+     "unitPriceCents": "15000",
+     "amountCents": 15000
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "Manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "600",
+     "amountCents": 600
+    }
+   ],
+   "source": "Sewer Squad Invoice 022 - Romeros.pdf",
+   "hasDiscount": false,
+   "location": "ROMEROS|9101 LONG POINT RD",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "023",
+   "date": "2026-07-23",
+   "nextServiceDate": "2026-10-21",
+   "serviceTitle": "Lift Station Pump Installation",
+   "serviceType": "LIFT_STATION_SERVICE",
+   "assetType": null,
+   "gallons": null,
+   "rate": null,
+   "manifestFee": "NONE",
+   "totalCents": 379996,
+   "lines": [
+    {
+     "kind": "FLAT_RATE",
+     "description": "Lift station pump installation",
+     "quantity": "1",
+     "unitPriceCents": "379996",
+     "amountCents": 379996
+    }
+   ],
+   "source": "Sewer Squad Invoice 023 - Maks (Pump Installation).pdf",
+   "hasDiscount": false,
+   "location": "MAKS GAS STATION|10402 ANTOINE DR",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "024",
+   "date": "2026-07-28",
+   "nextServiceDate": "2026-10-26",
+   "serviceTitle": "Complex Hydro Jetting",
+   "serviceType": "HYDRO_JETTING",
+   "assetType": null,
+   "gallons": null,
+   "rate": null,
+   "manifestFee": "NONE",
+   "totalCents": 162374,
+   "lines": [
+    {
+     "kind": "FLAT_RATE",
+     "description": "Complex hydro jetting",
+     "quantity": "1",
+     "unitPriceCents": "162374",
+     "amountCents": 162374
+    }
+   ],
+   "source": "Sewer Squad Invoice 024 - Drip Dessert Lounge.pdf",
+   "hasDiscount": false,
+   "location": "DRIP DESSERT LOUNGE|18321 W AIRPORT BLVD, SUITE 108",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "025",
+   "date": "2026-07-28",
+   "nextServiceDate": "2026-10-26",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 1200,
+   "rate": "0.42",
+   "manifestFee": "CITY_OF_HOUSTON",
+   "totalCents": 62415,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "1200",
+     "unitPriceCents": "42",
+     "amountCents": 50400
+    },
+    {
+     "kind": "OTHER",
+     "description": "Additional services (itemized on the original invoice)",
+     "quantity": "1",
+     "unitPriceCents": "9999",
+     "amountCents": 9999
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "City of Houston manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "2016",
+     "amountCents": 2016
+    }
+   ],
+   "source": "Sewer Squad Invoice 025 - Leightons Montrose.pdf",
+   "hasDiscount": false,
+   "location": "LEIGHTONS MONTROSE|4315 MONTROSE BLVD",
+   "status": "ISSUED",
+   "reconstructed": true
+  },
+  {
+   "number": "026",
+   "date": "2026-08-04",
+   "nextServiceDate": "2026-11-02",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 1000,
+   "rate": "0.42",
+   "manifestFee": "STANDARD",
+   "totalCents": 40680,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "1000",
+     "unitPriceCents": "42",
+     "amountCents": 42000
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "Manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "1680",
+     "amountCents": 1680
+    },
+    {
+     "kind": "DISCOUNT",
+     "description": "Discount",
+     "quantity": "1",
+     "unitPriceCents": "-3000",
+     "amountCents": -3000
+    }
+   ],
+   "source": "Sewer Squad Invoice 026 - Kroozin Market.pdf",
+   "hasDiscount": true,
+   "location": "KROOZIN MARKET|8430 PHELAN BLVD",
+   "status": "ISSUED",
+   "reconstructed": true
+  },
+  {
+   "number": "027",
+   "date": "2026-08-05",
+   "nextServiceDate": "2026-11-03",
+   "serviceTitle": "Lift Station Pump Installation",
+   "serviceType": "LIFT_STATION_SERVICE",
+   "assetType": null,
+   "gallons": null,
+   "rate": null,
+   "manifestFee": "NONE",
+   "totalCents": 467097,
+   "lines": [
+    {
+     "kind": "FLAT_RATE",
+     "description": "Lift station pump installation",
+     "quantity": "1",
+     "unitPriceCents": "467097",
+     "amountCents": 467097
+    }
+   ],
+   "source": "Sewer Squad Invoice 027 - Maks (Pump Installation).pdf",
+   "hasDiscount": true,
+   "location": "MAKS GAS STATION|10402 ANTOINE DR",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "028",
+   "date": "2026-08-05",
+   "nextServiceDate": "2026-11-03",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 300,
+   "rate": "0.42",
+   "manifestFee": "CITY_OF_HOUSTON",
+   "totalCents": 13104,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "300",
+     "unitPriceCents": "42",
+     "amountCents": 12600
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "City of Houston manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "504",
+     "amountCents": 504
+    }
+   ],
+   "source": "Sewer Squad Invoice 028 - Oru.pdf",
+   "hasDiscount": false,
+   "location": "ORU|746 W 24TH ST",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "029",
+   "date": "2026-08-06",
+   "nextServiceDate": "2026-11-04",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 2000,
+   "rate": "0.42",
+   "manifestFee": "STANDARD",
+   "totalCents": 94567,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "2000",
+     "unitPriceCents": "42",
+     "amountCents": 84000
+    },
+    {
+     "kind": "OTHER",
+     "description": "Additional services (itemized on the original invoice)",
+     "quantity": "1",
+     "unitPriceCents": "7207",
+     "amountCents": 7207
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "Manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "3360",
+     "amountCents": 3360
+    }
+   ],
+   "source": "Sewer Squad Invoice 029 - Vivek Laundry.pdf",
+   "hasDiscount": false,
+   "location": "VIVEK LAUNDRY|6418 WINDSWEPT LN",
+   "status": "ISSUED",
+   "reconstructed": true
+  },
+  {
+   "number": "030",
+   "date": "2026-08-06",
+   "nextServiceDate": "2026-11-04",
+   "serviceTitle": "Grease Trap Cleaning",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": null,
+   "rate": null,
+   "manifestFee": "STANDARD",
+   "totalCents": 15800,
+   "lines": [
+    {
+     "kind": "FLAT_RATE",
+     "description": "Grease trap cleaning",
+     "quantity": "1",
+     "unitPriceCents": "15192",
+     "amountCents": 15192
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "Manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "608",
+     "amountCents": 608
+    }
+   ],
+   "source": "Sewer Squad Invoice 030 - Lucero Bakery.pdf",
+   "hasDiscount": true,
+   "location": "LUCERO BAKERY|1117 COLLINGSWORTH ST",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "031",
+   "date": "2026-08-06",
+   "nextServiceDate": "2026-11-04",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 2700,
+   "rate": "0.22",
+   "manifestFee": "CITY_OF_HOUSTON",
+   "totalCents": 61776,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "2700",
+     "unitPriceCents": "22",
+     "amountCents": 59400
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "City of Houston manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "2376",
+     "amountCents": 2376
+    }
+   ],
+   "source": "Sewer Squad Invoice 031 - Now & Forever Gas Station (W Parker).pdf",
+   "hasDiscount": false,
+   "location": "NOW & FOREVER GAS STATION|251 W PARKER RD",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "032",
+   "date": "2026-08-06",
+   "nextServiceDate": "2026-11-04",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 1000,
+   "rate": "0.22",
+   "manifestFee": "CITY_OF_HOUSTON",
+   "totalCents": 22880,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "1000",
+     "unitPriceCents": "22",
+     "amountCents": 22000
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "City of Houston manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "880",
+     "amountCents": 880
+    }
+   ],
+   "source": "Sewer Squad Invoice 032 - Now & Forever Gas Station (SW Freeway).pdf",
+   "hasDiscount": false,
+   "location": "NOW & FOREVER GAS STATION|8103 SW FREEWAY",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "033",
+   "date": "2026-08-06",
+   "nextServiceDate": "2026-11-04",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 750,
+   "rate": "0.22",
+   "manifestFee": "CITY_OF_HOUSTON",
+   "totalCents": 17160,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "750",
+     "unitPriceCents": "22",
+     "amountCents": 16500
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "City of Houston manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "660",
+     "amountCents": 660
+    }
+   ],
+   "source": "Sewer Squad Invoice 033 - Now & Forever Gas Station (W Bellfort).pdf",
+   "hasDiscount": false,
+   "location": "NOW & FOREVER GAS STATION|11660 W BELLFORT AVE",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "034",
+   "date": "2026-08-06",
+   "nextServiceDate": "2026-11-04",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 1000,
+   "rate": "0.22",
+   "manifestFee": "CITY_OF_HOUSTON",
+   "totalCents": 22880,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "1000",
+     "unitPriceCents": "22",
+     "amountCents": 22000
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "City of Houston manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "880",
+     "amountCents": 880
+    }
+   ],
+   "source": "Sewer Squad Invoice 034 - Now & Forever Gas Station (Westheimer).pdf",
+   "hasDiscount": false,
+   "location": "NOW & FOREVER GAS STATION|13905 WESTHEIMER RD",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "035",
+   "date": "2026-08-07",
+   "nextServiceDate": "2026-11-05",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 750,
+   "rate": "0.42",
+   "manifestFee": "CITY_OF_HOUSTON",
+   "totalCents": 30000,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "750",
+     "unitPriceCents": "42",
+     "amountCents": 31500
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "City of Houston manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "1260",
+     "amountCents": 1260
+    },
+    {
+     "kind": "DISCOUNT",
+     "description": "Discount",
+     "quantity": "1",
+     "unitPriceCents": "-2760",
+     "amountCents": -2760
+    }
+   ],
+   "source": "Sewer Squad Invoice 035 - Lankamex Food Mart.pdf",
+   "hasDiscount": true,
+   "location": "LANKAMEX FOOD MART|9025 WINKLER RD",
+   "status": "ISSUED",
+   "reconstructed": true
+  },
+  {
+   "number": "036",
+   "date": "2026-08-07",
+   "nextServiceDate": "2026-11-05",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 750,
+   "rate": "0.42",
+   "manifestFee": "CITY_OF_HOUSTON",
+   "totalCents": 24885,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "750",
+     "unitPriceCents": "42",
+     "amountCents": 31500
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "City of Houston manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "1260",
+     "amountCents": 1260
+    },
+    {
+     "kind": "DISCOUNT",
+     "description": "Discount",
+     "quantity": "1",
+     "unitPriceCents": "-7875",
+     "amountCents": -7875
+    }
+   ],
+   "source": "Sewer Squad Invoice 036 - Senor Tacos.pdf",
+   "hasDiscount": true,
+   "location": "SENOR TACOS|8607 LONG POINT RD",
+   "status": "ISSUED",
+   "reconstructed": true
+  },
+  {
+   "number": "037",
+   "date": "2026-08-09",
+   "nextServiceDate": "2026-11-07",
+   "serviceTitle": "Grease Trap & Sanitary Line Waste",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 2000,
+   "rate": "0.38",
+   "manifestFee": "NONE",
+   "totalCents": 85999,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap & sanitary line waste",
+     "quantity": "2000",
+     "unitPriceCents": "38",
+     "amountCents": 76000
+    },
+    {
+     "kind": "OTHER",
+     "description": "Additional services (itemized on the original invoice)",
+     "quantity": "1",
+     "unitPriceCents": "9999",
+     "amountCents": 9999
+    }
+   ],
+   "source": "Sewer Squad Invoice 037 - Beez Kneez.pdf",
+   "hasDiscount": false,
+   "location": "BEEZ KNEEZ|1015 W 19TH ST",
+   "status": "ISSUED",
+   "reconstructed": true
+  },
+  {
+   "number": "038",
+   "date": "2026-08-09",
+   "nextServiceDate": "2026-11-07",
+   "serviceTitle": "Line Snaking, Jetting & Inspection",
+   "serviceType": "LINE_CLEANING",
+   "assetType": null,
+   "gallons": null,
+   "rate": null,
+   "manifestFee": "NONE",
+   "totalCents": 214998,
+   "lines": [
+    {
+     "kind": "FLAT_RATE",
+     "description": "Line snaking, jetting & inspection",
+     "quantity": "1",
+     "unitPriceCents": "214998",
+     "amountCents": 214998
+    }
+   ],
+   "source": "Sewer Squad Invoice 038 - Beez Kneez.pdf",
+   "hasDiscount": false,
+   "location": "BEEZ KNEEZ|1015 W 19TH ST",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "039",
+   "date": "2026-08-10",
+   "nextServiceDate": "2026-11-08",
+   "serviceTitle": "Grease Trap Cleaning",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": null,
+   "rate": null,
+   "manifestFee": "CITY_OF_HOUSTON",
+   "totalCents": 30799,
+   "lines": [
+    {
+     "kind": "FLAT_RATE",
+     "description": "Grease trap cleaning",
+     "quantity": "1",
+     "unitPriceCents": "29614",
+     "amountCents": 29614
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "City of Houston manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "1185",
+     "amountCents": 1185
+    }
+   ],
+   "source": "Sewer Squad Invoice 039 - Bettys Restaurant.pdf",
+   "hasDiscount": false,
+   "location": "BETTYS RESTAURANT|10101 BISSONET ST, SUITE F",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "040",
+   "date": "2026-08-10",
+   "nextServiceDate": "2026-11-08",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 1000,
+   "rate": "0.38",
+   "manifestFee": "CITY_OF_HOUSTON",
+   "totalCents": 39520,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "1000",
+     "unitPriceCents": "38",
+     "amountCents": 38000
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "City of Houston manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "1520",
+     "amountCents": 1520
+    }
+   ],
+   "source": "Sewer Squad Invoice 040 - Ghost Bar.pdf",
+   "hasDiscount": false,
+   "location": "GHOST BAR|5600 RICHMOND AVE",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "041",
+   "date": "2026-08-11",
+   "nextServiceDate": "2026-11-09",
+   "serviceTitle": "Grease Trap Cleaning",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": null,
+   "rate": null,
+   "manifestFee": "CITY_OF_HOUSTON",
+   "totalCents": 15800,
+   "lines": [
+    {
+     "kind": "FLAT_RATE",
+     "description": "Grease trap cleaning",
+     "quantity": "1",
+     "unitPriceCents": "15192",
+     "amountCents": 15192
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "City of Houston manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "608",
+     "amountCents": 608
+    }
+   ],
+   "source": "Sewer Squad Invoice 041 - Upscale Detail.pdf",
+   "hasDiscount": true,
+   "location": "UPSCALE DETAIL|8625 W MONTGOMERY RD",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "042",
+   "date": "2026-08-11",
+   "nextServiceDate": "2026-11-09",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 1500,
+   "rate": "0.42",
+   "manifestFee": "CITY_OF_HOUSTON",
+   "totalCents": 56070,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "1500",
+     "unitPriceCents": "42",
+     "amountCents": 63000
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "City of Houston manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "2520",
+     "amountCents": 2520
+    },
+    {
+     "kind": "DISCOUNT",
+     "description": "Discount",
+     "quantity": "1",
+     "unitPriceCents": "-9450",
+     "amountCents": -9450
+    }
+   ],
+   "source": "Sewer Squad Invoice 042 - The Kennedy.pdf",
+   "hasDiscount": true,
+   "location": "THE KENNEDY|3210 W DALLAS ST",
+   "status": "ISSUED",
+   "reconstructed": true
+  },
+  {
+   "number": "043",
+   "date": "2026-08-12",
+   "nextServiceDate": "2026-11-10",
+   "serviceTitle": "Grease Trap Cleaning",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": null,
+   "rate": null,
+   "manifestFee": "CITY_OF_HOUSTON",
+   "totalCents": 23400,
+   "lines": [
+    {
+     "kind": "FLAT_RATE",
+     "description": "Grease trap cleaning",
+     "quantity": "1",
+     "unitPriceCents": "22500",
+     "amountCents": 22500
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "City of Houston manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "900",
+     "amountCents": 900
+    }
+   ],
+   "source": "Sewer Squad Invoice 043 - The AfroEatery.pdf",
+   "hasDiscount": false,
+   "location": "THE AFROEATERY|2352 S DAIRY ASHFORD RD",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "044",
+   "date": "2026-08-12",
+   "nextServiceDate": "2026-11-10",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 1500,
+   "rate": "0.375",
+   "manifestFee": "CITY_OF_HOUSTON",
+   "totalCents": 52875,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "1500",
+     "unitPriceCents": "37.5",
+     "amountCents": 56250
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "City of Houston manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "2250",
+     "amountCents": 2250
+    },
+    {
+     "kind": "DISCOUNT",
+     "description": "Discount",
+     "quantity": "1",
+     "unitPriceCents": "-5625",
+     "amountCents": -5625
+    }
+   ],
+   "source": "Sewer Squad Invoice 044 - Platr.pdf",
+   "hasDiscount": true,
+   "location": "PLATR|3801 JEANETTA RD",
+   "status": "ISSUED",
+   "reconstructed": true
+  },
+  {
+   "number": "045",
+   "date": "2026-08-13",
+   "nextServiceDate": "2026-11-11",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 4000,
+   "rate": "0.42",
+   "manifestFee": "CITY_OF_HOUSTON",
+   "totalCents": 174720,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "4000",
+     "unitPriceCents": "42",
+     "amountCents": 168000
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "City of Houston manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "6720",
+     "amountCents": 6720
+    }
+   ],
+   "source": "Sewer Squad Invoice 045 - Jordyns Brunch Cafe.pdf",
+   "hasDiscount": false,
+   "location": "JORDYNS BRUNCH CAFE|191 HEIGHTS BLVD",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "046",
+   "date": "2026-08-13",
+   "nextServiceDate": "2026-11-11",
+   "serviceTitle": "Grease Trap Cleaning",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": null,
+   "rate": null,
+   "manifestFee": "CITY_OF_HOUSTON",
+   "totalCents": 23400,
+   "lines": [
+    {
+     "kind": "FLAT_RATE",
+     "description": "Grease trap cleaning",
+     "quantity": "1",
+     "unitPriceCents": "22500",
+     "amountCents": 22500
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "City of Houston manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "900",
+     "amountCents": 900
+    }
+   ],
+   "source": "Sewer Squad Invoice 046 - Leemoo Health Bar.pdf",
+   "hasDiscount": false,
+   "location": "LEEMOO HEALTH BAR|2720 BISSONNET ST, STE B",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "047",
+   "date": "2026-08-15",
+   "nextServiceDate": "2026-11-13",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 1000,
+   "rate": "0.50",
+   "manifestFee": "NONE",
+   "totalCents": 50000,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "1000",
+     "unitPriceCents": "50",
+     "amountCents": 50000
+    }
+   ],
+   "source": "Sewer Squad Invoice 047 - Sri Shirdi Sai Jalaram Mandir.pdf",
+   "hasDiscount": false,
+   "location": "SRI SHIRDI SAI JALARAM MANDIR|13845 W BELLFORT",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "048",
+   "date": "2026-08-17",
+   "nextServiceDate": "2026-11-15",
+   "serviceTitle": "Grit Trap Pumping & Disposal",
+   "serviceType": "GRIT_TRAP_CLEANING",
+   "assetType": "GRIT_TRAP",
+   "gallons": 2000,
+   "rate": "0.89",
+   "manifestFee": "CITY_OF_HOUSTON",
+   "totalCents": 185120,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grit trap pumping & disposal",
+     "quantity": "2000",
+     "unitPriceCents": "89",
+     "amountCents": 178000
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "City of Houston manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "7120",
+     "amountCents": 7120
+    }
+   ],
+   "source": "Sewer Squad Invoice 048 - Now & Forever Car Wash.pdf",
+   "hasDiscount": false,
+   "location": "NOW & FOREVER CAR WASH|251 W PARKER RD",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "049",
+   "date": "2026-08-17",
+   "nextServiceDate": "2026-11-15",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 2000,
+   "rate": "0.23",
+   "manifestFee": "CITY_OF_HOUSTON",
+   "totalCents": 47840,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "2000",
+     "unitPriceCents": "23",
+     "amountCents": 46000
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "City of Houston manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "1840",
+     "amountCents": 1840
+    }
+   ],
+   "source": "Sewer Squad Invoice 049 - Now & Forever Gas Station (Beechnut).pdf",
+   "hasDiscount": false,
+   "location": "NOW & FOREVER GAS STATION|13600 BEECHNUT ST",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "050",
+   "date": "2026-08-18",
+   "nextServiceDate": "2026-11-16",
+   "serviceTitle": "Grit Trap Pumping & Disposal",
+   "serviceType": "GRIT_TRAP_CLEANING",
+   "assetType": "GRIT_TRAP",
+   "gallons": 750,
+   "rate": "0.89",
+   "manifestFee": "CITY_OF_HOUSTON",
+   "totalCents": 77419,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grit trap pumping & disposal",
+     "quantity": "750",
+     "unitPriceCents": "89",
+     "amountCents": 66750
+    },
+    {
+     "kind": "OTHER",
+     "description": "Trench drain clearing",
+     "quantity": "1",
+     "unitPriceCents": "7999",
+     "amountCents": 7999
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "City of Houston manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "2670",
+     "amountCents": 2670
+    }
+   ],
+   "source": "Sewer Squad Invoice 050 - The District Car Wash.pdf",
+   "hasDiscount": false,
+   "location": "THE DISTRICT CAR WASH|8001 BRAESMAIN DR",
+   "status": "ISSUED",
+   "exact": true,
+   "reconstructed": false
+  },
+  {
+   "number": "051",
+   "date": "2026-08-19",
+   "nextServiceDate": "2026-11-17",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 750,
+   "rate": "0.42",
+   "manifestFee": "STANDARD",
+   "totalCents": 24885,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "750",
+     "unitPriceCents": "42",
+     "amountCents": 31500
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "Manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "1260",
+     "amountCents": 1260
+    },
+    {
+     "kind": "DISCOUNT",
+     "description": "Discount",
+     "quantity": "1",
+     "unitPriceCents": "-7875",
+     "amountCents": -7875
+    }
+   ],
+   "source": "Sewer Squad Invoice 051 - Rosehill Assisted Living.pdf",
+   "hasDiscount": true,
+   "location": "ROSEHILL ASSISTED LIVING|513 FM 359",
+   "status": "ISSUED",
+   "reconstructed": true
+  },
+  {
+   "number": "052",
+   "date": "2026-08-19",
+   "nextServiceDate": "2026-11-17",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 1000,
+   "rate": "0.35",
+   "manifestFee": "STANDARD",
+   "totalCents": 36400,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "1000",
+     "unitPriceCents": "35",
+     "amountCents": 35000
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "Manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "1400",
+     "amountCents": 1400
+    }
+   ],
+   "source": "Sewer Squad Invoice 052 - Hardin Store Express.pdf",
+   "hasDiscount": false,
+   "location": "HARDIN STORE EXPRESS|28303 DOBBIN HUFFSMITH RD",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "053",
+   "date": "2026-08-20",
+   "nextServiceDate": "2026-11-18",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 1000,
+   "rate": "0.23",
+   "manifestFee": "STANDARD",
+   "totalCents": 23920,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "1000",
+     "unitPriceCents": "23",
+     "amountCents": 23000
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "Manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "920",
+     "amountCents": 920
+    }
+   ],
+   "source": "Sewer Squad Invoice 053 - Kroozin Clay.pdf",
+   "hasDiscount": false,
+   "location": "KROOZIN CLAY|19533 CLAY RD",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "054",
+   "date": "2026-08-21",
+   "nextServiceDate": "2026-11-19",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 3500,
+   "rate": "0.22",
+   "manifestFee": "CITY_OF_HOUSTON",
+   "totalCents": 85079,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "3500",
+     "unitPriceCents": "22",
+     "amountCents": 77000
+    },
+    {
+     "kind": "OTHER",
+     "description": "Additional services (itemized on the original invoice)",
+     "quantity": "1",
+     "unitPriceCents": "4999",
+     "amountCents": 4999
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "City of Houston manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "3080",
+     "amountCents": 3080
+    }
+   ],
+   "source": "Sewer Squad Invoice 054 - Now & Forever Gas Station (Addicks Clodine).pdf",
+   "hasDiscount": false,
+   "location": "NOW & FOREVER GAS STATION|13629 ADDICKS CLODINE RD",
+   "status": "ISSUED",
+   "reconstructed": true
+  },
+  {
+   "number": "055",
+   "date": "2026-08-22",
+   "nextServiceDate": "2026-11-20",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 1000,
+   "rate": "0.42",
+   "manifestFee": "CITY_OF_HOUSTON",
+   "totalCents": 43680,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "1000",
+     "unitPriceCents": "42",
+     "amountCents": 42000
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "City of Houston manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "1680",
+     "amountCents": 1680
+    }
+   ],
+   "source": "Sewer Squad Invoice 055 - KomChop.pdf",
+   "hasDiscount": false,
+   "location": "KOMCHOP|14144 WESTHEIMER RD, STE 120",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "056",
+   "date": "2026-08-24",
+   "nextServiceDate": "2026-11-22",
+   "serviceTitle": "Lift Station Pump & Disposal",
+   "serviceType": "LIFT_STATION_SERVICE",
+   "assetType": null,
+   "gallons": null,
+   "rate": null,
+   "manifestFee": "NONE",
+   "totalCents": 22500,
+   "lines": [
+    {
+     "kind": "FLAT_RATE",
+     "description": "Lift station pump & disposal",
+     "quantity": "1",
+     "unitPriceCents": "22500",
+     "amountCents": 22500
+    }
+   ],
+   "source": "Sewer Squad Invoice 056 - Hardin Store Express (Lift Station).pdf",
+   "hasDiscount": false,
+   "location": "HARDIN STORE EXPRESS|28303 DOBBIN HUFFSMITH RD",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "057",
+   "date": "2026-08-24",
+   "nextServiceDate": "2026-11-22",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 2000,
+   "rate": "0.37",
+   "manifestFee": "STANDARD",
+   "totalCents": 76960,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "2000",
+     "unitPriceCents": "37",
+     "amountCents": 74000
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "Manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "2960",
+     "amountCents": 2960
+    }
+   ],
+   "source": "Sewer Squad Invoice 057 - Karahi Point.pdf",
+   "hasDiscount": false,
+   "location": "KARAHI POINT|12000 SW FREEWAY",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "058",
+   "date": "2026-08-25",
+   "nextServiceDate": "2026-11-23",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 1800,
+   "rate": "0.38",
+   "manifestFee": "STANDARD",
+   "totalCents": 66348,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "1800",
+     "unitPriceCents": "38",
+     "amountCents": 68400
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "Manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "2736",
+     "amountCents": 2736
+    },
+    {
+     "kind": "DISCOUNT",
+     "description": "Discount",
+     "quantity": "1",
+     "unitPriceCents": "-4788",
+     "amountCents": -4788
+    }
+   ],
+   "source": "Sewer Squad Invoice 058 - Kwik Hot Chicken.pdf",
+   "hasDiscount": true,
+   "location": "KWIK HOT CHICKEN|1636 MENNONITE RD, STE 1000",
+   "status": "ISSUED",
+   "reconstructed": true
+  },
+  {
+   "number": "059",
+   "date": "2026-08-25",
+   "nextServiceDate": "2026-11-23",
+   "serviceTitle": "Grit Trap Pumping & Disposal",
+   "serviceType": "GRIT_TRAP_CLEANING",
+   "assetType": "GRIT_TRAP",
+   "gallons": null,
+   "rate": null,
+   "manifestFee": "WAIVED",
+   "totalCents": 34999,
+   "lines": [
+    {
+     "kind": "FLAT_RATE",
+     "description": "Grit trap pumping & disposal",
+     "quantity": "1",
+     "unitPriceCents": "34999",
+     "amountCents": 34999
+    }
+   ],
+   "source": "Sewer Squad Invoice 059 - Better Tires & Automotive.pdf",
+   "hasDiscount": false,
+   "location": "BETTER TIRES & AUTOMOTIVE|3134 E CROSSTIMBERS ST",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "060",
+   "date": "2026-08-25",
+   "nextServiceDate": "2026-11-23",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 1300,
+   "rate": "0.32",
+   "manifestFee": "CITY_OF_HOUSTON",
+   "totalCents": 43264,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "1300",
+     "unitPriceCents": "32",
+     "amountCents": 41600
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "City of Houston manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "1664",
+     "amountCents": 1664
+    }
+   ],
+   "source": "Sewer Squad Invoice 060 - Lava Lounge.pdf",
+   "hasDiscount": false,
+   "location": "LAVA LOUNGE|9705 WESTHEIMER RD",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "061",
+   "date": "2026-08-25",
+   "nextServiceDate": "2026-11-23",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": null,
+   "rate": null,
+   "manifestFee": "STANDARD",
+   "totalCents": 23400,
+   "lines": [
+    {
+     "kind": "FLAT_RATE",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "1",
+     "unitPriceCents": "22500",
+     "amountCents": 22500
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "Manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "900",
+     "amountCents": 900
+    }
+   ],
+   "source": "Sewer Squad Invoice 061 - Pho Chopstix.pdf",
+   "hasDiscount": false,
+   "location": "PHO CHOPSTIX|1829 N MASON RD",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "062",
+   "date": "2026-08-26",
+   "nextServiceDate": "2026-11-24",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": null,
+   "rate": null,
+   "manifestFee": "CITY_OF_HOUSTON",
+   "totalCents": 23400,
+   "lines": [
+    {
+     "kind": "FLAT_RATE",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "1",
+     "unitPriceCents": "22500",
+     "amountCents": 22500
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "City of Houston manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "900",
+     "amountCents": 900
+    }
+   ],
+   "source": "Sewer Squad Invoice 062 - La Sipota.pdf",
+   "hasDiscount": false,
+   "location": "LA SIPOTA|4407 W FUQUA ST",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "063",
+   "date": "2026-08-26",
+   "nextServiceDate": "2026-11-24",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 750,
+   "rate": "0.42",
+   "manifestFee": "CITY_OF_HOUSTON",
+   "totalCents": 24885,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "750",
+     "unitPriceCents": "42",
+     "amountCents": 31500
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "City of Houston manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "1260",
+     "amountCents": 1260
+    },
+    {
+     "kind": "DISCOUNT",
+     "description": "Discount",
+     "quantity": "1",
+     "unitPriceCents": "-7875",
+     "amountCents": -7875
+    }
+   ],
+   "source": "Sewer Squad Invoice 063 - H-Town Hibachi.pdf",
+   "hasDiscount": true,
+   "location": "HTOWN HIBACHI|3920 CANAL ST",
+   "status": "ISSUED",
+   "reconstructed": true
+  },
+  {
+   "number": "064",
+   "date": "2026-08-26",
+   "nextServiceDate": "2026-11-24",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": null,
+   "rate": null,
+   "manifestFee": "NONE",
+   "totalCents": 22500,
+   "lines": [
+    {
+     "kind": "FLAT_RATE",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "1",
+     "unitPriceCents": "22500",
+     "amountCents": 22500
+    }
+   ],
+   "source": "Sewer Squad Invoice 064 - Hollands Coffee.pdf",
+   "hasDiscount": false,
+   "location": "HOLLANDS COFFEE|210 FM 1942",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "065",
+   "date": "2026-08-26",
+   "nextServiceDate": "2026-11-24",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 1200,
+   "rate": "0.35",
+   "manifestFee": "CITY_OF_HOUSTON",
+   "totalCents": 43680,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "1200",
+     "unitPriceCents": "35",
+     "amountCents": 42000
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "City of Houston manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "1680",
+     "amountCents": 1680
+    }
+   ],
+   "source": "Sewer Squad Invoice 065 - Revolutions Gas Station.pdf",
+   "hasDiscount": false,
+   "location": "REVOLUTIONS GAS STATION|12675 VETERANS MEMORIAL DR",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "066",
+   "date": "2026-08-26",
+   "nextServiceDate": "2026-11-24",
+   "serviceTitle": "Manhole Removal & Installation",
+   "serviceType": "OTHER",
+   "assetType": null,
+   "gallons": null,
+   "rate": null,
+   "manifestFee": "NONE",
+   "totalCents": 157998,
+   "lines": [
+    {
+     "kind": "FLAT_RATE",
+     "description": "Manhole removal & installation",
+     "quantity": "1",
+     "unitPriceCents": "157998",
+     "amountCents": 157998
+    }
+   ],
+   "source": "Sewer Squad Invoice 066 - Revolutions Gas Station (Manholes).pdf",
+   "hasDiscount": false,
+   "location": "REVOLUTIONS GAS STATION|12675 VETERANS MEMORIAL DR",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "067",
+   "date": "2026-08-28",
+   "nextServiceDate": "2026-11-26",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 75,
+   "rate": null,
+   "manifestFee": "STANDARD",
+   "totalCents": 23400,
+   "lines": [
+    {
+     "kind": "FLAT_RATE",
+     "description": "Grease trap pumping & disposal (75 gal)",
+     "quantity": "1",
+     "unitPriceCents": "22500",
+     "amountCents": 22500
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "Manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "900",
+     "amountCents": 900
+    }
+   ],
+   "source": "Sewer Squad Invoice 067 - Now & Forever Gas Station (Alvin).pdf",
+   "hasDiscount": false,
+   "location": "NOW & FOREVER GAS STATION|22550 HWY 6",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "068",
+   "date": "2026-08-28",
+   "nextServiceDate": "2026-11-26",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 1200,
+   "rate": "0.22",
+   "manifestFee": "CITY_OF_HOUSTON",
+   "totalCents": 27456,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "1200",
+     "unitPriceCents": "22",
+     "amountCents": 26400
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "City of Houston manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "1056",
+     "amountCents": 1056
+    }
+   ],
+   "source": "Sewer Squad Invoice 068 - Now & Forever Gas Station (Chimney Rock).pdf",
+   "hasDiscount": false,
+   "location": "NOW & FOREVER GAS STATION|6225 CHIMNEY ROCK RD",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "069",
+   "date": "2026-08-28",
+   "nextServiceDate": "2026-11-26",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 1200,
+   "rate": "0.23",
+   "manifestFee": "STANDARD",
+   "totalCents": 28704,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "1200",
+     "unitPriceCents": "23",
+     "amountCents": 27600
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "Manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "1104",
+     "amountCents": 1104
+    }
+   ],
+   "source": "Sewer Squad Invoice 069 - Now & Forever Gas Station (S Main).pdf",
+   "hasDiscount": false,
+   "location": "NOW & FOREVER GAS STATION|4223 S MAIN ST",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "070",
+   "date": "2026-08-28",
+   "nextServiceDate": "2026-11-26",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 1000,
+   "rate": "0.23",
+   "manifestFee": "CITY_OF_HOUSTON",
+   "totalCents": 28919,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "1000",
+     "unitPriceCents": "23",
+     "amountCents": 23000
+    },
+    {
+     "kind": "OTHER",
+     "description": "Additional services (itemized on the original invoice)",
+     "quantity": "1",
+     "unitPriceCents": "4999",
+     "amountCents": 4999
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "City of Houston manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "920",
+     "amountCents": 920
+    }
+   ],
+   "source": "Sewer Squad Invoice 070 - Now & Forever Gas Station (13450 Westheimer).pdf",
+   "hasDiscount": false,
+   "location": "NOW & FOREVER GAS STATION|13450 WESTHEIMER RD",
+   "status": "ISSUED",
+   "reconstructed": true
+  },
+  {
+   "number": "071",
+   "date": "2026-08-28",
+   "nextServiceDate": "2026-11-26",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 1000,
+   "rate": "0.23",
+   "manifestFee": "CITY_OF_HOUSTON",
+   "totalCents": 23920,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "1000",
+     "unitPriceCents": "23",
+     "amountCents": 23000
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "City of Houston manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "920",
+     "amountCents": 920
+    }
+   ],
+   "source": "Sewer Squad Invoice 071 - Now & Forever Gas Station (14531 Westheimer).pdf",
+   "hasDiscount": false,
+   "location": "NOW & FOREVER GAS STATION|14531 WESTHEIMER RD",
+   "status": "ISSUED",
+   "reconstructed": false
+  },
+  {
+   "number": "072",
+   "date": "2026-09-01",
+   "nextServiceDate": "2026-11-30",
+   "serviceTitle": "Grease Trap Pumping & Disposal",
+   "serviceType": "GREASE_TRAP_PUMPING",
+   "assetType": "GREASE_TRAP",
+   "gallons": 1000,
+   "rate": "0.28",
+   "manifestFee": "STANDARD",
+   "totalCents": 29120,
+   "lines": [
+    {
+     "kind": "PER_GALLON",
+     "description": "Grease trap pumping & disposal",
+     "quantity": "1000",
+     "unitPriceCents": "28",
+     "amountCents": 28000
+    },
+    {
+     "kind": "MANIFEST_FEE",
+     "description": "Manifest fee",
+     "quantity": "1",
+     "unitPriceCents": "1120",
+     "amountCents": 1120
+    }
+   ],
+   "source": "Sewer Squad Invoice 072 - Spark Gas Station & Kare Market.pdf",
+   "hasDiscount": false,
+   "location": "SPARK GAS STATION & KARE MARKET|12303 MURPHY RD",
+   "status": "ISSUED",
+   "reconstructed": false
+  }
+ ],
+ "proposals": [
+  {
+   "number": "P-060",
+   "date": "2026-08-25",
+   "totalCents": null,
+   "source": "Sewer Squad Proposal - 909 Franklin St.pdf",
+   "kind": "PROPOSAL",
+   "preparedFor": "909 Franklin St",
+   "addressLine1": "909 Franklin St",
+   "city": "Houston",
+   "state": "TX",
+   "postalCode": "77002",
+   "priceNote": "$3,537 – $3,897",
+   "sections": [
+    {
+     "title": null,
+     "subtotalLabel": null,
+     "lines": []
+    }
+   ],
+   "scopeTitle": "Grease Trap Pumping & Disposal",
+   "status": "SENT",
+   "note": "Estimated price range for about 6,300 gallons at $0.43 per gallon, including the City of Houston manifest fee. Final price is based on gallons pumped."
+  },
+  {
+   "number": "P-068",
+   "date": "2026-08-28",
+   "totalCents": null,
+   "source": "Sewer Squad Proposal - 9600 Bellaire Blvd.pdf",
+   "kind": "PROPOSAL",
+   "preparedFor": "9600 Bellaire Blvd",
+   "addressLine1": "9600 Bellaire Blvd",
+   "city": "Houston",
+   "state": "TX",
+   "postalCode": "77036",
+   "priceNote": null,
+   "sections": [
+    {
+     "title": null,
+     "subtotalLabel": null,
+     "lines": []
+    }
+   ],
+   "scopeTitle": "Grease Trap Pumping & Disposal",
+   "status": "DRAFT",
+   "note": "Pricing not recorded in the imported records (about 1,500 gallons). Add pricing before sending."
+  },
+  {
+   "number": "P-067",
+   "date": "2026-08-27",
+   "totalCents": null,
+   "source": "Sewer Squad Proposal - Grubbs BBQ.pdf",
+   "kind": "PROPOSAL",
+   "preparedFor": "Grubbs BBQ",
+   "addressLine1": "9230A Jensen Dr",
+   "city": "Houston",
+   "state": "TX",
+   "postalCode": "77093",
+   "priceNote": null,
+   "sections": [
+    {
+     "title": null,
+     "subtotalLabel": null,
+     "lines": []
+    }
+   ],
+   "scopeTitle": "Grease Trap Pumping & Disposal",
+   "status": "DRAFT",
+   "note": "Pricing not recorded in the imported records (about 1,000 gallons). Add pricing before sending."
+  },
+  {
+   "number": "P-054",
+   "date": "2026-08-21",
+   "totalCents": 64396,
+   "source": "Sewer Squad Proposal - Hollands Coffee & Anchor Hand Wash (Crosby).pdf",
+   "kind": "PROPOSAL",
+   "preparedFor": "Hollands Coffee & Anchor Hand Wash",
+   "addressLine1": "210 FM 1942",
+   "city": "Crosby",
+   "state": "TX",
+   "postalCode": "77532",
+   "priceNote": null,
+   "scopeTitle": "Grease & Grit Trap Service",
+   "scopeSubtitle": "Two concepts, one location",
+   "status": "SENT",
+   "intro": "Sewer Squad Services LLC is pleased to propose the following scope of work for your two concepts at the above location. Pricing is broken out by concept below.",
+   "note": "Pricing above is a flat-rate proposal covering both concepts at this location.\nA 4% manifest fee applies to each concept's trap service. All waste is disposed of in full compliance with TCEQ regulations. This proposal is valid for 30 days from the date above.\nWe recommend recurring service every 90 days to keep both systems compliant and clog-free.",
+   "linkLocation": "HOLLANDS COFFEE|210 FM 1942",
+   "sections": [
+    {
+     "title": "HOLLANDS COFFEE — Grease Trap Service",
+     "subtotalLabel": "Hollands subtotal",
+     "lines": [
+      {
+       "kind": "FLAT_RATE",
+       "description": "Grease trap pumping & disposal",
+       "quantity": "1",
+       "unitPriceCents": "22500",
+       "amountCents": 22500
+      },
+      {
+       "kind": "MANIFEST_FEE",
+       "description": "Manifest fee",
+       "quantity": "1",
+       "unitPriceCents": "900",
+       "amountCents": 900
+      }
+     ]
+    },
+    {
+     "title": "ANCHOR HAND WASH DETAIL CENTER — Grit Trap Service",
+     "subtotalLabel": "Anchor subtotal",
+     "lines": [
+      {
+       "kind": "FLAT_RATE",
+       "description": "Grit trap pumping & disposal",
+       "quantity": "1",
+       "unitPriceCents": "24999",
+       "amountCents": 24999
+      },
+      {
+       "kind": "OTHER",
+       "description": "Trench drain cleaning",
+       "quantity": "3",
+       "unitPriceCents": "4999",
+       "amountCents": 14997
+      },
+      {
+       "kind": "MANIFEST_FEE",
+       "description": "Manifest fee",
+       "quantity": "1",
+       "unitPriceCents": "1000",
+       "amountCents": 1000
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "number": "P-069",
+   "date": "2026-08-28",
+   "totalCents": 424320,
+   "source": "Sewer Squad Proposal - The Stafford Centre.pdf",
+   "kind": "PROPOSAL",
+   "preparedFor": "The Stafford Centre",
+   "addressLine1": "10505 Cash Rd",
+   "city": "Stafford",
+   "state": "TX",
+   "postalCode": "77477",
+   "priceNote": null,
+   "sections": [
+    {
+     "title": null,
+     "subtotalLabel": null,
+     "lines": [
+      {
+       "kind": "PER_GALLON",
+       "description": "Grease trap pumping & disposal",
+       "quantity": "12000",
+       "unitPriceCents": "34",
+       "amountCents": 408000
+      },
+      {
+       "kind": "MANIFEST_FEE",
+       "description": "Manifest fee",
+       "quantity": "1",
+       "unitPriceCents": "16320",
+       "amountCents": 16320
+      }
+     ]
+    }
+   ],
+   "scopeTitle": "Grease Trap Pumping & Disposal",
+   "status": "SENT",
+   "note": "A 4% manifest fee applies to the trap service. All waste is disposed of in full compliance with TCEQ regulations. This proposal is valid for 30 days from the date above."
+  },
+  {
+   "number": "Q-060",
+   "date": "2026-08-25",
+   "totalCents": 37500,
+   "source": "Sewer Squad Quote - Anchor Hand Wash & Detail.pdf",
+   "kind": "QUOTE",
+   "preparedFor": "Anchor Hand Wash & Detail",
+   "addressLine1": "210 FM 1942",
+   "city": "Crosby",
+   "state": "TX",
+   "postalCode": "77532",
+   "priceNote": null,
+   "sections": [
+    {
+     "title": null,
+     "subtotalLabel": null,
+     "lines": [
+      {
+       "kind": "FLAT_RATE",
+       "description": "Grit trap pumping & disposal",
+       "quantity": "1",
+       "unitPriceCents": "37500",
+       "amountCents": 37500
+      }
+     ]
+    }
+   ],
+   "scopeTitle": "Grit Trap Pumping & Disposal",
+   "status": "SENT",
+   "note": "This proposal is valid for 30 days from the date above. We recommend recurring service every 90 days to keep your system compliant and clog-free."
+  }
+ ],
+ "reports": [
+  {
+   "number": "037",
+   "invoice": "037",
+   "location": "BEEZ KNEEZ|1015 W 19TH ST",
+   "preparedFor": "Beez Kneez",
+   "addressLine1": "1015 W 19th St",
+   "city": "Houston",
+   "state": "TX",
+   "postalCode": "77008",
+   "serviceDate": "2026-08-09",
+   "subject": "Grease Interceptor Service & Findings",
+   "sections": [
+    {
+     "title": "Service Performed",
+     "body": "Sewer Squad Services LLC was dispatched to the above location to pump out and service the facility's grease interceptor (grease trap). The interceptor was fully evacuated and its contents transported and disposed of in accordance with all applicable TCEQ and City of Houston regulations."
+    },
+    {
+     "title": "Findings",
+     "body": "During service, our technicians observed active sanitary sewer flow discharging INTO the grease interceptor from the City of Houston sanitary line. Under normal design conditions, flow should move away from the interceptor toward the municipal sanitary main. The reverse condition observed on site indicates a defect in the sanitary line configuration serving this property.\n\nBased on field observations, the condition appears attributable to one or more of the following:\n• Improper sanitary line slope. The sanitary lateral does not appear to maintain the minimum required downward gradient toward the city main. As a result, effluent cannot drain by gravity and is flowing back into the grease interceptor.\n• Possible obstruction in the City of Houston sanitary main. A partial or full blockage within the municipal sanitary line may be restricting flow, causing wastewater to back up and overflow into the grease interceptor.\n\nEither condition, or a combination of both, will result in recurring backups, overflow, and premature filling of the grease interceptor regardless of pumping frequency. The underlying sanitary line issue must be corrected to resolve the problem."
+    },
+    {
+     "title": "Recommended Corrective Action",
+     "body": "• Perform a camera (CCTV) inspection of the sanitary lateral and its connection to the city main to confirm slope/grade and to locate any obstruction.\n• Correct the sanitary line slope so it meets plumbing code gradient requirements toward the city main.\n• If an obstruction in the city main is confirmed, coordinate with the City of Houston for line clearing or repair.\n• Verify that the grease interceptor is properly isolated from sanitary flow once corrections are complete."
+    }
+   ],
+   "closing": "This report reflects conditions observed at the time of service and is provided to assist in diagnosing and correcting the sanitary line issue. Sewer Squad Services LLC is available to perform the camera inspection and any follow-up work required.",
+   "source": "Sewer Squad Service Report - Beez Kneez.pdf"
+  },
+  {
+   "number": "040",
+   "invoice": "040",
+   "location": "GHOST BAR|5600 RICHMOND AVE",
+   "preparedFor": "Ghost Bar",
+   "addressLine1": "5600 Richmond Ave",
+   "city": "Houston",
+   "state": "TX",
+   "postalCode": "77057",
+   "serviceDate": "2026-08-10",
+   "subject": "Sample Well & City Connection",
+   "sections": [
+    {
+     "title": "Service Overview",
+     "body": "Sewer Squad Services LLC inspected the sample well and the property's connection to the City of Houston sanitary main at the above location. This report documents our findings and outlines the recommended corrective work."
+    },
+    {
+     "title": "Findings",
+     "body": "Upon inspection, our technicians found the sample well and the connection to the city line completely clogged with accumulated debris and toilet paper. This blockage is restricting flow through the line and is the likely source of the backups being experienced at the property. Left unaddressed, a blockage of this severity will continue to cause backups, slow drainage, and the risk of overflow."
+    },
+    {
+     "title": "Recommended Service",
+     "body": "We recommend a thorough, high-pressure hydro jetting and mechanical snaking of the sample well and the connection to the city line. Hydro jetting scours the full interior of the pipe, cutting through compacted debris and paper and flushing it clear, while snaking breaks up and removes any remaining obstruction. In the majority of cases, this service fully restores flow and resolves the issue.\n\nShould the blockage prove more extensive, or should the line show signs of a deeper structural problem, we can perform a full camera (CCTV) inspection to pinpoint the exact location and cause. This gives you a clear, documented picture of the line's condition before any further work is authorized — no guesswork, no surprises."
+    },
+    {
+     "title": "Pricing",
+     "body": "• Hydro jetting & snaking of the sample well and connection to the city line — $799.99 (flat rate).\n• Camera (CCTV) inspection, if further diagnosis is needed — available for an additional charge.\n• Any additional work identified beyond the scope above will be quoted separately for your approval before we proceed."
+    },
+    {
+     "title": "Our Warranty",
+     "body": "All of our work is backed by a 90-day warranty. If the same issue returns within 90 days of service, we will make it right. We use commercial-grade equipment, dispose of all waste in full compliance with TCEQ and City of Houston regulations, and stand behind every job we complete."
+    }
+   ],
+   "closing": "We would be glad to schedule this service and get your line flowing clean and clear. Call 346-244-5579 or email Sales@sewersquadservices.com to book — our team is ready when you are.",
+   "source": "Sewer Squad Service Report - Ghost Bar.pdf"
+  }
+ ],
+ "company": {
+  "name": "Sewer Squad Services LLC",
+  "addressLine1": "5718 Westheimer Rd",
+  "city": "Houston",
+  "state": "TX",
+  "phone": "346-244-5579",
+  "email": "Sales@sewersquadservices.com",
+  "tceqNumber": "26967"
+ }
+}

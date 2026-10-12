@@ -1,9 +1,10 @@
 import "server-only";
 import type { Db } from "../db";
 import { PdfWriter, colors } from "./layout";
+import { BrandedPdf, companyBlock, companyLine, fitPages, ink } from "./branded";
+import { autoNote, lineRow, summaryLabel, type DocLine } from "@/domain/document-lines";
 import { formatDateKey, formatInstant } from "@/lib/dates";
-import { formatCents, formatRateCents } from "@/lib/money";
-import { formatAddress } from "@/lib/utils";
+import { formatCents } from "@/lib/money";
 import { companyTimeZone, getSetting } from "../services/settings";
 
 export async function renderInvoicePdf(db: Db, invoiceId: string): Promise<Uint8Array> {
@@ -11,44 +12,56 @@ export async function renderInvoicePdf(db: Db, invoiceId: string): Promise<Uint8
     where: { id: invoiceId },
     include: { lineItems: { orderBy: { sortOrder: "asc" } }, organization: true, billingProfile: true, serviceLocation: true, job: { select: { jobNumber: true } }, manifest: { select: { manifestNumber: true } } },
   });
-  const company = await getSetting("company", db);
-  const billing = await getSetting("billing", db);
-  const w = await PdfWriter.create(`Invoice ${inv.invoiceNumber}`, `${company.name} · Invoice ${inv.invoiceNumber} · Questions? ${company.phone || company.email || "Contact your account representative"}`);
-  w.header("Invoice", [company.addressLine1, [company.city, company.state, company.postalCode].filter(Boolean).join(" "), company.phone, company.email].filter(Boolean).join(" · ") || company.name, [
-    inv.invoiceNumber,
-    `Issued ${formatDateKey(inv.issueDate, "long")}`,
-    `Due ${formatDateKey(inv.dueDate, "long")}`,
-    `Terms: Net ${inv.paymentTermsDays}`,
-  ]);
-  if (inv.status === "VOID") w.stamp("VOID");
-  if (inv.status === "DRAFT") w.stamp("DRAFT");
+  const [company, billing] = await Promise.all([companyBlock(db), getSetting("billing", db)]);
+  const bps = billing.manifestFeeBps;
+  return fitPages(async (k) => {
+    const w = await BrandedPdf.create(`Invoice ${inv.invoiceNumber}`, company, k);
+    w.setFooter([billing.invoiceFooter, companyLine(company)]);
 
-  const bp = inv.billingProfile;
-  w.fields([
-    ["Bill to", [bp?.name ?? inv.organization.name, bp?.addressLine1, [bp?.city, bp?.state, bp?.postalCode].filter(Boolean).join(" "), bp?.billingEmail].filter(Boolean).join("\n")],
-    ["Service location", inv.serviceLocation ? `${inv.serviceLocation.name}\n${formatAddress(inv.serviceLocation)}` : "Multiple / account level"],
-    ["Customer account", `${inv.organization.name} (${inv.organization.accountNumber})`],
-    ["Reference", [inv.serviceDate ? `Service date ${formatDateKey(inv.serviceDate)}` : null, inv.job ? `Job ${inv.job.jobNumber}` : null, inv.manifest ? `Manifest ${inv.manifest.manifestNumber}` : null, inv.poNumber ? `PO ${inv.poNumber}` : null].filter(Boolean).join("\n")],
-  ]);
-  w.y -= 4;
-  w.table(
-    ["Description", "Qty", "Unit price", "Amount"],
-    inv.lineItems.map((l) => [l.description, Number(l.quantity).toLocaleString("en-US", { maximumFractionDigits: 3 }), formatRateCents(l.unitPriceCents.toString()), formatCents(l.amountCents)]),
-    [5, 1, 1.4, 1.4],
-    ["left", "right", "right", "right"],
-  );
-  const rows: [string, string, boolean?][] = [["Subtotal", formatCents(inv.subtotalCents)]];
-  if (inv.discountCents) rows.push(["Discounts", `-${formatCents(inv.discountCents)}`]);
-  rows.push([`Tax (${(inv.taxRateBps / 100).toFixed(2)}%)`, formatCents(inv.taxCents)]);
-  rows.push(["Total", formatCents(inv.totalCents), true]);
-  if (inv.amountPaidCents) rows.push(["Paid", `-${formatCents(inv.amountPaidCents)}`]);
-  rows.push(["Balance due", formatCents(inv.balanceCents), true]);
-  w.totals(rows);
-  w.y -= 10;
-  if (inv.notes) w.text(inv.notes, { size: 8.5, color: colors.muted, gap: 6 });
-  w.text("Pay online securely from your Sewer Squad customer portal. Card and bank payments are processed by Stripe; Sewer Squad never stores card numbers.", { size: 8.5, color: colors.muted, gap: 4 });
-  if (billing.invoiceFooter) w.text(billing.invoiceFooter, { size: 8.5, color: colors.muted });
-  return w.save();
+    const stamp = inv.status === "VOID" ? { text: "VOID", color: ink.danger } : inv.status === "DRAFT" ? { text: "DRAFT", color: ink.muted } : inv.status === "PAID" ? { text: "PAID", color: ink.green } : inv.status === "WRITTEN_OFF" ? { text: "WRITTEN OFF", color: ink.muted } : undefined;
+    w.header(
+      "INVOICE",
+      [
+        { text: `Invoice #: ${inv.invoiceNumber}` },
+        { text: `Date: ${formatDateKey(inv.issueDate, "long")}` },
+        ...(inv.paymentTermsDays > 0 ? [{ text: `Due: ${formatDateKey(inv.dueDate, "long")}` }] : []),
+        ...(inv.nextServiceDate ? [{ text: `NEXT SERVICE DATE: ${formatDateKey(inv.nextServiceDate, "long")}`, strong: true }] : []),
+      ],
+      company,
+      stamp,
+    );
+
+    const bp = inv.billingProfile;
+    const loc = inv.serviceLocation;
+    const billName = (loc?.name ?? inv.organization.name).toUpperCase();
+    const billLines = bp?.addressLine1 ? [bp.addressLine1, [bp.city, bp.state].filter(Boolean).join(", ") + (bp.postalCode ? ` ${bp.postalCode}` : "")] : loc ? [loc.addressLine1, `${loc.city}, ${loc.state}${loc.postalCode ? ` ${loc.postalCode}` : ""}`] : [];
+    const serviceLines = [
+      inv.serviceTitle ?? inv.lineItems[0]?.description ?? "Service",
+      ...(inv.serviceDate ? [`Service date: ${formatDateKey(inv.serviceDate, "long")}`] : []),
+      ...(inv.manifest || inv.manifestRef ? [`Manifest: ${inv.manifest?.manifestNumber ?? inv.manifestRef}`] : []),
+      ...(inv.poNumber ? [`PO: ${inv.poNumber}`] : []),
+    ];
+    w.columns([[{ label: "BILL TO", name: billName, lines: billLines }], [{ label: "SERVICE", lines: serviceLines }]]);
+
+    const lines: DocLine[] = inv.lineItems.map((l) => ({ kind: l.kind, description: l.description, quantity: l.quantity.toString(), unitPriceCents: l.unitPriceCents.toString(), amountCents: l.amountCents }));
+    w.table(lines.map((l) => lineRow(l, bps)));
+
+    const rows: { label: string; value: string }[] = [];
+    if (lines.length <= 5) for (const l of lines) rows.push({ label: `${summaryLabel(l, bps)}:`, value: l.amountCents < 0 ? `-${formatCents(-l.amountCents)}` : formatCents(l.amountCents) });
+    else rows.push({ label: "Subtotal:", value: formatCents(inv.subtotalCents - inv.discountCents) });
+    if (inv.taxCents) rows.push({ label: `Sales tax (${(inv.taxRateBps / 100).toFixed(2)}%):`, value: formatCents(inv.taxCents) });
+    if (inv.amountPaidCents) rows.push({ label: "Invoice total:", value: formatCents(inv.totalCents) }, { label: "Paid:", value: `-${formatCents(inv.amountPaidCents)}` });
+    w.y -= 12;
+    w.summary(rows);
+    w.totalBar(inv.status === "PAID" ? "PAID IN FULL:" : "TOTAL DUE:", formatCents(inv.status === "VOID" ? 0 : inv.balanceCents));
+
+    const note = inv.notes ? inv.notes.split("\n") : autoNote(lines, bps);
+    const closing = inv.status === "PAID" ? "Paid in full. Thank you!" : billing.invoiceNote;
+    w.note([...note, closing && !note.join(" ").includes(closing) ? closing : ""]);
+    const app = (process.env.APP_URL ?? "").replace(/^https?:\/\//, "").replace(/\/$/, "");
+    if (app && !["PAID", "VOID", "WRITTEN_OFF", "DRAFT"].includes(inv.status)) w.italicLine(`Pay online anytime at ${app}, or call ${company.phone || "our office"}.`);
+    return w;
+  });
 }
 
 export async function renderReceiptPdf(db: Db, paymentId: string): Promise<Uint8Array> {

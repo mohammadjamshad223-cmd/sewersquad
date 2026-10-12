@@ -169,7 +169,11 @@ export const LINE_ITEM_KIND_LABEL: Record<string, string> = {
   AFTER_HOURS: "After-hours",
   ADDITIONAL_EQUIPMENT: "Additional equipment",
   DISPOSAL_FEE: "Disposal fee",
+  MANIFEST_FEE: "Manifest fee (auto %)",
   DISCOUNT: "Discount",
   LATE_FEE: "Late fee",
   OTHER: "Other",
 };
+
+export const PROPOSAL_TONE = { DRAFT: "neutral", SENT: "info", ACCEPTED: "success", DECLINED: "danger" } as const;
+export const REPORT_TONE = { DRAFT: "neutral", FINAL: "success" } as const;

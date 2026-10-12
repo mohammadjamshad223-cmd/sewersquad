@@ -10,6 +10,7 @@ import { approveJob, rejectJob, reviewJobCharge } from "@/server/services/field"
 import * as er from "@/server/services/emergencies";
 import * as fleet from "@/server/services/fleet";
 import { disposalSchema, recordDisposal, facilitySchema, upsertFacility } from "@/server/services/disposal";
+import { billSchema, billStatusSchema, createDisposalBill, setDisposalBillStatus } from "@/server/services/disposal-bills";
 import { staffReply, updateTicket } from "@/server/services/support";
 import { readUploadedFile } from "@/server/services/documents";
 import { processDueDeliveries } from "@/server/services/notifications";
@@ -172,6 +173,18 @@ const _facility = formAction(facilitySchema.and(z.object({ facilityId: id.option
   return { ok: true, message: "Facility saved." };
 });
 export async function saveFacilityAction(p: ActionResult, fd: FormData) { return _facility(p, fd); }
+
+const _bill = formAction(billSchema, async (input, fd) => {
+  const bill = await createDisposalBill(await assertStaff("disposal.write"), input, await readUploadedFile(fd.get("file")));
+  return { ok: true, message: `Bill ${bill.vendorInvoiceNumber} saved.` };
+});
+export async function createDisposalBillAction(p: ActionResult, fd: FormData) { return _bill(p, fd); }
+
+const _billStatus = formAction(billStatusSchema, async (input) => {
+  await setDisposalBillStatus(await assertStaff("disposal.write"), input);
+  return { ok: true, message: input.status === "PAID" ? "Marked paid." : input.status === "VOID" ? "Bill voided." : "Bill re-opened." };
+});
+export async function setDisposalBillStatusAction(p: ActionResult, fd: FormData) { return _billStatus(p, fd); }
 
 // ── Support ──
 const _reply = formAction(z.object({ ticketId: id, body: z.string().trim().min(1).max(5000), internal: z.enum(["on"]).optional(), status: z.enum(["OPEN", "IN_PROGRESS", "WAITING_ON_CUSTOMER", "RESOLVED", "CLOSED"]).optional() }), async (i) => {

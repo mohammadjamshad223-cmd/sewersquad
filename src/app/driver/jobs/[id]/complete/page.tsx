@@ -24,10 +24,10 @@ export default async function CompletePage({ params }: { params: Promise<{ id: s
   const label = (a: { type: string; customTypeLabel: string | null }) => (a.type === "OTHER" && a.customTypeLabel ? a.customTypeLabel : ASSET_TYPE_LABEL[a.type] ?? a.type);
   return (
     <CompletionWizard
-      job={{ id: job.id, jobNumber: job.jobNumber, status: job.status, locationName: job.location.name, address: `${job.location.addressLine1}, ${job.location.city}`, instructions: [job.instructions, job.plan?.specialInstructions, job.location.accessInstructions].filter(Boolean).join("\n"), driverName: actor.name, truck: job.vehicle?.unitNumber ?? null, rejection: job.manifest?.status === "REJECTED" ? job.manifest.rejectionReason : null }}
+      job={{ id: job.id, jobNumber: job.jobNumber, status: job.status, cityOfHouston: job.location.manifestFee === "CITY_OF_HOUSTON", locationName: job.location.name, address: `${job.location.addressLine1}, ${job.location.city}`, instructions: [job.instructions, job.plan?.specialInstructions, job.location.accessInstructions].filter(Boolean).join("\n"), driverName: actor.name, truck: job.vehicle?.unitNumber ?? null, rejection: job.manifest?.status === "REJECTED" ? job.manifest.rejectionReason : null }}
       assets={[...job.assets.map((a) => ({ ...a.asset, label: label(a.asset), planned: true })), ...otherAssets.map((a) => ({ ...a, label: label(a), planned: false }))]}
       wasteTypes={[...WASTE_TYPES]}
-      photos={job.documents.map((d) => ({ id: d.id, phase: d.photoPhase ?? "ISSUE", url: `/api/documents/${d.id}` }))}
+      photos={job.documents.map((d) => ({ id: d.id, phase: d.type === "MANIFEST_OFFICIAL" ? "CITY_MANIFEST" : d.photoPhase ?? "ISSUE", url: `/api/documents/${d.id}` }))}
       charges={job.charges.map((c) => ({ id: c.id, description: c.description, status: c.status }))}
       server={{
         clientVersion: rec?.clientDraftVersion ?? 0,

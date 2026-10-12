@@ -8,7 +8,7 @@ import { companyTimeZone } from "./settings";
 const ROUTE_STATUSES = ["ASSIGNED", "ACCEPTED", "EN_ROUTE", "ARRIVED", "IN_PROGRESS", "PENDING_DOCUMENTATION", "SUBMITTED", "COMPLETED", "UNABLE_TO_SERVICE"] as const;
 
 const stopInclude = {
-  location: { select: { id: true, name: true, addressLine1: true, addressLine2: true, city: true, state: true, postalCode: true, siteContactName: true, siteContactPhone: true, accessInstructions: true, specialRequirements: true, latitude: true, longitude: true } },
+  location: { select: { id: true, name: true, addressLine1: true, addressLine2: true, city: true, state: true, postalCode: true, siteContactName: true, siteContactPhone: true, accessInstructions: true, specialRequirements: true, latitude: true, longitude: true, manifestFee: true } },
   organization: { select: { name: true, primaryPhone: true } },
   assets: { include: { asset: { select: { id: true, assetTag: true, type: true, capacityGallons: true, installLocation: true, customTypeLabel: true } } } },
   vehicle: { select: { unitNumber: true, tankCapacityGallons: true } },
@@ -59,7 +59,7 @@ export async function driverJob(driverId: string, jobId: string) {
       ...stopInclude,
       plan: { select: { specialInstructions: true } },
       serviceRecord: { include: { assetRecords: true } },
-      documents: { where: { deletedAt: null, type: "SERVICE_PHOTO" }, orderBy: { createdAt: "asc" }, select: { id: true, photoPhase: true, title: true, assetId: true } },
+      documents: { where: { deletedAt: null, type: { in: ["SERVICE_PHOTO", "MANIFEST_OFFICIAL"] } }, orderBy: { createdAt: "asc" }, select: { id: true, type: true, photoPhase: true, title: true, assetId: true } },
       charges: { orderBy: { createdAt: "asc" } },
       manifest: { select: { manifestNumber: true, status: true, rejectionReason: true } },
       statusEvents: { orderBy: { occurredAt: "asc" }, select: { toStatus: true, occurredAt: true, note: true } },

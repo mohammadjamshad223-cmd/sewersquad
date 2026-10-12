@@ -67,6 +67,8 @@ export async function buildManifestData(db: Db, jobId: string, overrides?: { ext
       county: job.location.county,
       contactName: job.location.siteContactName,
       contactPhone: job.location.siteContactPhone,
+      postalCode: job.location.postalCode || null,
+      cityCounty: [job.location.city, job.location.county].filter(Boolean).join(" / ") || null,
     },
     collection: {
       wasteType: rec?.wasteType ?? assets[0]?.wasteType ?? null,
@@ -86,6 +88,9 @@ export async function buildManifestData(db: Db, jobId: string, overrides?: { ext
       licensePlate: job.vehicle?.licensePlate ?? null,
       vehiclePermit: job.vehicle?.permitNumber ?? null,
       certificationStatement: hauler.certificationStatement || null,
+      tceqNumber: hauler.tceqNumber || null,
+      address: [company.addressLine1, [company.city, company.state].filter(Boolean).join(", ")].filter(Boolean).join(", ") || null,
+      phone: company.phone || null,
     },
     disposal: disposal
       ? {
@@ -95,8 +100,9 @@ export async function buildManifestData(db: Db, jobId: string, overrides?: { ext
           disposedAt: disposal.disposedAt.toISOString(),
           ticketNumber: disposal.ticketNumber,
           facilityAcknowledged: disposal.facilityAcknowledged,
+          gallonsReceived: disposal.gallons,
         }
-      : { facilityName: null, facilityAddress: null, facilityPermit: null, disposedAt: null, ticketNumber: null, facilityAcknowledged: false },
+      : { facilityName: null, facilityAddress: null, facilityPermit: null, disposedAt: null, ticketNumber: null, facilityAcknowledged: false, gallonsReceived: null },
     signatures: {
       customer: cust ? { name: cust.signerName || null, title: cust.signerTitle, signedAt: cust.signedAt.toISOString(), unavailable: cust.unavailable, unavailableReason: cust.unavailableReason, hasImage: Boolean(cust.signatureDocumentId) } : null,
       driver: drv ? { name: drv.signerName, signedAt: drv.signedAt.toISOString(), hasImage: Boolean(drv.signatureDocumentId) } : null,
@@ -262,4 +268,58 @@ export function manifestListWhere(params: { q?: string; status?: string; from?: 
 /** Latest finalized version for customer-facing display. */
 export async function latestFinalVersion(manifestId: string) {
   return prisma.manifestVersion.findFirst({ where: { manifestId, isFinal: true }, orderBy: { version: "desc" } });
+}
+
+/**
+ * Invoices entered without a job still get Sewer Squad's manifest, filled from the invoice and
+ * the customer's records, filed for the office and in the customer's portal. Idempotent.
+ */
+export async function generateInvoiceManifest(db: Db, invoiceId: string, actorId: string | null) {
+  const inv = await db.invoice.findUniqueOrThrow({
+    where: { id: invoiceId },
+    include: { lineItems: true, organization: true, serviceLocation: { include: { assets: { where: { deletedAt: null, status: "ACTIVE" } } } } },
+  });
+  if (inv.jobId || inv.manifestRef || !inv.serviceLocation) return null;
+  const loc = inv.serviceLocation;
+  const title = inv.serviceTitle ?? inv.lineItems[0]?.description ?? "Service";
+  const gallons = inv.lineItems.filter((l) => l.kind === "PER_GALLON").reduce((s, l) => s + Math.round(Number(l.quantity)), 0);
+  const kindFromTitle = /grit/i.test(title) ? "Grit Trap" : /lift/i.test(title) ? "Lift Station" : /septic/i.test(title) ? "Septic Tank" : /line|jett|snak|drain/i.test(title) ? "Sewer / Drain Line" : "Grease Trap";
+  const assets = loc.assets.filter((a) => (ASSET_TYPE_LABEL[a.type] ?? a.type).toLowerCase().includes(kindFromTitle.split(" ")[0]!.toLowerCase()));
+  const equipment = (assets.length ? assets : [{ assetTag: "", type: "", capacityGallons: 0, customTypeLabel: null }]).map((a, i) => ({
+    assetTag: a.assetTag,
+    type: a.type ? (ASSET_TYPE_LABEL[a.type] ?? a.type) : kindFromTitle,
+    capacityGallons: a.capacityGallons,
+    gallonsPumped: i === 0 ? gallons : 0,
+    servicePerformed: title,
+  }));
+  const [hauler, company] = await Promise.all([getSetting("hauler", db), getSetting("company", db)]);
+  const number = await numbers.manifest(db);
+  const data: ManifestData = {
+    template: null,
+    reference: { manifestNumber: number, jobNumber: `Invoice ${inv.invoiceNumber}`, serviceDate: keyFromDate(inv.serviceDate ?? inv.issueDate) },
+    generator: { businessName: loc.name, organizationName: inv.organization.name, accountNumber: inv.organization.accountNumber, address: formatAddress(loc), locationName: loc.name, county: loc.county, contactName: loc.siteContactName, contactPhone: loc.siteContactPhone, postalCode: loc.postalCode || null, cityCounty: [loc.city, loc.county].filter(Boolean).join(" / ") || null },
+    collection: { wasteType: /grit/i.test(title) ? "Grit trap waste" : "Grease trap waste", equipment, totalGallons: gallons, startedAt: null, finishedAt: null, notes: null },
+    hauler: { name: hauler.legalName || company.name || null, transporterPermitNumber: hauler.transporterPermitNumber || null, registrationNumber: hauler.registrationNumber || null, driverName: null, truckUnit: null, vin: null, licensePlate: null, vehiclePermit: null, certificationStatement: hauler.certificationStatement || null, tceqNumber: hauler.tceqNumber || null, address: [company.addressLine1, [company.city, company.state].filter(Boolean).join(", ")].filter(Boolean).join(", ") || null, phone: company.phone || null },
+    disposal: { facilityName: null, facilityAddress: null, facilityPermit: null, disposedAt: null, ticketNumber: null, facilityAcknowledged: false, gallonsReceived: null },
+    signatures: { customer: null, driver: null },
+    verification: { verifiedBy: null, verifiedAt: null },
+    extra: {},
+  };
+  const { drawManifest } = await import("../pdf/manifest-pdf");
+  const bytes = await drawManifest(db, { data, customerSignature: null, driverSignature: null, draft: false, integrity: `Manifest ${number} · invoice ${inv.invoiceNumber}` });
+  const doc = await storeDocument(db, {
+    bytes,
+    fileName: `Manifest ${number}.pdf`,
+    title: `Manifest ${number} — invoice ${inv.invoiceNumber}`,
+    type: "MANIFEST",
+    visibility: "CUSTOMER",
+    organizationId: inv.organizationId,
+    locationId: loc.id,
+    invoiceId: inv.id,
+    uploadedById: actorId,
+    trusted: { mime: "application/pdf", ext: "pdf" },
+  });
+  await db.invoice.update({ where: { id: inv.id }, data: { manifestRef: number } });
+  await audit(db, { actorId, action: "manifest.generate_for_invoice", entityType: "Invoice", entityId: inv.id, organizationId: inv.organizationId, after: { manifestNumber: number, documentId: doc.id } });
+  return doc;
 }

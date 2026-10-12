@@ -1,3 +1,4 @@
+import { getSetting } from "@/server/services/settings";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { idParam } from "@/server/params";
@@ -38,7 +39,8 @@ export default async function AdminInvoice({ params, searchParams }: { params: P
         breadcrumbs={[{ label: "Invoices", href: "/admin/invoices" }, { label: inv.invoiceNumber }]}
         actions={
           <>
-            {pdf && <DocLink id={pdf.id}>PDF</DocLink>}
+            {pdf ? <DocLink id={pdf.id}>PDF</DocLink> : <a className="text-[13px] text-brand underline" href={`/api/pdf/invoice/${inv.id}`} target="_blank" rel="noreferrer">Preview PDF</a>}
+            <Button asChild variant="ghost" size="sm"><Link href={`/admin/service-reports/new?invoice=${inv.id}`}>Write service report</Link></Button>
             {inv.status === "DRAFT" && canWrite && <ActionButton action={sendInvoiceAction.bind(null, inv.id)} successMessage="Invoice sent to the customer." confirm="Send this invoice to the customer? It can no longer be edited after sending.">Send invoice</ActionButton>}
             {inv.status !== "DRAFT" && canWrite && <ActionButton variant="ghost" size="sm" action={regenerateInvoicePdfAction.bind(null, inv.id)} successMessage="PDF regenerated.">Regenerate PDF</ActionButton>}
             {open && hasPermission(actor, "payments.record") && <Button asChild variant="secondary" size="sm"><Link href={`/admin/payments/new?org=${inv.organizationId}&invoice=${inv.id}`}>Record payment</Link></Button>}
@@ -47,12 +49,14 @@ export default async function AdminInvoice({ params, searchParams }: { params: P
           </>
         }
       />
+      {inv.legacySource && <Alert tone="info" title="Imported from your records">Original invoice: {inv.legacySource}. Line items were rebuilt from your records{inv.lineItems.some((l) => /itemized/i.test(l.description)) ? "; extras are itemized on the original" : ""}.</Alert>}
+      {inv.manifestRef && <Alert tone="info" title={`Manifest ${inv.manifestRef}`}>Generated with this invoice and filed in the customer&apos;s documents.</Alert>}
       {sp.created && <Alert tone="success" title="Draft created">Review it, then send it to the customer.</Alert>}
       {inv.notes?.startsWith("Pricing required") && <Alert tone="warning" title="Pricing required">No contracted or default price matched this service. Set the price on the line item before sending.</Alert>}
       {editing ? (
         <Card><CardHeader title="Edit draft" /><CardBody>
-          <InvoiceEditor orgs={[{ id: inv.organization.id, name: inv.organization.name, locations: inv.organization.locations, billingProfiles: inv.organization.billingProfiles }]} taxRateBps={inv.taxRateBps}
-            invoice={{ id: inv.id, organizationId: inv.organizationId, serviceLocationId: inv.serviceLocationId, billingProfileId: inv.billingProfileId, serviceDate: inv.serviceDate ? keyFromDate(inv.serviceDate) : null, paymentTermsDays: inv.paymentTermsDays, poNumber: inv.poNumber, notes: inv.notes, lines: inv.lineItems.map((l) => ({ kind: l.kind, description: l.description, quantity: l.quantity.toString(), unitPrice: (Number(l.unitPriceCents) / 100).toFixed(Number(l.unitPriceCents) % 1 ? 4 : 2), taxable: l.taxable })) }} />
+          <InvoiceEditor orgs={[{ id: inv.organization.id, name: inv.organization.name, locations: inv.organization.locations, billingProfiles: inv.organization.billingProfiles }]} taxRateBps={inv.taxRateBps} manifestFeeBps={(await getSetting("billing")).manifestFeeBps}
+            invoice={{ id: inv.id, organizationId: inv.organizationId, serviceLocationId: inv.serviceLocationId, billingProfileId: inv.billingProfileId, serviceDate: inv.serviceDate ? keyFromDate(inv.serviceDate) : null, paymentTermsDays: inv.paymentTermsDays, poNumber: inv.poNumber, serviceTitle: inv.serviceTitle, nextServiceDate: inv.nextServiceDate ? keyFromDate(inv.nextServiceDate) : null, notes: inv.notes, lines: inv.lineItems.map((l) => ({ kind: l.kind, description: l.description, quantity: l.quantity.toString(), unitPrice: (Number(l.unitPriceCents) / 100).toFixed(Number(l.unitPriceCents) % 1 ? 4 : 2), taxable: l.taxable })) }} />
         </CardBody></Card>
       ) : (
         <div className="grid grid-cols-[minmax(0,1fr)] gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">

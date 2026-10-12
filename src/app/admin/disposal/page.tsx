@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertTriangle, Download } from "lucide-react";
+import { AlertTriangle, CircleDollarSign, Download, Droplets, FileWarning, Receipt } from "lucide-react";
 import { requireStaffPage, hasPermission } from "@/server/authz/guards";
 import { prisma } from "@/server/db";
 import { fleetReconciliation, unallocatedLoads } from "@/server/services/disposal";
@@ -7,26 +7,28 @@ import { reconcileEvent } from "@/domain/reconciliation";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Alert, PageHeader } from "@/components/ui/misc";
+import { Alert, PageHeader, Stat } from "@/components/ui/misc";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { Tabs } from "@/components/ui/tabs";
 import { FilterBar } from "@/components/ui/filters";
 import { DocLink } from "@/components/portal/doc-link";
-import { addDays, formatInstant, isDateKey, todayKey } from "@/lib/dates";
+import { addDays, formatDateKey, formatInstant, isDateKey, keyFromDate, todayKey } from "@/lib/dates";
 import { formatCents, formatRateCents } from "@/lib/money";
 import { WASTE_TYPES } from "@/lib/status";
 import { companyTimeZone } from "@/server/services/settings";
-import { AdminDisposalForm, FacilityDialog } from "./forms";
+import { disposalBillSummary, listDisposalBills } from "@/server/services/disposal-bills";
+import { AdminDisposalForm, BillDialog, BillStatusActions, FacilityDialog } from "./forms";
 
 export const metadata = { title: "Disposal" };
 
-export default async function Disposal({ searchParams }: { searchParams: Promise<{ tab?: string; from?: string; to?: string; vehicle?: string }> }) {
+export default async function Disposal({ searchParams }: { searchParams: Promise<{ tab?: string; from?: string; to?: string; vehicle?: string; vendor?: string; status?: string }> }) {
   const actor = await requireStaffPage("disposal.read");
   const sp = await searchParams;
-  const tab = sp.tab ?? "events";
+  const tab = sp.tab ?? "bills";
   const tz = await companyTimeZone();
   const today = todayKey(tz);
-  const from = sp.from && isDateKey(sp.from) ? sp.from : addDays(today, -30);
+  // Vendor bills default to year to date; truck events to the last 30 days.
+  const from = sp.from && isDateKey(sp.from) ? sp.from : tab === "bills" ? `${today.slice(0, 4)}-01-01` : addDays(today, -30);
   const to = sp.to && isDateKey(sp.to) ? sp.to : today;
   const canWrite = hasPermission(actor, "disposal.write");
   const [vehicles, drivers, facilities] = await Promise.all([
@@ -37,8 +39,9 @@ export default async function Disposal({ searchParams }: { searchParams: Promise
   const vehicleId = sp.vehicle && vehicles.some((v) => v.id === sp.vehicle) ? sp.vehicle : vehicles[0]?.id;
   return (
     <div>
-      <PageHeader title="Disposal" description="Disposal events, facility records and collected-vs-disposed reconciliation." actions={<Button asChild variant="secondary" size="sm"><a href={`/api/export/disposal?from=${from}&to=${to}`}><Download /> Reconciliation CSV</a></Button>} />
-      <Tabs basePath="/admin/disposal" active={tab} tabs={[{ key: "events", label: "Events" }, { key: "reconciliation", label: "Reconciliation" }, { key: "facilities", label: "Facilities", count: facilities.length }, ...(canWrite ? [{ key: "record", label: "Record event" }] : [])]} />
+      <PageHeader title="Disposal" description="Disposal events, facility records and collected-vs-disposed reconciliation." actions={tab === "bills" ? <Button asChild variant="secondary" size="sm"><a href={`/api/export/disposal-bills?${new URLSearchParams({ from, to, ...(sp.vendor ? { vendor: sp.vendor } : {}), ...(sp.status ? { status: sp.status } : {}) })}`}><Download /> Bills CSV</a></Button> : <Button asChild variant="secondary" size="sm"><a href={`/api/export/disposal?from=${from}&to=${to}`}><Download /> Reconciliation CSV</a></Button>} />
+      <Tabs basePath="/admin/disposal" active={tab} tabs={[{ key: "bills", label: "Fees & bills" }, { key: "events", label: "Events" }, { key: "reconciliation", label: "Reconciliation" }, { key: "facilities", label: "Facilities", count: facilities.length }, ...(canWrite ? [{ key: "record", label: "Record event" }] : [])]} />
+      {tab === "bills" && <Bills from={from} to={to} today={today} vendor={sp.vendor} status={sp.status} canWrite={canWrite} facilities={facilities.map((f) => ({ id: f.id, name: f.name, rate: f.ratePerGallonCents ? (Number(f.ratePerGallonCents) / 100).toString() : null }))} />}
       {tab === "events" && <Events from={from} to={to} tz={tz} />}
       {tab === "reconciliation" && <Recon from={from} to={to} />}
       {tab === "facilities" && (
@@ -49,13 +52,13 @@ export default async function Disposal({ searchParams }: { searchParams: Promise
             <TBody>
               {facilities.map((f) => (
                 <TR key={f.id}>
-                  <TD className="font-medium">{f.name}<span className="block text-[12px] font-normal text-muted-foreground">{f.phone}</span></TD>
+                  <TD className="font-medium">{f.name}<span className="block text-[12px] font-normal text-muted-foreground">{f.phone}</span>{f.vendorAccountNumber && <span className="block text-[12px] font-normal text-muted-foreground">Acct {f.vendorAccountNumber}</span>}</TD>
                   <TD className="text-[13px]">{f.addressLine1}, {f.city}, {f.state} {f.postalCode}</TD>
                   <TD>{f.permitNumber ?? "—"}</TD>
                   <TD className="text-right tabular-nums">{f.ratePerGallonCents ? formatRateCents(f.ratePerGallonCents.toString(), "gal") : "—"}</TD>
                   <TD className="text-[13px]">{f.acceptedWasteTypes.join(", ") || "—"}</TD>
                   <TD><Badge tone={f.status === "ACTIVE" ? "success" : "neutral"}>{f.status.toLowerCase()}</Badge></TD>
-                  <TD className="text-right">{(canWrite || hasPermission(actor, "settings.write")) && <FacilityDialog wasteTypes={[...WASTE_TYPES]} facility={{ id: f.id, name: f.name, addressLine1: f.addressLine1, city: f.city, state: f.state, postalCode: f.postalCode, phone: f.phone, permitNumber: f.permitNumber, acceptedWasteTypes: f.acceptedWasteTypes, status: f.status, notes: f.notes, rate: f.ratePerGallonCents ? (Number(f.ratePerGallonCents) / 100).toString() : null }} />}</TD>
+                  <TD className="text-right">{(canWrite || hasPermission(actor, "settings.write")) && <FacilityDialog wasteTypes={[...WASTE_TYPES]} facility={{ id: f.id, name: f.name, addressLine1: f.addressLine1, city: f.city, state: f.state, postalCode: f.postalCode, phone: f.phone, permitNumber: f.permitNumber, acceptedWasteTypes: f.acceptedWasteTypes, status: f.status, notes: f.notes, vendorAccountNumber: f.vendorAccountNumber, remitTo: f.remitTo, billingPhone: f.billingPhone, rate: f.ratePerGallonCents ? (Number(f.ratePerGallonCents) / 100).toString() : null }} />}</TD>
                 </TR>
               ))}
             </TBody>
@@ -134,6 +137,124 @@ async function Recon({ from, to }: { from: string; to: string }) {
           </TBody>
         </Table>
         <CardBody className="text-[12px] text-muted-foreground">Expected disposed = opening load + collected − closing load + documented adjustments. Collected volumes come from submitted service records; disposed volumes from recorded disposal events.</CardBody>
+      </Card>
+    </div>
+  );
+}
+
+const BILL_TONE = { OPEN: "warning", PAID: "success", VOID: "neutral" } as const;
+
+async function Bills({ from, to, today, vendor, status, canWrite, facilities }: { from: string; to: string; today: string; vendor?: string; status?: string; canWrite: boolean; facilities: { id: string; name: string; rate: string | null }[] }) {
+  const filters = {
+    from,
+    to,
+    facilityId: vendor && facilities.some((f) => f.id === vendor) ? vendor : undefined,
+    status: status === "OPEN" || status === "PAID" || status === "VOID" ? status : undefined,
+  } as const;
+  const [bills, s, planned] = await Promise.all([
+    listDisposalBills(filters),
+    disposalBillSummary({ ...filters, status: undefined }),
+    prisma.disposalBill.findMany({ where: { status: "OPEN", scheduledPayDate: { not: null } }, select: { scheduledPayDate: true, totalCents: true, facility: { select: { name: true } } }, orderBy: { scheduledPayDate: "asc" } }),
+  ]);
+  const plan = [...planned.reduce((m, b) => {
+    const key = `${keyFromDate(b.scheduledPayDate!)}|${b.facility.name}`;
+    const cur = m.get(key) ?? { date: keyFromDate(b.scheduledPayDate!), vendor: b.facility.name, count: 0, cents: 0 };
+    cur.count += 1;
+    cur.cents += b.totalCents;
+    return m.set(key, cur);
+  }, new Map<string, { date: string; vendor: string; count: number; cents: number }>()).values()];
+  const maxMonth = Math.max(1, ...s.byMonth.map((m) => m.billedCents));
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Stat label="Disposal fees billed" value={formatCents(s.billedCents)} hint={`${s.bills} bills · ${formatDateKey(from)} – ${formatDateKey(to)}`} icon={Receipt} tone="brand" />
+        <Stat label="Still owed (all dates)" value={formatCents(s.openAllCents)} hint={`${s.openAllCount} open bills`} icon={FileWarning} tone={s.openAllCents > 0 ? "warning" : "success"} />
+        <Stat label="Paid in range" value={formatCents(s.paidCents)} icon={CircleDollarSign} tone="success" />
+        <Stat label="Average cost per gallon" value={s.centsPerGallon === null ? "—" : formatRateCents(s.centsPerGallon.toFixed(2), "gal")} hint={`${s.gallons.toLocaleString()} gal disposed`} icon={Droplets} />
+      </div>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card className="min-w-0">
+          <CardHeader title="By vendor" />
+          <Table>
+            <THead><tr><TH>Vendor</TH><TH className="text-right">Bills</TH><TH className="text-right">Gallons</TH><TH className="text-right">Billed</TH><TH className="text-right">Open</TH></tr></THead>
+            <TBody>
+              {s.byVendor.map((v) => (
+                <TR key={v.facilityId}>
+                  <TD className="font-medium"><Link href={`/admin/disposal?${new URLSearchParams({ from, to, vendor: v.facilityId })}`} className="hover:underline">{v.name}</Link></TD>
+                  <TD className="text-right tabular-nums">{v.bills}</TD>
+                  <TD className="text-right tabular-nums">{v.gallons.toLocaleString()}</TD>
+                  <TD className="text-right tabular-nums">{formatCents(v.billedCents)}</TD>
+                  <TD className="text-right tabular-nums">{v.openCents ? formatCents(v.openCents) : "—"}</TD>
+                </TR>
+              ))}
+              {s.byVendor.length === 0 && <TR><TD colSpan={5} className="py-6 text-center text-muted-foreground">No vendor bills in this range.</TD></TR>}
+            </TBody>
+          </Table>
+        </Card>
+        <Card className="min-w-0">
+          <CardHeader title="By month" />
+          <Table>
+            <THead><tr><TH>Month</TH><TH className="w-1/3 min-w-16"><span className="sr-only">Share</span></TH><TH className="text-right">Gallons</TH><TH className="text-right">Billed</TH></tr></THead>
+            <TBody>
+              {s.byMonth.map((m) => (
+                <TR key={m.month}>
+                  <TD className="whitespace-nowrap font-medium">{new Date(`${m.month}-01T12:00:00Z`).toLocaleString("en-US", { month: "short", year: "numeric", timeZone: "UTC" })}</TD>
+                  <TD aria-hidden><div className="h-2 rounded-full bg-brand" style={{ width: `${Math.max(2, (m.billedCents / maxMonth) * 100)}%` }} /></TD>
+                  <TD className="text-right tabular-nums">{m.gallons.toLocaleString()}</TD>
+                  <TD className="text-right tabular-nums">{formatCents(m.billedCents)}</TD>
+                </TR>
+              ))}
+              {s.byMonth.length === 0 && <TR><TD colSpan={4} className="py-6 text-center text-muted-foreground">No vendor bills in this range.</TD></TR>}
+            </TBody>
+          </Table>
+        </Card>
+      </div>
+      {plan.length > 0 && (
+        <Card>
+          <CardHeader title="Payment plan" description="Open bills with an agreed payment date (e.g. a vendor repayment plan). Mark each bill paid once the payment clears." />
+          <Table>
+            <THead><tr><TH>Pay by</TH><TH>Vendor</TH><TH className="text-right">Invoices</TH><TH className="text-right">Amount</TH><TH /></tr></THead>
+            <TBody>
+              {plan.map((p) => (
+                <TR key={`${p.date}${p.vendor}`}>
+                  <TD className="whitespace-nowrap font-medium">{formatDateKey(p.date)}</TD>
+                  <TD>{p.vendor}</TD>
+                  <TD className="text-right tabular-nums">{p.count}</TD>
+                  <TD className="text-right font-medium tabular-nums">{formatCents(p.cents)}</TD>
+                  <TD>{p.date < today && <Badge tone="danger">date passed — paid?</Badge>}</TD>
+                </TR>
+              ))}
+            </TBody>
+          </Table>
+        </Card>
+      )}
+      <Card>
+        <CardHeader title="Vendor bills" description="What disposal sites charge us, entered from their invoices." action={canWrite && <BillDialog facilities={facilities} wasteTypes={[...WASTE_TYPES]} today={today} />} />
+        <FilterBar dates selects={[{ param: "vendor", label: "Vendor", options: facilities.map((f) => ({ value: f.id, label: f.name })) }, { param: "status", label: "Status", options: [{ value: "OPEN", label: "Open" }, { value: "PAID", label: "Paid" }, { value: "VOID", label: "Void" }] }]} />
+        <Table>
+          <THead><tr><TH>Invoice</TH><TH>Vendor</TH><TH>Service</TH><TH>Lines</TH><TH className="text-right">Gallons</TH><TH className="text-right">Total</TH><TH>Pay by</TH><TH>Status</TH><TH className="text-right"><span className="sr-only">Actions</span></TH></tr></THead>
+          <TBody>
+            {bills.map((b) => (
+              <TR key={b.id}>
+                <TD className="whitespace-nowrap font-medium">{b.vendorInvoiceNumber}<span className="block text-[12px] font-normal text-muted-foreground">{formatDateKey(keyFromDate(b.invoiceDate))}{b.dueDate && ` · due ${formatDateKey(keyFromDate(b.dueDate))}`}</span></TD>
+                <TD>{b.facility.name}{b.referenceNumber && <span className="block text-[12px] text-muted-foreground">Ticket {b.referenceNumber}</span>}</TD>
+                <TD className="whitespace-nowrap text-[13px]">{b.serviceDate ? formatDateKey(keyFromDate(b.serviceDate)) : "—"}</TD>
+                <TD className="text-[13px]">
+                  {b.lines.map((l) => (
+                    <span key={l.id} className="block">{l.description}{l.gallons !== null && ` · ${l.gallons.toLocaleString()} gal`}{l.ratePerGallonCents && ` @ ${formatRateCents(l.ratePerGallonCents.toString())}`}{l.manifestNumbers.length > 0 && <span className="text-muted-foreground"> · Manifest {l.manifestNumbers.join(", ")}</span>}</span>
+                  ))}
+                  {b.documents[0] && <DocLink id={b.documents[0].id}>Vendor invoice</DocLink>}
+                </TD>
+                <TD className="text-right tabular-nums">{b.lines.reduce((t, l) => t + (l.gallons ?? 0), 0).toLocaleString()}</TD>
+                <TD className={`text-right tabular-nums ${b.status === "VOID" ? "text-muted-foreground line-through" : "font-medium"}`}>{formatCents(b.totalCents)}</TD>
+                <TD className="whitespace-nowrap text-[13px]">{b.status === "OPEN" && (b.scheduledPayDate ?? b.dueDate) ? <span className={keyFromDate((b.scheduledPayDate ?? b.dueDate)!) < today ? "text-danger" : ""}>{formatDateKey(keyFromDate((b.scheduledPayDate ?? b.dueDate)!))}{b.scheduledPayDate && <span className="block text-[11px] text-muted-foreground">payment plan</span>}</span> : "—"}</TD>
+                <TD><Badge tone={BILL_TONE[b.status]}>{b.status.toLowerCase()}</Badge>{b.paidAt && <span className="block text-[12px] text-muted-foreground">{formatDateKey(keyFromDate(b.paidAt))}{b.paymentReference && ` · ${b.paymentReference}`}</span>}</TD>
+                <TD>{canWrite && <BillStatusActions billId={b.id} status={b.status} label={b.vendorInvoiceNumber} today={today} />}</TD>
+              </TR>
+            ))}
+            {bills.length === 0 && <TR><TD colSpan={9} className="py-8 text-center text-muted-foreground">No vendor bills match. Change the dates or add a bill.</TD></TR>}
+          </TBody>
+        </Table>
       </Card>
     </div>
   );

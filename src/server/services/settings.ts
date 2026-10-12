@@ -32,6 +32,12 @@ export const settingsSchemas = {
     legalName: z.string().default(""),
     transporterPermitNumber: z.string().default(""),
     registrationNumber: z.string().default(""),
+    /** Printed on invoices, proposals and reports as "TCEQ #…". */
+    tceqNumber: z.string().default(""),
+    /** Printed as "City of Houston #…" once set. */
+    cityOfHoustonNumber: z.string().default(""),
+    /** First manifest/ticket number when continuing paper numbering (e.g. 194460). 0 = MF-YYYY-NNNNNN. */
+    manifestStartNumber: z.number().int().min(0).max(99_999_999).default(0),
     certificationStatement: z
       .string()
       .default(
@@ -47,6 +53,12 @@ export const settingsSchemas = {
     lateFeeEnabled: z.boolean().default(false),
     lateFeeBps: z.number().int().min(0).max(2000).default(0),
     invoiceFooter: z.string().default("Thank you for your business."),
+    /** Default closing line in the invoice NOTE. */
+    invoiceNote: z.string().default("Payment due upon receipt. Thank you!"),
+    /** Manifest fee as a share of the trap service, in basis points (400 = 4%). */
+    manifestFeeBps: z.number().int().min(0).max(2500).default(400),
+    /** Next service date printed on invoices when no recurring plan sets one. 0 = don't print. */
+    nextServiceDays: z.number().int().min(0).max(730).default(90),
     reminderOffsetsDays: z.array(z.number().int()).default([-3, 0, 7, 14, 30]),
   }),
   scheduling: z.object({

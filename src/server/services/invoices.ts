@@ -12,10 +12,11 @@ import { addDays, dateFromKey, formatDateKey, isDateKey, keyFromDate, todayKey }
 import { formatCents, parseDollarRateToCentsString } from "@/lib/money";
 import { LINE_ITEM_KIND_LABEL, SERVICE_TYPE_LABEL } from "@/lib/status";
 import { companyTimeZone, getSetting } from "./settings";
+import { manifestFeeCents } from "@/domain/document-lines";
 import { notify, staffWithPermission } from "./notifications";
 import { storeDocument } from "./documents";
 
-const LINE_KINDS = ["SERVICE", "PER_GALLON", "FLAT_RATE", "MINIMUM_CHARGE", "EMERGENCY_SURCHARGE", "AFTER_HOURS", "ADDITIONAL_EQUIPMENT", "DISPOSAL_FEE", "DISCOUNT", "LATE_FEE", "OTHER"] as const;
+const LINE_KINDS = ["SERVICE", "PER_GALLON", "FLAT_RATE", "MINIMUM_CHARGE", "EMERGENCY_SURCHARGE", "AFTER_HOURS", "ADDITIONAL_EQUIPMENT", "DISPOSAL_FEE", "MANIFEST_FEE", "DISCOUNT", "LATE_FEE", "OTHER"] as const;
 
 export const lineSchema = z.object({
   kind: z.enum(LINE_KINDS),
@@ -32,9 +33,34 @@ export const invoiceSchema = z.object({
   serviceDate: z.string().refine(isDateKey).optional().or(z.literal("").transform(() => undefined)),
   paymentTermsDays: z.coerce.number().int().min(0).max(120).optional(),
   poNumber: z.string().trim().max(60).optional(),
+  serviceTitle: z.string().trim().max(120).optional(),
+  nextServiceDate: z.string().refine(isDateKey).optional().or(z.literal("").transform(() => undefined)),
   notes: z.string().trim().max(2000).optional(),
   lines: z.array(lineSchema).min(1, "Add at least one line item."),
 });
+
+/** Invoice headline for a service type, as on the owner's invoices ("Grease Trap Pumping & Disposal"). */
+export const SERVICE_TITLE: Record<string, string> = {
+  GREASE_TRAP_PUMPING: "Grease Trap Pumping & Disposal",
+  INTERCEPTOR_PUMPING: "Grease Interceptor Pumping & Disposal",
+  SEPTIC_PUMPING: "Septic Pumping & Disposal",
+  GRIT_TRAP_CLEANING: "Grit Trap Pumping & Disposal",
+  LINT_TRAP_CLEANING: "Lint Trap Pumping & Disposal",
+  LIFT_STATION_SERVICE: "Lift Station Service",
+  HYDRO_JETTING: "Hydro Jetting",
+  LINE_CLEANING: "Line Cleaning",
+  INSPECTION: "Inspection",
+  OTHER: "Service",
+};
+const sentenceCase = (t: string) => t.charAt(0) + t.slice(1).toLowerCase();
+
+/** Manifest fee line for a location's fee type, or null. Amount = bps of the trap service lines. */
+export function manifestFeeLine(feeType: string | null | undefined, lines: { kind: string; quantity: string; unitPriceCents: string }[], bps: number): LineDraft | null {
+  if (feeType !== "STANDARD" && feeType !== "CITY_OF_HOUSTON") return null;
+  const cents = manifestFeeCents(lines.map((l) => ({ kind: l.kind, amountCents: lineAmountCents(l.quantity, l.unitPriceCents) })), bps);
+  if (cents <= 0) return null;
+  return { kind: "MANIFEST_FEE", description: feeType === "CITY_OF_HOUSTON" ? "City of Houston manifest fee" : "Manifest fee", quantity: "1", unitPriceCents: String(cents), taxable: false };
+}
 
 type LineDraft = { kind: LineItemKind; description: string; quantity: string; unitPriceCents: string; taxable: boolean };
 
@@ -78,8 +104,11 @@ async function writeLines(db: Db, invoiceId: string, lines: LineDraft[], taxRate
   return totals;
 }
 
-function linesFromInput(input: z.infer<typeof invoiceSchema>["lines"]): LineDraft[] {
-  return input.map((l) => ({ kind: l.kind, description: l.description, quantity: l.quantity, unitPriceCents: parseDollarRateToCentsString(l.unitPrice)!, taxable: l.kind === "DISCOUNT" ? true : l.taxable }));
+/** Manifest fee lines are always recomputed from the trap service lines, whatever was typed. */
+function linesFromInput(input: z.infer<typeof invoiceSchema>["lines"], manifestFeeBps: number): LineDraft[] {
+  const lines: LineDraft[] = input.map((l) => ({ kind: l.kind, description: l.description, quantity: l.quantity, unitPriceCents: parseDollarRateToCentsString(l.unitPrice)!, taxable: l.kind === "DISCOUNT" ? true : l.taxable }));
+  const fee = manifestFeeCents(lines.map((l) => ({ kind: l.kind, amountCents: lineAmountCents(l.quantity, l.unitPriceCents) })), manifestFeeBps);
+  return lines.map((l) => (l.kind === "MANIFEST_FEE" ? { ...l, quantity: "1", unitPriceCents: String(fee), taxable: false } : l));
 }
 
 export async function createInvoice(actor: Actor, input: z.infer<typeof invoiceSchema>) {
@@ -106,13 +135,15 @@ export async function createInvoice(actor: Actor, input: z.infer<typeof invoiceS
         taxRateBps: b.taxRateBps,
         allowPartial: b.allowPartial,
         poNumber: input.poNumber ?? b.profile?.poNumber ?? null,
+        serviceTitle: input.serviceTitle ?? null,
+        nextServiceDate: input.nextServiceDate ? dateFromKey(input.nextServiceDate) : null,
         notes: input.notes ?? null,
         isDemo: b.org.isDemo,
         createdById: actor.userId,
         updatedById: actor.userId,
       },
     });
-    const t = await writeLines(tx, invoice.id, linesFromInput(input.lines), b.taxRateBps);
+    const t = await writeLines(tx, invoice.id, linesFromInput(input.lines, (await getSetting("billing", tx)).manifestFeeBps), b.taxRateBps);
     const saved = await tx.invoice.update({ where: { id: invoice.id }, data: { subtotalCents: t.subtotalCents, discountCents: t.discountCents, taxCents: t.taxCents, totalCents: t.totalCents, balanceCents: t.totalCents } });
     await audit(tx, { actorId: actor.userId, action: "invoice.create", entityType: "Invoice", entityId: invoice.id, organizationId: b.org.id, after: { ...input, totals: t } });
     return saved;
@@ -126,7 +157,7 @@ export async function updateDraftInvoice(actor: Actor, invoiceId: string, input:
     if (!inv) throw notFound();
     if (inv.status !== "DRAFT") throw badRequest("Only draft invoices can be edited. Void and reissue a sent invoice instead.");
     if (inv.organizationId !== input.organizationId) throw badRequest("The customer on an invoice cannot be changed.");
-    const t = await writeLines(tx, inv.id, linesFromInput(input.lines), inv.taxRateBps);
+    const t = await writeLines(tx, inv.id, linesFromInput(input.lines, (await getSetting("billing", tx)).manifestFeeBps), inv.taxRateBps);
     const terms = input.paymentTermsDays ?? inv.paymentTermsDays;
     await tx.invoice.update({
       where: { id: inv.id },
@@ -136,6 +167,8 @@ export async function updateDraftInvoice(actor: Actor, invoiceId: string, input:
         paymentTermsDays: terms,
         dueDate: dateFromKey(addDays(keyFromDate(inv.issueDate), terms)),
         poNumber: input.poNumber ?? inv.poNumber,
+        serviceTitle: input.serviceTitle ?? null,
+        nextServiceDate: input.nextServiceDate ? dateFromKey(input.nextServiceDate) : null,
         notes: input.notes ?? null,
         subtotalCents: t.subtotalCents,
         discountCents: t.discountCents,
@@ -173,8 +206,7 @@ export async function buildJobLines(db: Db, jobId: string): Promise<{ lines: Lin
     include: { plan: true, location: true, charges: { where: { status: "APPROVED" } }, serviceRecord: { include: { assetRecords: true } } },
   });
   const gallons = job.serviceRecord?.assetRecords.reduce((s, a) => s + a.gallonsPumped, 0) ?? 0;
-  const label = SERVICE_TYPE_LABEL[job.serviceType] ?? "Service";
-  const when = formatDateKey(job.scheduledDate);
+  const label = sentenceCase(SERVICE_TITLE[job.serviceType] ?? SERVICE_TYPE_LABEL[job.serviceType] ?? "Service");
   const lines: LineDraft[] = [];
   let needsPricing = false;
 
@@ -195,28 +227,28 @@ export async function buildJobLines(db: Db, jobId: string): Promise<{ lines: Lin
   };
 
   if (job.quotedPriceCents !== null && job.quotedPriceCents !== undefined) {
-    pushBase("SERVICE", `${label} — ${job.location.name} (${when}), quoted price`, "1", String(job.quotedPriceCents));
+    pushBase("SERVICE", label, "1", String(job.quotedPriceCents));
   } else if (job.plan && (job.plan.flatPriceCents !== null || job.plan.perGallonCents !== null)) {
     if (job.plan.pricingModel === "FLAT_RATE" && job.plan.flatPriceCents !== null) {
-      pushBase("FLAT_RATE", `${label} — ${job.location.name} (${when})`, "1", String(job.plan.flatPriceCents));
+      pushBase("FLAT_RATE", label, "1", String(job.plan.flatPriceCents));
     } else if (job.plan.perGallonCents !== null) {
-      pushBase("PER_GALLON", `${label} — ${gallons.toLocaleString()} gal @ contracted rate (${when})`, String(gallons), job.plan.perGallonCents.toString());
+      pushBase("PER_GALLON", label, String(gallons), job.plan.perGallonCents.toString());
       applyMinimum(job.plan.minimumChargeCents);
     } else needsPricing = true;
   } else {
     const perGallon = pick("PER_GALLON");
     const flat = pick("FLAT_RATE");
     if (perGallon && (!flat || (perGallon.organizationId && !flat.organizationId))) {
-      pushBase("PER_GALLON", `${label} — ${gallons.toLocaleString()} gal (${when})`, String(gallons), perGallon.amountCents.toString());
+      pushBase("PER_GALLON", label, String(gallons), perGallon.amountCents.toString());
       const min = pick("MINIMUM_CHARGE");
       applyMinimum(min ? Number(min.amountCents) : null);
     } else if (flat) {
-      pushBase("FLAT_RATE", `${label} — ${job.location.name} (${when})`, "1", flat.amountCents.toString());
+      pushBase("FLAT_RATE", label, "1", flat.amountCents.toString());
     } else {
       needsPricing = true;
     }
   }
-  if (needsPricing) lines.push({ kind: "SERVICE", description: `${label} — ${job.location.name} (${when}) — PRICING REQUIRED`, quantity: "1", unitPriceCents: "0", taxable: true });
+  if (needsPricing) lines.push({ kind: "SERVICE", description: `${label} — PRICING REQUIRED`, quantity: "1", unitPriceCents: "0", taxable: true });
 
   if (job.type === "EMERGENCY" && job.quotedPriceCents === null) {
     const s = pick("EMERGENCY_SURCHARGE");
@@ -229,6 +261,8 @@ export async function buildJobLines(db: Db, jobId: string): Promise<{ lines: Lin
       }
     }
   }
+  const fee = manifestFeeLine(job.location.manifestFee, lines, (await getSetting("billing", db)).manifestFeeBps);
+  if (fee) lines.push(fee);
   const disposalRule = pick("DISPOSAL_FEE");
   if (disposalRule && gallons > 0) lines.push({ kind: "DISPOSAL_FEE", description: `Disposal fee — ${gallons.toLocaleString()} gal`, quantity: String(gallons), unitPriceCents: disposalRule.amountCents.toString(), taxable: false });
 
@@ -244,7 +278,7 @@ export async function generateInvoiceForJob(actor: Actor, jobId: string, opts: {
   const run = async (tx: Db) => {
     const existing = await tx.invoice.findUnique({ where: { jobId } });
     if (existing) return existing;
-    const job = await tx.job.findUniqueOrThrow({ where: { id: jobId }, include: { manifest: true } });
+    const job = await tx.job.findUniqueOrThrow({ where: { id: jobId }, include: { manifest: true, plan: { select: { nextServiceDate: true, status: true } } } });
     if (job.status !== "COMPLETED") throw badRequest("Invoices are generated from approved (completed) jobs.");
     const b = await resolveBilling(tx, job.organizationId, job.locationId);
     const { lines, needsPricing } = await buildJobLines(tx, jobId);
@@ -260,6 +294,8 @@ export async function generateInvoiceForJob(actor: Actor, jobId: string, opts: {
         jobId,
         manifestId: job.manifest?.id ?? null,
         serviceDate: job.scheduledDate,
+        serviceTitle: SERVICE_TITLE[job.serviceType] ?? null,
+        nextServiceDate: await nextServiceDateFor(tx, job),
         issueDate: dateFromKey(issue),
         dueDate: dateFromKey(addDays(issue, b.termsDays)),
         paymentTermsDays: b.termsDays,
@@ -284,6 +320,13 @@ export async function generateInvoiceForJob(actor: Actor, jobId: string, opts: {
   return opts.db ? run(opts.db) : prisma.$transaction(run, { timeout: 30_000 });
 }
 
+/** The plan's next visit when there is one, else the service date + the configured interval. */
+async function nextServiceDateFor(db: Db, job: { scheduledDate: Date; plan: { nextServiceDate: Date | null; status: string } | null }) {
+  if (job.plan?.status === "ACTIVE" && job.plan.nextServiceDate && job.plan.nextServiceDate > job.scheduledDate) return job.plan.nextServiceDate;
+  const days = (await getSetting("billing", db)).nextServiceDays;
+  return days > 0 ? dateFromKey(addDays(keyFromDate(job.scheduledDate), days)) : null;
+}
+
 async function invoiceRecipients(db: Db, inv: Pick<Invoice, "organizationId" | "serviceLocationId" | "billingLocationId">) {
   const { customerRecipientsForLocation } = await import("./notifications");
   return customerRecipientsForLocation(db, inv.organizationId, inv.serviceLocationId ?? inv.billingLocationId);
@@ -303,6 +346,8 @@ export async function sendInvoice(actor: Actor, invoiceId: string, opts: { db?: 
       where: { id: invoiceId },
       data: { status: "SENT", sentAt: new Date(), issueDate: dateFromKey(issue), dueDate: dateFromKey(addDays(issue, inv.paymentTermsDays)), updatedById: actor.userId },
     });
+    // Every invoice carries a manifest: jobs bring their own, manual invoices get one generated here.
+    if (!inv.jobId) await (await import("./manifests")).generateInvoiceManifest(tx, invoiceId, actor.userId);
     await renderAndStoreInvoicePdf(tx, invoiceId, actor.userId);
     await audit(tx, { actorId: actor.userId, action: "invoice.send", entityType: "Invoice", entityId: invoiceId, organizationId: inv.organizationId, after: { status: "SENT", totalCents: inv.totalCents } });
     await notify(tx, {
