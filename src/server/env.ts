@@ -48,11 +48,26 @@ export type Env = z.infer<typeof schema>;
 
 let cached: Env | null = null;
 
+/** Trim whitespace and one pair of matching surrounding quotes; blank becomes undefined. */
+export function cleanValue(v: string | undefined): string | undefined {
+  if (typeof v !== "string") return undefined;
+  let s = v.trim();
+  if (s.length >= 2 && (s[0] === '"' || s[0] === "'") && s.at(-1) === s[0]) s = s.slice(1, -1).trim();
+  return s === "" ? undefined : s;
+}
+
+/** For admin diagnostics: shows which key is in use without revealing it (like Stripe's dashboard). */
+export function maskSecret(v: string | undefined): string {
+  if (!v) return "not set";
+  const prefix = v.match(/^[a-z]+_(live|test)_/)?.[0] ?? v.slice(0, 3);
+  return `${prefix}…${v.slice(-4)}`;
+}
+
 export function env(): Env {
   if (cached) return cached;
   // Values pasted into hosting dashboards often carry stray spaces or newlines; blank means unset.
   const cleaned = Object.fromEntries(
-    Object.entries(process.env).map(([k, v]) => [k, typeof v === "string" && v.trim() !== "" ? v.trim() : undefined]),
+    Object.entries(process.env).map(([k, v]) => [k, cleanValue(v)]),
   );
   const parsed = schema.safeParse(cleaned);
   if (!parsed.success) {

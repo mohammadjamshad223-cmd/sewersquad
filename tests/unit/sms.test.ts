@@ -40,3 +40,17 @@ describe("isLiveStripeKey", () => {
     expect(isLiveStripeKey(undefined)).toBe(false);
   });
 });
+
+describe("pasted settings", () => {
+  it("trims whitespace and surrounding quotes, and masks keys for display", async () => {
+    const { cleanValue, maskSecret } = await import("@/server/env");
+    expect(cleanValue("  sk_live_abc\n")).toBe("sk_live_abc");
+    expect(cleanValue('"sk_live_abc"')).toBe("sk_live_abc");
+    expect(cleanValue("'re_123'")).toBe("re_123");
+    expect(cleanValue('say "hi"')).toBe('say "hi"');
+    expect(cleanValue("   ")).toBeUndefined();
+    expect(maskSecret("sk_live_51UPPwXYZabcd1234")).toBe("sk_live_…1234");
+    expect(maskSecret("rk_test_zzz9876")).toBe("rk_test_…9876");
+    expect(maskSecret(undefined)).toBe("not set");
+  });
+});
