@@ -9,6 +9,7 @@ import { formatInstant, keyFromDate, isDateKey, dateFromKey, todayKey, addDays }
 import { companyTimeZone } from "@/server/services/settings";
 import { operationsMetrics, receivablesAging, revenueBreakdowns, monthlySeries, serviceContribution } from "@/server/services/analytics";
 import { fleetReconciliation } from "@/server/services/disposal";
+import { listDisposalBills } from "@/server/services/disposal-bills";
 import type { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -116,6 +117,17 @@ export const GET = route(async (req: NextRequest, ctx: { params: Promise<{ kind:
       return csvResponse(`disposal-reconciliation-${stamp}.csv`, [
         ["Truck", "Collected gal", "Disposed gal", "Opening", "Closing", "Adjustments", "Expected", "Discrepancy", "Flagged", "Disposal cost"],
         ...rows.map((r) => [r.vehicle.unitNumber, r.collectedGallons, r.disposedGallons, r.openingLoadGallons, r.closingLoadGallons, r.adjustmentsGallons, r.expectedDisposedGallons, r.discrepancyGallons, r.flagged ? "YES" : "", c(r.costCents)]),
+      ]);
+    }
+    case "disposal-bills": {
+      assertStaffActor(actor, "disposal.read");
+      const status = ["OPEN", "PAID", "VOID"].includes(sp.status ?? "") ? (sp.status as "OPEN" | "PAID" | "VOID") : undefined;
+      const bills = await listDisposalBills({ from, to, facilityId: sp.vendor && /^[0-9a-f-]{36}$/i.test(sp.vendor) ? sp.vendor : undefined, status });
+      return csvResponse(`disposal-bills-${stamp}.csv`, [
+        ["Vendor", "Invoice #", "Invoice date", "Due date", "Service date", "Reference", "Status", "Paid on", "Payment ref", "Line", "Waste type", "Gallons", "Rate $/gal", "Line amount", "Manifests", "Bill total"],
+        ...bills.flatMap((b) =>
+          b.lines.map((l) => [b.facility.name, b.vendorInvoiceNumber, keyFromDate(b.invoiceDate), b.dueDate ? keyFromDate(b.dueDate) : "", b.serviceDate ? keyFromDate(b.serviceDate) : "", b.referenceNumber ?? "", b.status, b.paidAt ? keyFromDate(b.paidAt) : "", b.paymentReference ?? "", l.description, l.wasteType ?? "", l.gallons ?? "", l.ratePerGallonCents ? (Number(l.ratePerGallonCents) / 100).toString() : "", c(l.amountCents), l.manifestNumbers.join(" "), c(b.totalCents)]),
+        ),
       ]);
     }
     default:

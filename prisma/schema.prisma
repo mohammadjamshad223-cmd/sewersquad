@@ -983,6 +983,7 @@ enum DocumentType {
   INVOICE
   RECEIPT
   DISPOSAL_TICKET
+  DISPOSAL_INVOICE
   SERVICE_PHOTO
   SIGNATURE
   CONTRACT
@@ -1028,6 +1029,8 @@ model Document {
   inspection         VehicleInspection? @relation(fields: [inspectionId], references: [id])
   disposalEventId    String?            @db.Uuid
   disposalEvent      DisposalEvent?     @relation(fields: [disposalEventId], references: [id])
+  disposalBillId     String?            @db.Uuid
+  disposalBill       DisposalBill?      @relation(fields: [disposalBillId], references: [id])
   emergencyRequestId String?            @db.Uuid
   emergencyRequest   EmergencyRequest?  @relation(fields: [emergencyRequestId], references: [id])
   supportTicketId    String?            @db.Uuid
@@ -1045,6 +1048,7 @@ model Document {
   @@index([jobId])
   @@index([manifestId])
   @@index([invoiceId])
+  @@index([disposalBillId])
 }
 
 model DocumentVersion {
@@ -1069,21 +1073,77 @@ model DocumentVersion {
 // ─────────────────────────────────────────────────────────────────────────────
 
 model DisposalFacility {
-  id                 String          @id @default(uuid()) @db.Uuid
-  name               String
-  addressLine1       String
-  city               String
-  state              String          @default("TX")
-  postalCode         String
-  phone              String?
-  permitNumber       String?
-  acceptedWasteTypes String[]
-  ratePerGallonCents Decimal?        @db.Decimal(14, 4)
-  status             RecordStatus    @default(ACTIVE)
-  notes              String?
-  createdAt          DateTime        @default(now())
-  updatedAt          DateTime        @updatedAt
-  events             DisposalEvent[]
+  id                  String          @id @default(uuid()) @db.Uuid
+  name                String
+  addressLine1        String
+  city                String
+  state               String          @default("TX")
+  postalCode          String
+  phone               String?
+  permitNumber        String?
+  acceptedWasteTypes  String[]
+  ratePerGallonCents  Decimal?        @db.Decimal(14, 4)
+  status              RecordStatus    @default(ACTIVE)
+  notes               String?
+  /// Our customer/account number with this vendor, as printed on their invoices.
+  vendorAccountNumber String?
+  /// Where the vendor wants payments sent (often a P.O. box, not the plant address).
+  remitTo             String?
+  billingPhone        String?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+  events              DisposalEvent[]
+  bills               DisposalBill[]
+}
+
+enum DisposalBillStatus {
+  OPEN
+  PAID
+  VOID
+}
+
+/// A disposal vendor's invoice to us (accounts payable): what we are charged to dump loads.
+model DisposalBill {
+  id                  String             @id @default(uuid()) @db.Uuid
+  facilityId          String             @db.Uuid
+  facility            DisposalFacility   @relation(fields: [facilityId], references: [id])
+  vendorInvoiceNumber String
+  invoiceDate         DateTime           @db.Date
+  dueDate             DateTime?          @db.Date
+  serviceDate         DateTime?          @db.Date
+  /// Vendor's service call / ticket number.
+  referenceNumber     String?
+  status              DisposalBillStatus @default(OPEN)
+  totalCents          Int
+  paidAt              DateTime?          @db.Date
+  paymentReference    String?
+  notes               String?
+  createdById         String?            @db.Uuid
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  lines               DisposalBillLine[]
+  documents           Document[]
+
+  @@unique([facilityId, vendorInvoiceNumber])
+  @@index([invoiceDate])
+  @@index([status])
+}
+
+model DisposalBillLine {
+  id                 String       @id @default(uuid()) @db.Uuid
+  billId             String       @db.Uuid
+  bill               DisposalBill @relation(fields: [billId], references: [id], onDelete: Cascade)
+  description        String
+  wasteType          String?
+  gallons            Int?
+  ratePerGallonCents Decimal?     @db.Decimal(14, 4)
+  amountCents        Int
+  /// Our manifest numbers the vendor printed for this load (links the cost back to jobs).
+  manifestNumbers    String[]
+  manifestDate       DateTime?    @db.Date
+  sortOrder          Int          @default(0)
+
+  @@index([billId])
 }
 
 model DisposalEvent {

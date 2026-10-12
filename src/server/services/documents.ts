@@ -21,6 +21,7 @@ export type DocumentLinks = {
   assetId?: string | null;
   inspectionId?: string | null;
   disposalEventId?: string | null;
+  disposalBillId?: string | null;
   emergencyRequestId?: string | null;
   supportTicketId?: string | null;
   vehicleId?: string | null;
@@ -69,6 +70,7 @@ export async function storeDocument(db: Db, input: StoreInput) {
       assetId: input.assetId ?? null,
       inspectionId: input.inspectionId ?? null,
       disposalEventId: input.disposalEventId ?? null,
+      disposalBillId: input.disposalBillId ?? null,
       emergencyRequestId: input.emergencyRequestId ?? null,
       supportTicketId: input.supportTicketId ?? null,
       vehicleId: input.vehicleId ?? null,

@@ -81,6 +81,7 @@ One browser key powers the dispatch map, location pins and the automatic address
 The platform deliberately leaves these blank rather than inventing them:
 - Hauler transporter permit and registration numbers (**Settings → Company**). They print on manifests.
 - Disposal facility permit numbers and accepted waste types (**Admin → Disposal → Facilities**).
+  The Liquid Environmental Solutions site address is a placeholder (its invoices show only a P.O. box). Replace it there.
 - Manifest template required fields per jurisdiction (City of Houston, Harris County, etc.). The
   default template is a starting point only. Confirm it with the local authority.
 - Sales-tax treatment of services (default 0%). Confirm it with your tax advisor.
