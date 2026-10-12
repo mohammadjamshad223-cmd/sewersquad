@@ -57,9 +57,9 @@ const _locStatus = formAction(z.object({ id, active: z.enum(["true", "false"]), 
 });
 export async function setLocationStatusAction(p: ActionResult, fd: FormData) { return _locStatus(p, fd); }
 
-const _contact = formAction(customers.contactSchema.extend({ organizationId: id, contactId: id.optional().or(z.literal("").transform(() => undefined)) }), async ({ organizationId, contactId, ...input }) => {
+const _contact = formAction(customers.contactSchema.and(z.object({ organizationId: id, contactId: id.optional().or(z.literal("").transform(() => undefined)) })), async ({ organizationId, contactId, ...input }) => {
   const actor = await assertStaff("customers.write");
-  await customers.upsertContact(actor, organizationId, contactId ?? null, input);
+  await customers.upsertContact(actor, organizationId, contactId ?? null, input as z.infer<typeof customers.contactSchema>);
   return { ok: true, message: "Contact saved." };
 });
 export async function saveContactAction(p: ActionResult, fd: FormData) { return _contact(p, fd); }

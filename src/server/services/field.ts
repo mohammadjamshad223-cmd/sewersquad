@@ -281,6 +281,7 @@ export async function submitService(actor: Actor, jobId: string, input: z.infer<
       });
       await notify(tx, {
         userIds: await customerRecipientsForLocation(tx, job.organizationId, job.locationId),
+        contacts: { organizationId: job.organizationId, locationId: job.locationId },
         type: "service.completed",
         title: `Service completed at ${job.location.name}`,
         body: `Your service visit (${job.jobNumber}) is complete. Your manifest will be available once our office has reviewed the documentation.`,

@@ -19,6 +19,7 @@ export async function sendServiceReminders() {
     for (const j of jobs) {
       const ids = await notify(prisma, {
         userIds: await customerRecipientsForLocation(prisma, j.organizationId, j.locationId),
+        contacts: { organizationId: j.organizationId, locationId: j.locationId },
         type: "service.reminder",
         title: offset === 1 ? `Reminder: service tomorrow at ${j.location.name}` : `Upcoming service in ${offset} days — ${j.location.name}`,
         body: `${formatDateKey(day, "long")}, ${formatWindow(j.windowStart, j.windowEnd)}. ${j.location.accessInstructions ? "Please make sure access instructions are still accurate." : "Please make sure the equipment is accessible."}`,

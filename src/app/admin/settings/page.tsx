@@ -1,3 +1,4 @@
+import { TestTextForm } from "./test-text";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { requireStaffPage, hasPermission } from "@/server/authz/guards";
@@ -75,7 +76,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
               {[
                 ["Stripe payments", `${integrations.stripe() ? (stripeIsLiveKey() ? "Live mode" : "Test mode") : stripeIsLiveKey() ? "Live key present but disabled — set STRIPE_LIVE_APPROVED after test-mode sign-off" : "Not configured"}${env().STRIPE_SECRET_KEY ? ` · key ${maskSecret(env().STRIPE_SECRET_KEY)}` : ""}`, "STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_ENABLE_ACH, STRIPE_LIVE_APPROVED"],
                 ["Email (Resend)", integrations.email() ? "Configured" : "Not configured — emails are logged as skipped", "RESEND_API_KEY, EMAIL_FROM"],
-                ["SMS (Twilio)", integrations.sms() ? "Configured" : "Not configured (optional)", "TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM_NUMBER"],
+                ["SMS (Twilio)", integrations.sms() ? `Configured${env().TWILIO_MESSAGING_SERVICE_SID ? " · Messaging Service" : " · From number"}` : "Not configured (optional)", "TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_MESSAGING_SERVICE_SID (or TWILIO_FROM_NUMBER)"],
                 ["Document storage", integrations.s3() ? `S3 bucket ${env().S3_BUCKET}` : `Local disk (${env().NODE_ENV === "production" ? "not allowed in production" : "development only"})`, "STORAGE_DRIVER, S3_BUCKET, S3_REGION, S3_ENDPOINT, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY"],
                 ["Maps", integrations.maps() ? "Configured" : "Not configured — schematic views only", "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY"],
                 ["Scheduled jobs", env().CRON_SECRET ? "Secret set" : "CRON_SECRET missing", "CRON_SECRET (see vercel.json)"],
@@ -83,10 +84,35 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
               ].map(([name, status, vars]) => <TR key={name}><TD className="font-medium">{name}</TD><TD><Badge tone={/Not configured|missing|DISABLED|not allowed/.test(status!) ? "warning" : "success"}>{status}</Badge></TD><TD className="font-mono text-[12px] text-muted-foreground">{vars}</TD></TR>)}
             </TBody>
           </Table>
+          {canWrite && <CardBody className="border-t"><TestTextForm /></CardBody>}
         </Card>
       )}
+      {tab === "integrations" && <RecentTexts />}
       {tab === "audit" && hasPermission(actor, "audit.read") && <AuditTrail where={{}} title="Audit log (latest 200)" take={200} />}
     </div>
+  );
+}
+
+async function RecentTexts() {
+  const texts = await prisma.contactText.findMany({ orderBy: { createdAt: "desc" }, take: 25, include: { contact: { select: { name: true, organization: { select: { name: true } } } } } });
+  return (
+    <Card className="mt-6">
+      <CardHeader title="Recent text messages to customers" description="Texts to customer contacts who agreed to receive them. Failed texts retry automatically; a STOP reply turns texting off for that contact." />
+      <Table>
+        <THead><tr><TH>When</TH><TH>To</TH><TH>Message</TH><TH>Status</TH></tr></THead>
+        <TBody>
+          {texts.map((t) => (
+            <TR key={t.id}>
+              <TD className="whitespace-nowrap text-[13px]">{t.createdAt.toLocaleString("en-US", { timeZone: "America/Chicago", dateStyle: "medium", timeStyle: "short" })}</TD>
+              <TD className="text-[13px]">{t.contact.name}<span className="block text-muted-foreground">{t.contact.organization.name}</span></TD>
+              <TD className="max-w-md text-[13px]">{t.body}</TD>
+              <TD><Badge tone={t.status === "SENT" ? "success" : t.status === "PENDING" ? "info" : t.status === "FAILED" ? "danger" : "neutral"}>{t.status.toLowerCase()}</Badge>{t.lastError && <span className="block max-w-xs truncate text-[11px] text-muted-foreground" title={t.lastError}>{t.lastError}</span>}</TD>
+            </TR>
+          ))}
+          {texts.length === 0 && <TR><TD colSpan={4} className="py-6 text-center text-muted-foreground">No texts yet. Turn on “Send text message updates” on a customer contact.</TD></TR>}
+        </TBody>
+      </Table>
+    </Card>
   );
 }
 

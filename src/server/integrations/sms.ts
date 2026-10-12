@@ -16,10 +16,19 @@ export async function sendSms(to: string, body: string): Promise<SendResult> {
         Authorization: `Basic ${Buffer.from(`${e.TWILIO_ACCOUNT_SID}:${e.TWILIO_AUTH_TOKEN}`).toString("base64")}`,
         "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: new URLSearchParams({ To: number, From: toE164(e.TWILIO_FROM_NUMBER) ?? e.TWILIO_FROM_NUMBER!, Body: body.slice(0, 600) }),
+      body: new URLSearchParams({
+        To: number,
+        ...(e.TWILIO_MESSAGING_SERVICE_SID ? { MessagingServiceSid: e.TWILIO_MESSAGING_SERVICE_SID } : { From: toE164(e.TWILIO_FROM_NUMBER) ?? e.TWILIO_FROM_NUMBER! }),
+        Body: body.slice(0, 600),
+      }),
       signal: AbortSignal.timeout(10_000),
     });
-    if (!res.ok) return { status: "failed", error: `Twilio ${res.status}: ${(await res.text()).slice(0, 300)}` };
+    if (!res.ok) {
+      const text = await res.text();
+      // 21610: the recipient replied STOP. Retrying never succeeds, so report it distinctly.
+      const code = Number((/"code"\s*:\s*(\d+)/.exec(text) ?? [])[1]);
+      return { status: "failed", error: `Twilio ${res.status}${code ? ` (code ${code})` : ""}: ${text.slice(0, 300)}`, unsubscribed: code === 21610, permanent: code === 21610 || code === 21211 || code === 21614 };
+    }
     const json = (await res.json()) as { sid?: string };
     return { status: "sent", providerId: json.sid ?? null };
   } catch (err) {

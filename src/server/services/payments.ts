@@ -291,7 +291,7 @@ export async function settlePayment(paymentId: string, info: { amountTotal: numb
       const recipients = new Set<string>();
       if (p.initiatedById) recipients.add(p.initiatedById);
       for (const id of await customerRecipientsForLocation(tx, p.organizationId, firstInvoice?.serviceLocationId ?? null)) recipients.add(id);
-      await notify(tx, { userIds: [...recipients], type: "payment.received", title: `Payment received — ${formatCents(p.amountCents)}`, body: `Thank you. Payment ${p.paymentNumber} has been applied to your account. Your receipt is available in the portal.`, link: `/customer/payments`, entityType: "Payment", entityId: p.id, dedupeKey: `payment:${p.id}:received` });
+      await notify(tx, { userIds: [...recipients], contacts: { organizationId: p.organizationId, locationId: firstInvoice?.serviceLocationId ?? null }, type: "payment.received", title: `Payment received — ${formatCents(p.amountCents)}`, body: `Thank you. Payment ${p.paymentNumber} has been applied to your account. Your receipt is available in the portal.`, link: `/customer/payments`, entityType: "Payment", entityId: p.id, dedupeKey: `payment:${p.id}:received` });
     }, { timeout: 30_000 });
   }
   return result.p;

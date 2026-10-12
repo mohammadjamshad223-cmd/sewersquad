@@ -107,6 +107,7 @@ async function transition(actorId: string, id: string, to: EmergencyStatus, note
     if (customerVisible && er.submittedById) {
       await notify(tx, {
         userIds: [er.submittedById, ...(await customerRecipientsForLocation(tx, er.organizationId, er.locationId))],
+        contacts: { organizationId: er.organizationId, locationId: er.locationId },
         type: "emergency.update",
         title: `Emergency ${er.requestNumber}: ${EMERGENCY_STATUS[to]?.label}`,
         body: note ?? "Your request status was updated.",
