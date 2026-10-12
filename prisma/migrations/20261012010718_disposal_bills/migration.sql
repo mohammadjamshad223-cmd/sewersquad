@@ -23,6 +23,7 @@ CREATE TABLE "DisposalBill" (
     "referenceNumber" TEXT,
     "status" "DisposalBillStatus" NOT NULL DEFAULT 'OPEN',
     "totalCents" INTEGER NOT NULL,
+    "scheduledPayDate" DATE,
     "paidAt" DATE,
     "paymentReference" TEXT,
     "notes" TEXT,

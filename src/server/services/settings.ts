@@ -36,6 +36,8 @@ export const settingsSchemas = {
     tceqNumber: z.string().default(""),
     /** Printed as "City of Houston #…" once set. */
     cityOfHoustonNumber: z.string().default(""),
+    /** First manifest/ticket number when continuing paper numbering (e.g. 194460). 0 = MF-YYYY-NNNNNN. */
+    manifestStartNumber: z.number().int().min(0).max(99_999_999).default(0),
     certificationStatement: z
       .string()
       .default(

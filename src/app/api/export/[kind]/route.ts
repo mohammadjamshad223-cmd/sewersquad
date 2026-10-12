@@ -124,9 +124,9 @@ export const GET = route(async (req: NextRequest, ctx: { params: Promise<{ kind:
       const status = ["OPEN", "PAID", "VOID"].includes(sp.status ?? "") ? (sp.status as "OPEN" | "PAID" | "VOID") : undefined;
       const bills = await listDisposalBills({ from, to, facilityId: sp.vendor && /^[0-9a-f-]{36}$/i.test(sp.vendor) ? sp.vendor : undefined, status });
       return csvResponse(`disposal-bills-${stamp}.csv`, [
-        ["Vendor", "Invoice #", "Invoice date", "Due date", "Service date", "Reference", "Status", "Paid on", "Payment ref", "Line", "Waste type", "Gallons", "Rate $/gal", "Line amount", "Manifests", "Bill total"],
+        ["Vendor", "Invoice #", "Invoice date", "Due date", "Service date", "Reference", "Pay by (plan)", "Status", "Paid on", "Payment ref", "Line", "Waste type", "Gallons", "Rate $/gal", "Line amount", "Manifests", "Bill total"],
         ...bills.flatMap((b) =>
-          b.lines.map((l) => [b.facility.name, b.vendorInvoiceNumber, keyFromDate(b.invoiceDate), b.dueDate ? keyFromDate(b.dueDate) : "", b.serviceDate ? keyFromDate(b.serviceDate) : "", b.referenceNumber ?? "", b.status, b.paidAt ? keyFromDate(b.paidAt) : "", b.paymentReference ?? "", l.description, l.wasteType ?? "", l.gallons ?? "", l.ratePerGallonCents ? (Number(l.ratePerGallonCents) / 100).toString() : "", c(l.amountCents), l.manifestNumbers.join(" "), c(b.totalCents)]),
+          b.lines.map((l) => [b.facility.name, b.vendorInvoiceNumber, keyFromDate(b.invoiceDate), b.dueDate ? keyFromDate(b.dueDate) : "", b.serviceDate ? keyFromDate(b.serviceDate) : "", b.referenceNumber ?? "", b.scheduledPayDate ? keyFromDate(b.scheduledPayDate) : "", b.status, b.paidAt ? keyFromDate(b.paidAt) : "", b.paymentReference ?? "", l.description, l.wasteType ?? "", l.gallons ?? "", l.ratePerGallonCents ? (Number(l.ratePerGallonCents) / 100).toString() : "", c(l.amountCents), l.manifestNumbers.join(" "), c(b.totalCents)]),
         ),
       ]);
     }

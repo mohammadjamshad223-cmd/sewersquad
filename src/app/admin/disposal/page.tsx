@@ -151,7 +151,18 @@ async function Bills({ from, to, today, vendor, status, canWrite, facilities }: 
     facilityId: vendor && facilities.some((f) => f.id === vendor) ? vendor : undefined,
     status: status === "OPEN" || status === "PAID" || status === "VOID" ? status : undefined,
   } as const;
-  const [bills, s] = await Promise.all([listDisposalBills(filters), disposalBillSummary({ ...filters, status: undefined })]);
+  const [bills, s, planned] = await Promise.all([
+    listDisposalBills(filters),
+    disposalBillSummary({ ...filters, status: undefined }),
+    prisma.disposalBill.findMany({ where: { status: "OPEN", scheduledPayDate: { not: null } }, select: { scheduledPayDate: true, totalCents: true, facility: { select: { name: true } } }, orderBy: { scheduledPayDate: "asc" } }),
+  ]);
+  const plan = [...planned.reduce((m, b) => {
+    const key = `${keyFromDate(b.scheduledPayDate!)}|${b.facility.name}`;
+    const cur = m.get(key) ?? { date: keyFromDate(b.scheduledPayDate!), vendor: b.facility.name, count: 0, cents: 0 };
+    cur.count += 1;
+    cur.cents += b.totalCents;
+    return m.set(key, cur);
+  }, new Map<string, { date: string; vendor: string; count: number; cents: number }>()).values()];
   const maxMonth = Math.max(1, ...s.byMonth.map((m) => m.billedCents));
   return (
     <div className="space-y-4">
@@ -198,11 +209,30 @@ async function Bills({ from, to, today, vendor, status, canWrite, facilities }: 
           </Table>
         </Card>
       </div>
+      {plan.length > 0 && (
+        <Card>
+          <CardHeader title="Payment plan" description="Open bills with an agreed payment date (e.g. a vendor repayment plan). Mark each bill paid once the payment clears." />
+          <Table>
+            <THead><tr><TH>Pay by</TH><TH>Vendor</TH><TH className="text-right">Invoices</TH><TH className="text-right">Amount</TH><TH /></tr></THead>
+            <TBody>
+              {plan.map((p) => (
+                <TR key={`${p.date}${p.vendor}`}>
+                  <TD className="whitespace-nowrap font-medium">{formatDateKey(p.date)}</TD>
+                  <TD>{p.vendor}</TD>
+                  <TD className="text-right tabular-nums">{p.count}</TD>
+                  <TD className="text-right font-medium tabular-nums">{formatCents(p.cents)}</TD>
+                  <TD>{p.date < today && <Badge tone="danger">date passed — paid?</Badge>}</TD>
+                </TR>
+              ))}
+            </TBody>
+          </Table>
+        </Card>
+      )}
       <Card>
         <CardHeader title="Vendor bills" description="What disposal sites charge us, entered from their invoices." action={canWrite && <BillDialog facilities={facilities} wasteTypes={[...WASTE_TYPES]} today={today} />} />
         <FilterBar dates selects={[{ param: "vendor", label: "Vendor", options: facilities.map((f) => ({ value: f.id, label: f.name })) }, { param: "status", label: "Status", options: [{ value: "OPEN", label: "Open" }, { value: "PAID", label: "Paid" }, { value: "VOID", label: "Void" }] }]} />
         <Table>
-          <THead><tr><TH>Invoice</TH><TH>Vendor</TH><TH>Service</TH><TH>Lines</TH><TH className="text-right">Gallons</TH><TH className="text-right">Total</TH><TH>Status</TH><TH className="text-right"><span className="sr-only">Actions</span></TH></tr></THead>
+          <THead><tr><TH>Invoice</TH><TH>Vendor</TH><TH>Service</TH><TH>Lines</TH><TH className="text-right">Gallons</TH><TH className="text-right">Total</TH><TH>Pay by</TH><TH>Status</TH><TH className="text-right"><span className="sr-only">Actions</span></TH></tr></THead>
           <TBody>
             {bills.map((b) => (
               <TR key={b.id}>
@@ -217,11 +247,12 @@ async function Bills({ from, to, today, vendor, status, canWrite, facilities }: 
                 </TD>
                 <TD className="text-right tabular-nums">{b.lines.reduce((t, l) => t + (l.gallons ?? 0), 0).toLocaleString()}</TD>
                 <TD className={`text-right tabular-nums ${b.status === "VOID" ? "text-muted-foreground line-through" : "font-medium"}`}>{formatCents(b.totalCents)}</TD>
+                <TD className="whitespace-nowrap text-[13px]">{b.status === "OPEN" && (b.scheduledPayDate ?? b.dueDate) ? <span className={keyFromDate((b.scheduledPayDate ?? b.dueDate)!) < today ? "text-danger" : ""}>{formatDateKey(keyFromDate((b.scheduledPayDate ?? b.dueDate)!))}{b.scheduledPayDate && <span className="block text-[11px] text-muted-foreground">payment plan</span>}</span> : "—"}</TD>
                 <TD><Badge tone={BILL_TONE[b.status]}>{b.status.toLowerCase()}</Badge>{b.paidAt && <span className="block text-[12px] text-muted-foreground">{formatDateKey(keyFromDate(b.paidAt))}{b.paymentReference && ` · ${b.paymentReference}`}</span>}</TD>
                 <TD>{canWrite && <BillStatusActions billId={b.id} status={b.status} label={b.vendorInvoiceNumber} today={today} />}</TD>
               </TR>
             ))}
-            {bills.length === 0 && <TR><TD colSpan={8} className="py-8 text-center text-muted-foreground">No vendor bills match. Change the dates or add a bill.</TD></TR>}
+            {bills.length === 0 && <TR><TD colSpan={9} className="py-8 text-center text-muted-foreground">No vendor bills match. Change the dates or add a bill.</TD></TR>}
           </TBody>
         </Table>
       </Card>

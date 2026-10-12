@@ -84,7 +84,7 @@ export async function clearLocalDraft(jobId: string) {
 
 // ── Photo queue ──────────────────────────────────────────────────────────────
 
-export type QueuedPhoto = { id: string; jobId: string; phase: "BEFORE" | "AFTER" | "ISSUE"; assetId: string | null; name: string; type: string; createdAt: number };
+export type QueuedPhoto = { id: string; jobId: string; phase: "BEFORE" | "AFTER" | "ISSUE" | "CITY_MANIFEST"; assetId: string | null; name: string; type: string; createdAt: number };
 
 export async function queuePhoto(meta: Omit<QueuedPhoto, "id" | "createdAt">, blob: Blob): Promise<QueuedPhoto> {
   const id = crypto.randomUUID();

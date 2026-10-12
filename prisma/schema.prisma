@@ -1137,6 +1137,8 @@ model DisposalBill {
   referenceNumber     String?
   status              DisposalBillStatus @default(OPEN)
   totalCents          Int
+  /// Agreed payment date, e.g. from a vendor repayment plan.
+  scheduledPayDate    DateTime?          @db.Date
   paidAt              DateTime?          @db.Date
   paymentReference    String?
   notes               String?
@@ -1275,6 +1277,8 @@ model Invoice {
   serviceTitle      String?
   /// Printed as "NEXT SERVICE DATE" on the invoice.
   nextServiceDate   DateTime?        @db.Date
+  /// Number of the manifest generated for an invoice that has no job (jobs carry their own manifest).
+  manifestRef       String?
   /// Original file for invoices imported from records kept before the portal.
   legacySource      String?
   notes             String?

@@ -31,6 +31,8 @@ type Asset = { id: string; assetTag: string; type: string; capacityGallons: numb
 type Photo = { id: string; phase: string; url: string; queued?: boolean };
 type SyncState = "idle" | "local" | "syncing" | "synced" | "offline" | "error";
 
+type PhotoPhaseKey = "BEFORE" | "AFTER" | "CITY_MANIFEST";
+
 const STEPS = ["Arrival", "Before", "Pumping", "After", "Manifest", "Signatures", "Submit"] as const;
 
 const EMPTY: Draft = { conditionBefore: "", accessIssues: "", unusualConditions: "", conditionAfter: "", issuesFound: "", followUpRecommendations: "", additionalWork: "", wasteType: "", notes: "", startedAt: null, assets: [] };
@@ -52,7 +54,7 @@ export function CompletionWizard({
   charges,
   server,
 }: {
-  job: { id: string; jobNumber: string; status: string; locationName: string; address: string; instructions: string; driverName: string; truck: string | null; rejection: string | null };
+  job: { id: string; jobNumber: string; status: string; cityOfHouston?: boolean; locationName: string; address: string; instructions: string; driverName: string; truck: string | null; rejection: string | null };
   assets: Asset[];
   wasteTypes: string[];
   photos: Photo[];
@@ -176,7 +178,7 @@ export function CompletionWizard({
   const setAsset = (assetId: string, patch: Partial<AssetRow>) => setDraft((d) => ({ ...d, assets: d.assets.map((a) => (a.assetId === assetId ? { ...a, ...patch } : a)) }));
 
   // ── Photos ──
-  async function addPhotos(files: FileList | null, phase: "BEFORE" | "AFTER") {
+  async function addPhotos(files: FileList | null, phase: PhotoPhaseKey) {
     if (!files) return;
     for (const file of Array.from(files)) {
       setUploading((n) => n + 1);
@@ -335,6 +337,12 @@ export function CompletionWizard({
 
       {step === 4 && (
         <div className="space-y-4">
+          {job.cityOfHouston && (
+            <div className="rounded-xl border border-brand/30 bg-brand-soft/40 p-4">
+              <PhotoSection title="City of Houston manifest" phase="CITY_MANIFEST" photos={photos} onAdd={addPhotos} onRemove={removePhoto} uploading={uploading} hint="this location is in City of Houston jurisdiction" />
+              <p className="mt-2 text-[13px] text-muted-foreground">Take a clear photo of the completed, signed City of Houston manifest. It is filed with the job and in the customer&apos;s records.</p>
+            </div>
+          )}
           <div className="rounded-xl border bg-surface p-4 shadow-card">
             <p className="text-[13px] font-medium uppercase tracking-wide text-muted-foreground">Digital manifest (from your entries)</p>
             <dl className="mt-3 grid grid-cols-2 gap-3 text-[14px]">
@@ -399,12 +407,12 @@ function TextBlock({ label, value, onChange, placeholder }: { label: string; val
   );
 }
 
-function PhotoSection({ title, phase, photos, onAdd, onRemove, uploading }: { title: string; phase: "BEFORE" | "AFTER"; photos: Photo[]; onAdd: (f: FileList | null, phase: "BEFORE" | "AFTER") => void; onRemove: (p: Photo) => void; uploading: number }) {
+function PhotoSection({ title, phase, photos, onAdd, onRemove, uploading, hint = "at least 1 required" }: { title: string; phase: PhotoPhaseKey; photos: Photo[]; onAdd: (f: FileList | null, phase: PhotoPhaseKey) => void; onRemove: (p: Photo) => void; uploading: number; hint?: string }) {
   const mine = photos.filter((p) => p.phase === phase);
   const ref = React.useRef<HTMLInputElement>(null);
   return (
     <div className="space-y-2">
-      <p className="text-[15px] font-medium">{title} <span className="text-[13px] font-normal text-muted-foreground">({mine.length}, at least 1 required)</span></p>
+      <p className="text-[15px] font-medium">{title} <span className="text-[13px] font-normal text-muted-foreground">({mine.length}, {hint})</span></p>
       <div className="grid grid-cols-3 gap-2">
         {mine.map((p) => (
           <div key={p.id} className="relative overflow-hidden rounded-lg border">

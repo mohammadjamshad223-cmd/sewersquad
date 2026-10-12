@@ -30,6 +30,7 @@ ADD COLUMN     "serviceReportId" UUID;
 
 -- AlterTable
 ALTER TABLE "Invoice" ADD COLUMN     "legacySource" TEXT,
+ADD COLUMN     "manifestRef" TEXT,
 ADD COLUMN     "nextServiceDate" DATE,
 ADD COLUMN     "serviceTitle" TEXT;
 
@@ -181,10 +182,3 @@ ALTER TABLE "ServiceReport" ADD CONSTRAINT "ServiceReport_invoiceId_fkey" FOREIG
 
 -- Money and quantities are never negative on proposals (discounts aside).
 ALTER TABLE "Proposal" ADD CONSTRAINT proposal_total_nonnegative CHECK ("totalCents" >= 0);
-
--- Liquid Environmental Solutions disposal site address (from the owner).
-UPDATE "DisposalFacility"
-SET "addressLine1" = '250 Gellhorn Dr', city = 'Houston', state = 'TX', "postalCode" = '77013',
-    notes = replace(notes, 'Invoices show only the payment P.O. box, not the plant address — edit this facility and enter the disposal site address. ', ''),
-    "updatedAt" = now()
-WHERE name ILIKE '%liquid environmental%' AND "addressLine1" = 'Disposal site address needed';

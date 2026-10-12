@@ -4,8 +4,7 @@ import { prisma, resetDb, seedRbac, staff, expectCode, PNG } from "./helpers";
 import { createDisposalBill, disposalBillSummary, setDisposalBillStatus, billSchema } from "@/server/services/disposal-bills";
 import { authorizeDocument } from "@/server/services/documents";
 
-const IMPORT_SQL = readFileSync("prisma/migrations/20261012011000_import_disposal_bills_2026_06_08/migration.sql", "utf8");
-const SOUTHWASTE_SQL = readFileSync("prisma/migrations/20261012020000_import_southwaste_bills/migration.sql", "utf8");
+const IMPORT_SQL = readFileSync("prisma/migrations/20261012011000_import_disposal_bills/migration.sql", "utf8");
 
 describe("disposal vendor bills", () => {
   let facilityId: string;
@@ -56,25 +55,20 @@ describe("disposal vendor bills", () => {
     expect(await prisma.auditLog.count({ where: { entityType: "DisposalBill", entityId: b.id } })).toBe(2);
   });
 
-  it("the invoice import migration loads the vendor bills once and is safe to re-run", async () => {
+  it("the disposal invoice import matches the owner's spreadsheet and is safe to re-run", async () => {
     await prisma.$executeRawUnsafe(IMPORT_SQL);
     await prisma.$executeRawUnsafe(IMPORT_SQL);
-    const imported = await prisma.disposalBill.findMany({ where: { facility: { name: { in: ["Liquid Environmental Solutions", "DownStream Environmental"] } } }, include: { lines: true } });
-    expect(imported).toHaveLength(9);
-    expect(imported.reduce((s, b) => s + b.totalCents, 0)).toBe(270_075);
-    for (const b of imported) expect(b.lines.reduce((s, l) => s + l.amountCents, 0)).toBe(b.totalCents);
-    expect(await prisma.disposalFacility.count({ where: { name: "DownStream Environmental" } })).toBe(1);
-  });
-
-  it("the Southwaste import matches the vendor statement (16 invoices, $3,562.35)", async () => {
-    await prisma.$executeRawUnsafe(SOUTHWASTE_SQL);
-    await prisma.$executeRawUnsafe(SOUTHWASTE_SQL);
-    const sw = await prisma.disposalBill.findMany({ where: { facility: { name: "Southwaste Disposal" } }, include: { lines: true } });
-    expect(sw).toHaveLength(16);
-    expect(sw.reduce((s, b) => s + b.totalCents, 0)).toBe(356_235);
-    for (const b of sw) expect(b.lines.reduce((s, l) => s + l.amountCents, 0)).toBe(b.totalCents);
-    const withGallons = sw.flatMap((b) => b.lines).filter((l) => l.gallons !== null);
-    expect(withGallons.reduce((s, l) => s + l.gallons!, 0)).toBe(9_905);
-    expect(withGallons.every((l) => l.amountCents === l.gallons! * 17)).toBe(true);
+    const bills = await prisma.disposalBill.findMany({ where: { facility: { name: { in: ["Liquid Environmental Solutions (LES)", "Downstream (Southwaste)", "Hurst (Southwaste)"] } } }, include: { lines: true, facility: true } });
+    expect(bills).toHaveLength(39);
+    expect(bills.reduce((s, b) => s + b.totalCents, 0)).toBe(1_102_493);
+    for (const b of bills) expect(b.lines.reduce((s, l) => s + l.amountCents, 0)).toBe(b.totalCents);
+    const by = (n: string) => bills.filter((b) => b.facility.name.startsWith(n));
+    expect([by("Liquid").length, by("Downstream").length, by("Hurst").length]).toEqual([13, 10, 16]);
+    expect(by("Hurst").reduce((s, b) => s + b.totalCents, 0)).toBe(356_235);
+    expect(by("Hurst").every((b) => b.scheduledPayDate)).toBe(true);
+    const plan = new Map<string, number>();
+    for (const b of by("Hurst")) plan.set(b.scheduledPayDate!.toISOString().slice(0, 10), (plan.get(b.scheduledPayDate!.toISOString().slice(0, 10)) ?? 0) + b.totalCents);
+    expect(Object.fromEntries(plan)).toEqual({ "2026-10-09": 105_060, "2026-10-23": 93_075, "2026-11-06": 89_675, "2026-11-20": 68_425 });
+    expect(await prisma.disposalFacility.count({ where: { name: "Downstream (Southwaste)" } })).toBe(1);
   });
 });

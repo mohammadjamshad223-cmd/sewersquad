@@ -346,6 +346,8 @@ export async function sendInvoice(actor: Actor, invoiceId: string, opts: { db?: 
       where: { id: invoiceId },
       data: { status: "SENT", sentAt: new Date(), issueDate: dateFromKey(issue), dueDate: dateFromKey(addDays(issue, inv.paymentTermsDays)), updatedById: actor.userId },
     });
+    // Every invoice carries a manifest: jobs bring their own, manual invoices get one generated here.
+    if (!inv.jobId) await (await import("./manifests")).generateInvoiceManifest(tx, invoiceId, actor.userId);
     await renderAndStoreInvoicePdf(tx, invoiceId, actor.userId);
     await audit(tx, { actorId: actor.userId, action: "invoice.send", entityType: "Invoice", entityId: invoiceId, organizationId: inv.organizationId, after: { status: "SENT", totalCents: inv.totalCents } });
     await notify(tx, {

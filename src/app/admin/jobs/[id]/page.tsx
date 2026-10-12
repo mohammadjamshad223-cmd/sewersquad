@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 import { notFound } from "next/navigation";
 import { idParam } from "@/server/params";
 import { requireStaffPage, hasPermission } from "@/server/authz/guards";
@@ -57,6 +58,7 @@ export default async function AdminJobDetail({ params, searchParams }: { params:
         breadcrumbs={[{ label: "Jobs", href: "/admin/jobs" }, { label: job.jobNumber }]}
         actions={
           <>
+            {canWrite && <Button asChild variant="secondary" size="sm"><Link href={`/admin/service-reports/new?job=${job.id}`}>Write service report</Link></Button>}
             {canWrite && notStarted && (
               <ReasonDialog trigger={{ label: "Reschedule" }} title="Reschedule job" description={job.planId ? "The plan's contractual occurrence date is preserved; only this visit moves." : undefined} action={rescheduleJobAction} hidden={{ jobId: job.id }} submitLabel="Reschedule">
                 <FieldInput label="New date" name="date" type="date" required defaultValue={keyFromDate(job.scheduledDate)} />
@@ -76,6 +78,7 @@ export default async function AdminJobDetail({ params, searchParams }: { params:
         <Card className="border-warning/40">
           <CardHeader title="Review submitted documentation" description="Approving finalizes the manifest, shares it and the approved photos with the customer, and generates the invoice per billing settings." />
           <CardBody className="space-y-3">
+            {job.location.manifestFee === "CITY_OF_HOUSTON" && !job.documents.some((d) => d.type === "MANIFEST_OFFICIAL") && <Alert tone="warning" title="No City of Houston manifest attached">This location is in City of Houston jurisdiction. Ask the driver to photograph the City manifest, or upload it on the manifest page.</Alert>}
             {missing.length > 0 && <Alert tone="danger" title="Manifest is missing required fields">{missing.join(", ")}. Correct the manifest or send the job back to the driver.</Alert>}
             {job.charges.some((c) => c.status === "PENDING_APPROVAL") && <Alert tone="warning">Review the driver&apos;s additional charges below before approving.</Alert>}
             <div className="flex flex-wrap gap-2">

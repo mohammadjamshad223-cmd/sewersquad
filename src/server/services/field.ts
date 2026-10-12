@@ -140,9 +140,31 @@ export async function uploadJobPhoto(actor: Actor, jobId: string, phase: "BEFORE
   );
 }
 
+/** The official City of Houston manifest a driver photographs on site (filed for the customer too). */
+export async function uploadCityManifest(actor: Actor, jobId: string, file: { bytes: Uint8Array; name: string }) {
+  const { job } = await driverJobForEdit(prisma, actor, jobId);
+  return prisma.$transaction(async (tx) => {
+    const manifest = await tx.manifest.findUnique({ where: { jobId } });
+    const doc = await storeDocument(tx, {
+      bytes: file.bytes,
+      fileName: file.name,
+      title: `City of Houston manifest — ${job.jobNumber}`,
+      type: "MANIFEST_OFFICIAL",
+      visibility: "CUSTOMER",
+      organizationId: job.organizationId,
+      locationId: job.locationId,
+      jobId,
+      manifestId: manifest?.id ?? null,
+      uploadedById: actor.userId,
+    });
+    await audit(tx, { actorId: actor.userId, action: "manifest.upload_city", entityType: "Job", entityId: jobId, organizationId: job.organizationId, after: { documentId: doc.id } });
+    return doc;
+  });
+}
+
 export async function deleteJobPhoto(actor: Actor, jobId: string, documentId: string) {
   await driverJobForEdit(prisma, actor, jobId);
-  const doc = await prisma.document.findFirst({ where: { id: documentId, jobId, type: "SERVICE_PHOTO", uploadedById: actor.userId, deletedAt: null } });
+  const doc = await prisma.document.findFirst({ where: { id: documentId, jobId, type: { in: ["SERVICE_PHOTO", "MANIFEST_OFFICIAL"] }, uploadedById: actor.userId, deletedAt: null } });
   if (!doc) throw notFound();
   await prisma.document.update({ where: { id: documentId }, data: { deletedAt: new Date() } });
 }
@@ -315,6 +337,8 @@ export async function approveJob(actor: Actor, jobId: string, note?: string) {
       await tx.job.update({ where: { id: jobId }, data: { status: "COMPLETED", approvedAt: new Date(), approvedById: actor.userId } });
       await tx.jobStatusEvent.create({ data: { jobId, fromStatus: job.status, toStatus: "COMPLETED", actorId: actor.userId, note: note ?? "Documentation approved" } });
       await tx.serviceRecord.update({ where: { jobId }, data: { reviewStatus: "APPROVED", reviewedById: actor.userId, reviewedAt: new Date(), reviewNotes: note ?? null } });
+      // City of Houston manifests photographed before the manifest existed are linked to it now.
+      await tx.document.updateMany({ where: { jobId, type: "MANIFEST_OFFICIAL", manifestId: null, deletedAt: null }, data: { manifestId: job.manifest.id } });
       // Approved service photos become visible to the customer.
       await tx.document.updateMany({ where: { jobId, type: "SERVICE_PHOTO", photoPhase: { in: ["BEFORE", "AFTER"] }, deletedAt: null }, data: { visibility: "CUSTOMER" } });
       await syncEmergencyForJob(tx, jobId, "COMPLETED", actor.userId);

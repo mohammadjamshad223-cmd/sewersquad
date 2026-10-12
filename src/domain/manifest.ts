@@ -12,7 +12,7 @@
 export type ManifestData = {
   template: { key: string; name: string; jurisdiction: string } | null;
   reference: { manifestNumber: string; jobNumber: string; serviceDate: string };
-  generator: { businessName: string; organizationName: string; accountNumber: string; address: string; locationName: string; county: string | null; contactName: string | null; contactPhone: string | null };
+  generator: { businessName: string; organizationName: string; accountNumber: string; address: string; locationName: string; county: string | null; contactName: string | null; contactPhone: string | null; postalCode?: string | null; cityCounty?: string | null };
   collection: {
     wasteType: string | null;
     equipment: { assetTag: string; type: string; capacityGallons: number; gallonsPumped: number; servicePerformed: string | null }[];
@@ -21,8 +21,8 @@ export type ManifestData = {
     finishedAt: string | null;
     notes: string | null;
   };
-  hauler: { name: string | null; transporterPermitNumber: string | null; registrationNumber: string | null; driverName: string | null; truckUnit: string | null; vin: string | null; licensePlate: string | null; vehiclePermit: string | null; certificationStatement: string | null };
-  disposal: { facilityName: string | null; facilityAddress: string | null; facilityPermit: string | null; disposedAt: string | null; ticketNumber: string | null; facilityAcknowledged: boolean };
+  hauler: { name: string | null; transporterPermitNumber: string | null; registrationNumber: string | null; driverName: string | null; truckUnit: string | null; vin: string | null; licensePlate: string | null; vehiclePermit: string | null; certificationStatement: string | null; tceqNumber?: string | null; address?: string | null; phone?: string | null };
+  disposal: { facilityName: string | null; facilityAddress: string | null; facilityPermit: string | null; disposedAt: string | null; ticketNumber: string | null; facilityAcknowledged: boolean; gallonsReceived?: number | null };
   signatures: {
     customer: { name: string | null; title: string | null; signedAt: string | null; unavailable: boolean; unavailableReason: string | null; hasImage: boolean } | null;
     driver: { name: string | null; signedAt: string | null; hasImage: boolean } | null;

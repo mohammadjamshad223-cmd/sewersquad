@@ -14,7 +14,7 @@ test.describe.serial("Workflow A (office & customer)", () => {
     await expect(page.getByText(/Approved\. Manifest finalized/)).toBeVisible();
     await page.reload();
     await expect(page.getByText("Finalized").first()).toBeVisible();
-    await expect(page.locator("text=/INV-\\d{4}-\\d{6}/").first()).toBeVisible();
+    await expect(page.locator('a[href^="/admin/invoices/"]').first()).toBeVisible();
   });
 
   test("customer sees the finalized manifest and the new invoice", async ({ page }) => {

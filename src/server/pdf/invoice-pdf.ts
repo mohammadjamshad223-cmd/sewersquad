@@ -38,7 +38,7 @@ export async function renderInvoicePdf(db: Db, invoiceId: string): Promise<Uint8
     const serviceLines = [
       inv.serviceTitle ?? inv.lineItems[0]?.description ?? "Service",
       ...(inv.serviceDate ? [`Service date: ${formatDateKey(inv.serviceDate, "long")}`] : []),
-      ...(inv.manifest ? [`Manifest: ${inv.manifest.manifestNumber}`] : []),
+      ...(inv.manifest || inv.manifestRef ? [`Manifest: ${inv.manifest?.manifestNumber ?? inv.manifestRef}`] : []),
       ...(inv.poNumber ? [`PO: ${inv.poNumber}`] : []),
     ];
     w.columns([[{ label: "BILL TO", name: billName, lines: billLines }], [{ label: "SERVICE", lines: serviceLines }]]);
