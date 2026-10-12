@@ -50,7 +50,11 @@ let cached: Env | null = null;
 
 export function env(): Env {
   if (cached) return cached;
-  const parsed = schema.safeParse(process.env);
+  // Values pasted into hosting dashboards often carry stray spaces or newlines; blank means unset.
+  const cleaned = Object.fromEntries(
+    Object.entries(process.env).map(([k, v]) => [k, typeof v === "string" && v.trim() !== "" ? v.trim() : undefined]),
+  );
+  const parsed = schema.safeParse(cleaned);
   if (!parsed.success) {
     const issues = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
     throw new Error(`Invalid environment configuration: ${issues}`);

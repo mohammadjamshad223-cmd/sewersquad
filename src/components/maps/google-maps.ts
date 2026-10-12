@@ -32,7 +32,7 @@ declare global {
   }
 }
 
-const KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
+const KEY = (process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "").trim();
 export const mapsEnabled = KEY.length > 0;
 
 let loading: Promise<GoogleMaps> | null = null;

@@ -11,7 +11,7 @@ const isDev = process.env.NODE_ENV !== "production";
  */
 // Google Maps (only when a key is set at build time): sources from Google's Maps JavaScript API
 // CSP guide. 'unsafe-eval' is not included; add it only if the map reports CSP violations.
-const maps = Boolean(process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY);
+const maps = Boolean(process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim());
 const g = (list: string) => (maps ? ` ${list}` : "");
 
 const csp = [
