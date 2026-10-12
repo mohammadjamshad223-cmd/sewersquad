@@ -5,6 +5,7 @@ import { env } from "../env";
 import { logger } from "../logger";
 import { renderEmailHtml, sendEmail } from "../integrations/email";
 import { sendSms } from "../integrations/sms";
+import { getSetting } from "./settings";
 import { brand } from "@/config/brand";
 
 /**
@@ -57,13 +58,52 @@ export type NotifyInput = {
   dedupeKey: string;
   /** Force email regardless of preference (e.g. password reset, invitation). */
   forceEmail?: boolean;
+  /** Also text this customer's opted-in contacts (no portal login needed). */
+  contacts?: { organizationId: string; locationId: string | null };
 };
+
+/** Which customer notifications go to texting contacts, and which contact flag governs them. */
+export const CONTACT_TEXT_TYPES: Partial<Record<string, "service" | "billing">> = {
+  "service.scheduled": "service",
+  "service.reminder": "service",
+  "service.en_route": "service",
+  "service.completed": "service",
+  "emergency.update": "service",
+  "invoice.issued": "billing",
+  "invoice.reminder": "billing",
+  "payment.received": "billing",
+};
+
+/** Queue texts to the customer's contacts who agreed to receive them. Idempotent per (contact, dedupeKey). */
+export async function queueContactTexts(db: Db, input: Pick<NotifyInput, "type" | "title" | "body" | "dedupeKey"> & { organizationId: string; locationId: string | null }) {
+  const category = CONTACT_TEXT_TYPES[input.type];
+  if (!category) return 0;
+  const contacts = await db.customerContact.findMany({
+    where: {
+      organizationId: input.organizationId,
+      smsOptIn: true,
+      smsOptedOutAt: null,
+      phone: { not: null },
+      ...(category === "service" ? { receivesReminders: true } : { receivesInvoices: true }),
+      OR: [{ locationId: null }, ...(input.locationId ? [{ locationId: input.locationId }] : [])],
+    },
+  });
+  if (!contacts.length) return 0;
+  const company = await getSetting("company", db);
+  const body = smsText(input.title, company.phone ? `${input.body} Questions? Call ${company.phone}.` : input.body);
+  const res = await db.contactText.createMany({
+    data: contacts.map((c) => ({ contactId: c.id, organizationId: input.organizationId, type: input.type, destination: c.phone!, body, dedupeKey: input.dedupeKey })),
+    skipDuplicates: true,
+  });
+  return res.count;
+}
 
 /**
  * Records notifications and queues deliveries according to each user's preferences.
  * Safe to call inside a transaction; delivery itself happens in processDueDeliveries().
  */
 export async function notify(db: Db, input: NotifyInput): Promise<string[]> {
+  if (input.contacts) await queueContactTexts(db, { ...input, ...input.contacts });
   const userIds = [...new Set(input.userIds)];
   if (userIds.length === 0) return [];
   const users = await db.user.findMany({
@@ -175,6 +215,35 @@ export async function processDueDeliveries(limit = 25) {
         },
       });
       logger.warn("notification.delivery_failed", { deliveryId: d.id, channel: d.channel, attempts, final, error: result.error });
+    }
+  }
+  const texts = await processDueContactTexts(limit);
+  return { processed: due.length + texts.processed, sent: sent + texts.sent };
+}
+
+async function processDueContactTexts(limit: number) {
+  const due = await prisma.contactText.findMany({ where: { status: "PENDING", nextAttemptAt: { lte: new Date() } }, orderBy: { nextAttemptAt: "asc" }, take: limit });
+  let sent = 0;
+  for (const t of due) {
+    const claimed = await prisma.contactText.updateMany({ where: { id: t.id, status: "PENDING", attempts: t.attempts }, data: { attempts: { increment: 1 }, nextAttemptAt: new Date(Date.now() + 60_000) } });
+    if (claimed.count === 0) continue;
+    const contact = await prisma.customerContact.findUnique({ where: { id: t.contactId } });
+    if (!contact || !contact.smsOptIn || contact.smsOptedOutAt) {
+      await prisma.contactText.update({ where: { id: t.id }, data: { status: "SKIPPED", lastError: "Contact is no longer opted in to texts." } });
+      continue;
+    }
+    const result = await sendSms(t.destination, t.body);
+    if (result.status === "sent") {
+      sent++;
+      await prisma.contactText.update({ where: { id: t.id }, data: { status: "SENT", sentAt: new Date(), providerMessageId: result.providerId, lastError: null } });
+    } else if (result.status === "skipped") {
+      await prisma.contactText.update({ where: { id: t.id }, data: { status: "SKIPPED", lastError: result.reason } });
+    } else {
+      if (result.unsubscribed) await prisma.customerContact.update({ where: { id: t.contactId }, data: { smsOptedOutAt: new Date() } });
+      const attempts = t.attempts + 1;
+      const final = result.permanent || attempts >= MAX_ATTEMPTS;
+      await prisma.contactText.update({ where: { id: t.id }, data: { status: final ? "FAILED" : "PENDING", lastError: result.error, nextAttemptAt: new Date(Date.now() + Math.min(2 ** attempts * 60_000, 6 * 3600_000)) } });
+      logger.warn("contact_text.failed", { textId: t.id, attempts, final, error: result.error });
     }
   }
   return { processed: due.length, sent };

@@ -315,8 +315,16 @@ model CustomerContact {
   isPrimary         Boolean          @default(false)
   receivesInvoices  Boolean          @default(false)
   receivesReminders Boolean          @default(true)
+  /// Text-message updates. Carriers require recorded consent before texting.
+  smsOptIn          Boolean          @default(false)
+  smsOptInAt        DateTime?
+  /// How consent was given, e.g. "Verbal, on the phone with Mohammad".
+  smsOptInSource    String?
+  /// Set when the contact replies STOP (or Twilio reports them unsubscribed).
+  smsOptedOutAt     DateTime?
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
+  texts             ContactText[]
 
   @@index([organizationId])
 }
@@ -1618,6 +1626,29 @@ model NotificationDelivery {
 
   @@unique([notificationId, channel])
   @@index([status, nextAttemptAt])
+}
+
+/// A text message to a customer contact (no portal login needed). Delivered like notifications.
+model ContactText {
+  id                String          @id @default(uuid()) @db.Uuid
+  contactId         String          @db.Uuid
+  contact           CustomerContact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  organizationId    String          @db.Uuid
+  type              String
+  destination       String
+  body              String
+  dedupeKey         String
+  status            DeliveryStatus  @default(PENDING)
+  attempts          Int             @default(0)
+  lastError         String?
+  providerMessageId String?
+  nextAttemptAt     DateTime        @default(now())
+  sentAt            DateTime?
+  createdAt         DateTime        @default(now())
+
+  @@unique([contactId, dedupeKey])
+  @@index([status, nextAttemptAt])
+  @@index([organizationId, createdAt])
 }
 
 model NotificationPreference {

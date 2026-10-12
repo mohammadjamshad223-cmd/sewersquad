@@ -125,7 +125,7 @@ export default async function CustomerDetail({ params, searchParams }: { params:
                   <TD className="font-medium">{c.name}<span className="block text-[12px] font-normal text-muted-foreground">{c.title}</span></TD>
                   <TD className="text-[13px]">{c.email}<span className="block text-muted-foreground">{c.phone}</span></TD>
                   <TD>{c.location?.name ?? "All"}</TD>
-                  <TD className="space-x-1">{c.isPrimary && <Badge tone="brand">Primary</Badge>}{c.receivesInvoices && <Badge>Invoices</Badge>}{c.receivesReminders && <Badge>Reminders</Badge>}</TD>
+                  <TD className="space-x-1">{c.isPrimary && <Badge tone="brand">Primary</Badge>}{c.receivesInvoices && <Badge>Invoices</Badge>}{c.receivesReminders && <Badge>Reminders</Badge>}{c.smsOptedOutAt ? <Badge tone="danger">Texts: STOP</Badge> : c.smsOptIn && <Badge tone="success">Texts on</Badge>}</TD>
                   <TD className="whitespace-nowrap text-right">
                     {canWrite && <><ContactDialog trigger={{ label: "Edit" , variant: "ghost" }} title="Edit contact" organizationId={org.id} locations={locOptions} contact={c} /><ActionButton variant="ghost" size="sm" className="text-danger" confirm="Remove this contact?" action={deleteContactAction.bind(null, org.id, c.id)} successMessage="Contact removed.">Remove</ActionButton></>}
                   </TD>

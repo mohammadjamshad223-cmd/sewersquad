@@ -50,7 +50,16 @@ Stripe IDs, amounts, brand and last-4 as returned by Stripe.
 
 ## SMS (Twilio)
 
-Set `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` and `TWILIO_FROM_NUMBER` (e.g. `+17135550100`).
+Set `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` and `TWILIO_MESSAGING_SERVICE_SID` (the `MG…` Messaging
+Service attached to your approved A2P campaign). `TWILIO_FROM_NUMBER` (e.g. `+17135550100`) works instead of a
+Messaging Service but is not recommended for A2P.
+
+- **Who gets texts:** customer *contacts* with "Send text message updates" switched on (consent noted on the
+  contact), no portal login needed. Service texts (scheduled, reminders, driver on the way, completed) go to
+  contacts who receive reminders; invoice and payment texts to contacts who receive invoices. Portal users can
+  also turn on texts in their own notification settings.
+- **STOP:** Twilio blocks texts to anyone who replied STOP; the portal records it on the contact and stops.
+- **Check it:** Settings → Integrations → Send test text, and the "Recent text messages" list below it.
 
 - US carriers block texts from unregistered business numbers, so complete **A2P 10DLC** registration
   (brand and campaign) in Twilio first. Opt-in happens when each user turns on text alerts under

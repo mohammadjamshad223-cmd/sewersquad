@@ -7,7 +7,7 @@ import { badRequest, notFound } from "../errors";
 import { numbers } from "../numbering";
 import type { Actor } from "../auth/session";
 import { assertStaffActor } from "../authz/check";
-import { addDays, compareKeys, dateFromKey, isDateKey, keyFromDate, todayKey, type DateKey } from "@/lib/dates";
+import { addDays, compareKeys, dateFromKey, formatDateKey, isDateKey, keyFromDate, todayKey, type DateKey } from "@/lib/dates";
 import { firstOccurrenceOnOrAfter, nextOccurrence, validateRule, type Rule } from "@/domain/recurrence";
 import { companyTimeZone, getSetting } from "./settings";
 import { parseDollarRateToCentsString, parseDollarsToCents } from "@/lib/money";
@@ -256,9 +256,10 @@ export async function materializePlan(db: Db, planId: string, actorId: string | 
     const { notify, customerRecipientsForLocation } = await import("./notifications");
     await notify(db, {
       userIds: await customerRecipientsForLocation(db, plan.organizationId, plan.locationId),
+      contacts: { organizationId: plan.organizationId, locationId: plan.locationId },
       type: "service.scheduled",
       title: `Service scheduled for ${plan.location.name}`,
-      body: `Your next ${plan.name} is scheduled for ${occurrence}. We'll send a reminder before the visit.`,
+      body: `Your next ${plan.name.replace(/ — every \d+ days$/, "").toLowerCase()} is scheduled for ${formatDateKey(occurrence, "long")}. We'll send a reminder before the visit.`,
       link: `/customer/services/${job.id}`,
       entityType: "Job",
       entityId: job.id,

@@ -4,7 +4,7 @@ import { logger } from "../logger";
 import { brand } from "@/config/brand";
 
 export type EmailMessage = { to: string; subject: string; text: string; html?: string };
-export type SendResult = { status: "sent"; providerId: string | null } | { status: "skipped"; reason: string } | { status: "failed"; error: string };
+export type SendResult = { status: "sent"; providerId: string | null } | { status: "skipped"; reason: string } | { status: "failed"; error: string; /** Recipient opted out (SMS STOP). */ unsubscribed?: boolean; /** Retrying will not help. */ permanent?: boolean };
 
 /** Sends through Resend's HTTP API. Returns "skipped" (never "sent") when not configured. */
 export async function sendEmail(msg: EmailMessage): Promise<SendResult> {

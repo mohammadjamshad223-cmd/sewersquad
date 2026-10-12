@@ -96,7 +96,7 @@ export function AssetForm({ locationId, asset, onDone }: { locationId: string; a
   );
 }
 
-export function ContactForm({ organizationId, locations, contact, onDone }: { organizationId: string; locations: { id: string; name: string }[]; contact?: { id: string; name: string; title: string | null; email: string | null; phone: string | null; locationId: string | null; isPrimary: boolean; receivesInvoices: boolean; receivesReminders: boolean }; onDone?: () => void }) {
+export function ContactForm({ organizationId, locations, contact, onDone }: { organizationId: string; locations: { id: string; name: string }[]; contact?: { id: string; name: string; title: string | null; email: string | null; phone: string | null; locationId: string | null; isPrimary: boolean; receivesInvoices: boolean; receivesReminders: boolean; smsOptIn?: boolean; smsOptInSource?: string | null; smsOptedOutAt?: Date | null }; onDone?: () => void }) {
   return (
     <ActionForm action={saveContactAction as Act} className="grid gap-4 sm:grid-cols-2" onSuccess={onDone} resetOnSuccess={!contact}>
       <input type="hidden" name="organizationId" value={organizationId} />
@@ -104,13 +104,18 @@ export function ContactForm({ organizationId, locations, contact, onDone }: { or
       <Field label="Name" name="name" required><Input defaultValue={contact?.name} /></Field>
       <Field label="Title" name="title"><Input defaultValue={contact?.title ?? ""} /></Field>
       <Field label="Email" name="email"><Input type="email" defaultValue={contact?.email ?? ""} /></Field>
-      <Field label="Phone" name="phone"><Input type="tel" defaultValue={contact?.phone ?? ""} /></Field>
+      <Field label="Mobile phone" name="phone"><Input type="tel" defaultValue={contact?.phone ?? ""} /></Field>
       <Field label="Location" name="locationId" className="sm:col-span-2"><Select defaultValue={contact?.locationId ?? ""}><option value="">All locations (organization)</option>{locations.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}</Select></Field>
       <div className="flex flex-wrap gap-4 text-sm sm:col-span-2">
         <label className="flex items-center gap-2"><Checkbox name="isPrimary" defaultChecked={contact?.isPrimary} /> Primary contact</label>
         <label className="flex items-center gap-2"><Checkbox name="receivesInvoices" defaultChecked={contact?.receivesInvoices} /> Receives invoices</label>
         <label className="flex items-center gap-2"><Checkbox name="receivesReminders" defaultChecked={contact?.receivesReminders ?? true} /> Receives reminders</label>
       </div>
+      <fieldset className="space-y-2 rounded-lg border p-3 sm:col-span-2">
+        <label className="flex items-center gap-2 text-sm font-medium"><Checkbox name="smsOptIn" defaultChecked={contact?.smsOptIn && !contact.smsOptedOutAt} /> Send text message updates</label>
+        <p className="text-[12px] text-muted-foreground">Service updates (scheduled, reminders, driver on the way, completed) go to contacts who receive reminders; invoice and payment texts to contacts who receive invoices. Only switch this on if the person agreed to texts — carriers require it.{contact?.smsOptedOutAt ? " This contact replied STOP; switch it back on only if they asked to resume." : ""}</p>
+        <Field label="How they agreed" name="smsOptInSource"><Input defaultValue={contact?.smsOptInSource ?? ""} placeholder="Verbal, on site with Mohammad 10/14" /></Field>
+      </fieldset>
       <div className="sm:col-span-2"><SubmitButton>Save contact</SubmitButton></div>
     </ActionForm>
   );

@@ -67,6 +67,11 @@ export const contactSchema = z.object({
   isPrimary: z.coerce.boolean().optional().default(false),
   receivesInvoices: z.coerce.boolean().optional().default(false),
   receivesReminders: z.coerce.boolean().optional().default(false),
+  smsOptIn: z.coerce.boolean().optional().default(false),
+  smsOptInSource: optStr(200),
+}).superRefine((v, ctx) => {
+  if (v.smsOptIn && !v.phone) ctx.addIssue({ code: "custom", path: ["phone"], message: "Add a mobile number to send text updates." });
+  if (v.smsOptIn && !v.smsOptInSource) ctx.addIssue({ code: "custom", path: ["smsOptInSource"], message: "Note how they agreed to texts (e.g. \"Verbal, on site 10/14\")." });
 });
 
 export const billingProfileSchema = z.object({
@@ -238,12 +243,17 @@ export async function upsertContact(actor: Actor, organizationId: string, contac
   assertStaffActor(actor, "customers.write");
   return prisma.$transaction(async (tx) => {
     if (input.locationId && !(await tx.serviceLocation.count({ where: { id: input.locationId, organizationId } }))) throw badRequest("Location does not belong to this customer.");
+    // Consent is recorded when texting is switched on; switching it on again after a STOP re-records it.
+    const consent = (prev: { smsOptIn: boolean; smsOptedOutAt: Date | null; smsOptInAt: Date | null } | null) =>
+      input.smsOptIn
+        ? prev?.smsOptIn && !prev.smsOptedOutAt ? {} : { smsOptInAt: new Date(), smsOptedOutAt: null }
+        : { smsOptInAt: null };
     if (contactId) {
       const existing = await tx.customerContact.findFirst({ where: { id: contactId, organizationId } });
       if (!existing) throw notFound();
-      await tx.customerContact.update({ where: { id: contactId }, data: input });
+      await tx.customerContact.update({ where: { id: contactId }, data: { ...input, ...consent(existing) } });
     } else {
-      await tx.customerContact.create({ data: { ...input, organizationId } });
+      await tx.customerContact.create({ data: { ...input, ...consent(null), organizationId } });
     }
     await audit(tx, { actorId: actor.userId, action: contactId ? "contact.update" : "contact.create", entityType: "CustomerContact", entityId: contactId ?? "new", organizationId, after: input });
   });

@@ -40,6 +40,8 @@ const schema = z.object({
   TWILIO_ACCOUNT_SID: z.string().optional(),
   TWILIO_AUTH_TOKEN: z.string().optional(),
   TWILIO_FROM_NUMBER: z.string().optional(),
+  /** Messaging Service SID (MG…) linked to the approved A2P campaign. Preferred over a bare From number. */
+  TWILIO_MESSAGING_SERVICE_SID: z.string().optional(),
 
   NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: z.string().optional(),
 });
@@ -90,7 +92,7 @@ export const integrations = {
     return !isLiveStripeKey(e.STRIPE_SECRET_KEY) || e.STRIPE_LIVE_APPROVED === "true";
   },
   email: () => Boolean(env().RESEND_API_KEY && env().EMAIL_FROM),
-  sms: () => Boolean(env().TWILIO_ACCOUNT_SID && env().TWILIO_AUTH_TOKEN && env().TWILIO_FROM_NUMBER),
+  sms: () => Boolean(env().TWILIO_ACCOUNT_SID && env().TWILIO_AUTH_TOKEN && (env().TWILIO_MESSAGING_SERVICE_SID || env().TWILIO_FROM_NUMBER)),
   s3: () => env().STORAGE_DRIVER === "s3" && Boolean(env().S3_BUCKET),
   maps: () => Boolean(env().NEXT_PUBLIC_GOOGLE_MAPS_API_KEY),
 };

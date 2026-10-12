@@ -106,6 +106,7 @@ export async function createJob(actor: Actor, input: z.infer<typeof jobSchema>, 
     await audit(tx, { actorId: actor.userId, action: "job.create", entityType: "Job", entityId: job.id, organizationId: loc.organizationId, after: input });
     await notify(tx, {
       userIds: await customerRecipientsForLocation(tx, loc.organizationId, loc.id),
+      contacts: { organizationId: loc.organizationId, locationId: loc.id },
       type: "service.scheduled",
       title: `Service scheduled for ${loc.name}`,
       body: `A ${input.type === "EMERGENCY" ? "dispatch" : "service visit"} is scheduled for ${formatDateKey(input.scheduledDate, "long")}, ${formatWindow(job.windowStart, job.windowEnd)}.`,
@@ -229,6 +230,7 @@ export async function rescheduleJob(actor: Actor, jobId: string, input: { date: 
     const stamp = Date.now();
     await notify(tx, {
       userIds: await customerRecipientsForLocation(tx, job.organizationId, job.locationId),
+      contacts: { organizationId: job.organizationId, locationId: job.locationId },
       type: "service.scheduled",
       title: `Service rescheduled: ${job.location.name}`,
       body: `Your service visit has moved to ${formatDateKey(input.date, "long")}, ${formatWindow(input.windowStart ?? job.windowStart, input.windowEnd ?? job.windowEnd)}.`,
@@ -272,6 +274,7 @@ export async function cancelJob(actor: Actor, jobId: string, reason: string) {
     }
     await notify(tx, {
       userIds: await customerRecipientsForLocation(tx, job.organizationId, job.locationId),
+      contacts: { organizationId: job.organizationId, locationId: job.locationId },
       type: "service.scheduled",
       title: `Service cancelled: ${job.location.name}`,
       body: `The visit scheduled for ${formatDateKey(job.scheduledDate, "long")} was cancelled. Contact us with any questions.`,
@@ -346,6 +349,7 @@ export async function driverTransition(actor: Actor, jobId: string, to: "ACCEPTE
     if (to === "EN_ROUTE") {
       await notify(tx, {
         userIds: await customerRecipientsForLocation(tx, job.organizationId, job.locationId),
+        contacts: { organizationId: job.organizationId, locationId: job.locationId },
         type: "service.en_route",
         title: `Your Sewer Squad driver is on the way`,
         body: `A driver is en route to ${job.location.name} for ${job.jobNumber}.`,

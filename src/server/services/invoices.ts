@@ -352,6 +352,7 @@ export async function sendInvoice(actor: Actor, invoiceId: string, opts: { db?: 
     await audit(tx, { actorId: actor.userId, action: "invoice.send", entityType: "Invoice", entityId: invoiceId, organizationId: inv.organizationId, after: { status: "SENT", totalCents: inv.totalCents } });
     await notify(tx, {
       userIds: await invoiceRecipients(tx, inv),
+      contacts: { organizationId: inv.organizationId, locationId: inv.serviceLocationId ?? inv.billingLocationId },
       type: "invoice.issued",
       title: `Invoice ${inv.invoiceNumber} — ${formatCents(inv.totalCents)}`,
       body: `A new invoice is available. Amount due ${formatCents(inv.balanceCents)} by ${formatDateKey(addDays(issue, inv.paymentTermsDays), "long")}.`,
@@ -479,6 +480,7 @@ export async function sendInvoiceReminders() {
       const label = offset < 0 ? `due in ${-offset} day${offset === -1 ? "" : "s"}` : offset === 0 ? "due today" : `${offset} days overdue`;
       const ids = await notify(prisma, {
         userIds: await invoiceRecipients(prisma, inv),
+        contacts: { organizationId: inv.organizationId, locationId: inv.serviceLocationId ?? inv.billingLocationId },
         type: "invoice.reminder",
         title: `Invoice ${inv.invoiceNumber} is ${label}`,
         body: `Balance ${formatCents(inv.balanceCents)}. Pay securely online from your Sewer Squad portal.`,

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useActionState, useEffect, useRef } from "react";
+import { startTransition, useActionState, useEffect, useRef } from "react";
 import { useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -14,7 +14,7 @@ export type ActionState =
   | { ok: true; message?: string; data?: unknown }
   | { ok: false; error: string; fieldErrors?: Record<string, string[] | undefined> };
 
-type FormCtx = { state: ActionState | null };
+type FormCtx = { state: ActionState | null; pending?: boolean };
 const FormStateContext = React.createContext<FormCtx>({ state: null });
 
 export function useFieldError(name: string): string | undefined {
@@ -66,7 +66,7 @@ export function ActionForm({
   redirectTo?: string;
   refresh?: boolean;
 } & Omit<React.FormHTMLAttributes<HTMLFormElement>, "action" | "onSubmit">) {
-  const [state, formAction] = useActionState(action, null as unknown as ActionState);
+  const [state, formAction, pending] = useActionState(action, null as unknown as ActionState);
   const formRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
   const last = useRef<ActionState | null>(null);
@@ -86,8 +86,29 @@ export function ActionForm({
   }, [state, successMessage, resetOnSuccess, onSuccess, redirectTo, refresh, router]);
 
   return (
-    <FormStateContext.Provider value={{ state }}>
-      <form ref={formRef} action={formAction} className={className} noValidate {...rest}>
+    <FormStateContext.Provider value={{ state, pending }}>
+      {/* Submitted via onSubmit (not the action prop) so React does not clear what the user typed
+          when the server rejects it; forms that should clear after saving use resetOnSuccess. */}
+      <form
+        ref={formRef}
+        className={className}
+        noValidate
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (pending) return;
+          const submitter = (e.nativeEvent as SubmitEvent).submitter;
+          let fd: FormData;
+          try {
+            fd = new FormData(e.currentTarget, submitter);
+          } catch {
+            // Older browsers: no submitter support; carry a named submit button by hand.
+            fd = new FormData(e.currentTarget);
+            if (submitter instanceof HTMLButtonElement && submitter.name) fd.append(submitter.name, submitter.value);
+          }
+          startTransition(() => formAction(fd));
+        }}
+        {...rest}
+      >
         {state && !state.ok && (
           <p role="alert" className="mb-4 rounded-md border border-danger/20 bg-danger-soft px-3 py-2 text-[13px] text-danger">
             {state.error}
@@ -100,7 +121,9 @@ export function ActionForm({
 }
 
 export function SubmitButton({ children, pendingText, ...props }: ButtonProps & { pendingText?: string }) {
-  const { pending } = useFormStatus();
+  const ctx = React.useContext(FormStateContext);
+  const status = useFormStatus();
+  const pending = ctx.pending ?? status.pending;
   return (
     <Button type="submit" disabled={pending || props.disabled} aria-busy={pending} {...props}>
       {pending && <Loader2 className="animate-spin" aria-hidden />}
