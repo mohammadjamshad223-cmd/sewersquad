@@ -1,22 +1,6 @@
 {
  "organizations": [
   {
-   "key": "PINK FLORA CO DISPENSARY",
-   "name": "Pink Flora Co Dispensary",
-   "locations": [
-    {
-     "key": "PINK FLORA CO DISPENSARY|3311 S SHEPHERD DR",
-     "name": "Pink Flora Co Dispensary",
-     "addressLine1": "3311 S Shepherd Dr",
-     "city": "Houston",
-     "state": "TX",
-     "postalCode": "77098",
-     "manifestFee": "CITY_OF_HOUSTON"
-    }
-   ],
-   "type": "OTHER"
-  },
-  {
    "key": "PIT STOP EXPRESS",
    "name": "Pit Stop Express",
    "locations": [
@@ -54,22 +38,6 @@
      "city": "Houston",
      "state": "TX",
      "postalCode": "77020",
-     "manifestFee": "CITY_OF_HOUSTON"
-    }
-   ],
-   "type": "OTHER"
-  },
-  {
-   "key": "ROADTRAC",
-   "name": "Roadtrac",
-   "locations": [
-    {
-     "key": "ROADTRAC|8136 W TIDWELL RD",
-     "name": "Roadtrac #4",
-     "addressLine1": "8136 W Tidwell Rd",
-     "city": "Houston",
-     "state": "TX",
-     "postalCode": "",
      "manifestFee": "CITY_OF_HOUSTON"
     }
    ],
@@ -931,32 +899,6 @@
  ],
  "invoices": [
   {
-   "number": "001",
-   "date": "2026-06-11",
-   "nextServiceDate": "2026-09-09",
-   "serviceTitle": "Grease Trap Pumping & Disposal",
-   "serviceType": "GREASE_TRAP_PUMPING",
-   "assetType": "GREASE_TRAP",
-   "gallons": null,
-   "rate": "0.60",
-   "manifestFee": "CITY_OF_HOUSTON",
-   "totalCents": 0,
-   "lines": [
-    {
-     "kind": "PER_GALLON",
-     "description": "Grease trap pumping & disposal - PRICING REQUIRED (trap size unknown)",
-     "quantity": "0",
-     "unitPriceCents": "60",
-     "amountCents": 0
-    }
-   ],
-   "source": "Sewer Squad Invoice 001 - Pink Flora Co Dispensary.pdf",
-   "hasDiscount": false,
-   "location": "PINK FLORA CO DISPENSARY|3311 S SHEPHERD DR",
-   "status": "DRAFT",
-   "reconstructed": false
-  },
-  {
    "number": "002",
    "date": "2026-06-15",
    "nextServiceDate": "2026-09-13",
@@ -988,46 +930,6 @@
    "location": "PIT STOP EXPRESS|22323 SW FREEWAY",
    "status": "ISSUED",
    "reconstructed": false
-  },
-  {
-   "number": "003",
-   "date": "2026-06-17",
-   "nextServiceDate": "2026-09-15",
-   "serviceTitle": "Grease Trap Pumping & Disposal",
-   "serviceType": "GREASE_TRAP_PUMPING",
-   "assetType": "GREASE_TRAP",
-   "gallons": 1250,
-   "rate": "0.30",
-   "manifestFee": "CITY_OF_HOUSTON",
-   "totalCents": 42500,
-   "lines": [
-    {
-     "kind": "PER_GALLON",
-     "description": "Grease trap pumping & disposal",
-     "quantity": "1250",
-     "unitPriceCents": "30",
-     "amountCents": 37500
-    },
-    {
-     "kind": "OTHER",
-     "description": "Additional services (itemized on the original invoice)",
-     "quantity": "1",
-     "unitPriceCents": "3500",
-     "amountCents": 3500
-    },
-    {
-     "kind": "MANIFEST_FEE",
-     "description": "City of Houston manifest fee",
-     "quantity": "1",
-     "unitPriceCents": "1500",
-     "amountCents": 1500
-    }
-   ],
-   "source": "Sewer Squad Invoice 003 - Roadtrac 4.pdf",
-   "hasDiscount": false,
-   "location": "ROADTRAC|8136 W TIDWELL RD",
-   "status": "ISSUED",
-   "reconstructed": true
   },
   {
    "number": "004",

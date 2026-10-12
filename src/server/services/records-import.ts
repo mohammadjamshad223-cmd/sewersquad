@@ -17,7 +17,7 @@ import records from "../import/records-2026.json";
 
 /**
  * One-time import of the records Sewer Squad kept before the portal (June–September 2026):
- * customers and locations, invoices 001–072, proposals and quotes, two service reports, and
+ * customers and locations, invoices 002–072 (001 and 003 were never confirmed), proposals and quotes, two service reports, and
  * 90-day service plans. Every step is idempotent (matched by name, address or document number),
  * runs in small batches so no request hits a host time limit, and can be re-run safely.
  */

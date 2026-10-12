@@ -37,17 +37,17 @@ describe("historical records import", () => {
     await runAll(owner, { unpaid, applyCompany: true, createPlans: true }); // idempotent
 
     expect(await prisma.organization.count()).toBe(RECORDS.organizations.length);
-    expect(await prisma.serviceLocation.count()).toBe(65);
+    expect(await prisma.serviceLocation.count()).toBe(63);
     const invoices = await prisma.invoice.findMany({ include: { lineItems: true } });
-    expect(invoices).toHaveLength(72);
+    expect(invoices).toHaveLength(70);
     const byNo = new Map(invoices.map((i) => [i.invoiceNumber, i]));
     for (const r of RECORDS.invoices) if (r.totalCents !== null) expect(byNo.get(r.number)!.totalCents).toBe(r.totalCents);
-    expect(byNo.get("001")!.status).toBe("DRAFT");
+    expect(byNo.has("001") || byNo.has("003")).toBe(false); // never confirmed as customers
     expect(byNo.get("050")!.status).toBe("SENT");
     expect(byNo.get("050")!.balanceCents).toBe(77_419);
     expect(byNo.get("049")!.status).toBe("PAID");
-    expect(await prisma.payment.count({ where: { status: "SUCCEEDED" } })).toBe(72 - 1 - unpaid.length);
-    expect(await prisma.document.count({ where: { type: "INVOICE", deletedAt: null } })).toBe(71);
+    expect(await prisma.payment.count({ where: { status: "SUCCEEDED" } })).toBe(70 - unpaid.length);
+    expect(await prisma.document.count({ where: { type: "INVOICE", deletedAt: null } })).toBe(70);
 
     const p054 = await prisma.proposal.findUniqueOrThrow({ where: { number: "P-054" } });
     expect(p054.totalCents).toBe(64_396);

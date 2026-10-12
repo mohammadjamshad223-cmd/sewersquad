@@ -11,7 +11,7 @@ export default async function ImportPage() {
   const preview = await importPreview();
   return (
     <div>
-      <PageHeader title="Import your records" description="One-time import of what you ran before the portal: customers, invoices 001–072, proposals and quotes, service reports and 90-day service schedules." breadcrumbs={[{ label: "Settings", href: "/admin/settings" }, { label: "Import records" }]} />
+      <PageHeader title="Import your records" description="One-time import of what you ran before the portal: customers, invoices 002–072, proposals and quotes, service reports and 90-day service schedules." breadcrumbs={[{ label: "Settings", href: "/admin/settings" }, { label: "Import records" }]} />
       <ImportRunner preview={preview} />
     </div>
   );
