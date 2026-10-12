@@ -10,7 +10,7 @@ explicit **"not configured"** state; it never pretends to work. Current state is
 | Email (Resend) | `RESEND_API_KEY`, `EMAIL_FROM` | **Not configured. Not exercised against Resend.** | Notifications stay in-app. Delivery records are marked `SKIPPED` with a reason. When staff invite someone, the one-time invitation link is shown to them (with a copy button) to hand over. Self-service "Forgot password" requires email. Without it, staff can use **Send reset link** or **Resend invite** on any user, which shows the one-time link with a copy button. |
 | SMS (Twilio) | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER` | **Not configured.** | SMS preferences remain, and sends are recorded as `SKIPPED`. |
 | Object storage (S3 / R2 / MinIO) | `STORAGE_DRIVER=s3`, `S3_*` | **Not exercised against a real bucket.** Local driver tested. | Development uses `./storage`. Production refuses to start file operations on local storage unless `ALLOW_LOCAL_STORAGE=true`. |
-| Maps | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | **No basemap/geocoding implemented.** | Dispatch "map" is a schematic plot from stored lat/lng. Navigation links open Google/Apple Maps (no key needed). Locations need lat/lng entered for the plot. |
+| Maps (Google) | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Implemented: dispatch stop map, location pin, automatic address → coordinates. Tested with an invalid key only (loads, fails cleanly); **not yet verified with a real key.** | Dispatch "map" is a schematic plot from stored lat/lng. Navigation links open Google/Apple Maps (no key needed). |
 | Brand assets | `public/brand/*`, `src/config/brand.ts` | **Done.** Official logo, navy `#002957` and green `#65AA27`. | — |
 
 ## Stripe — test mode first (required before any live use)
@@ -50,8 +50,14 @@ Stripe IDs, amounts, brand and last-4 as returned by Stripe.
 
 ## SMS (Twilio)
 
-Set the three Twilio variables. SMS goes only to users who opted in under notification preferences.
-US A2P 10DLC registration is your responsibility before sending at volume.
+Set `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` and `TWILIO_FROM_NUMBER` (e.g. `+17135550100`).
+
+- US carriers block texts from unregistered business numbers, so complete **A2P 10DLC** registration
+  (brand and campaign) in Twilio first. Opt-in happens when each user turns on text alerts under
+  their notification settings in the portal.
+- Every text starts with "Sewer Squad:" and ends with "Reply STOP to opt out." Twilio handles STOP/HELP.
+- Phone numbers are converted to international format automatically. 10-digit numbers are treated as US.
+- Sign-in links (invitations, password resets) are never sent by text.
 
 ## Object storage
 
@@ -61,6 +67,14 @@ Use a **private** bucket: no public ACLs, block public access on. The app serves
 - Cloudflare R2: set `S3_ENDPOINT=https://<account>.r2.cloudflarestorage.com` and `S3_REGION=auto`.
 - MinIO: also set `S3_FORCE_PATH_STYLE=true`.
 Enable bucket versioning (see [backups](backups.md)).
+
+## Maps (Google)
+
+One browser key powers the dispatch map, location pins and the automatic address lookup.
+1. In Google Cloud Console, create a project, link billing, and enable the **Maps JavaScript API** and **Geocoding API**.
+2. Create an API key. Under **Application restrictions**, choose **Websites** and add `https://portal.sewersquadservices.com/*` (and `https://sewersquad.vercel.app/*`). Under **API restrictions**, allow only those two APIs.
+3. Set `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` in Vercel and **redeploy**. The key is built into the page, so a redeploy is required.
+4. Locations without coordinates are placed from their address automatically the next time staff open the dispatch map, the locations list or the location. Changing an address clears the old position so it is looked up again.
 
 ## Compliance data that must come from you
 

@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { MapPin } from "lucide-react";
 import type { Prisma } from "@prisma/client";
-import { requireStaffPage } from "@/server/authz/guards";
+import { requireStaffPage, hasPermission } from "@/server/authz/guards";
+import { integrations } from "@/server/env";
+import { AutoGeocode } from "@/components/maps/auto-geocode";
 import { prisma } from "@/server/db";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +17,7 @@ import { titleCase } from "@/lib/utils";
 export const metadata = { title: "Service locations" };
 
 export default async function Locations({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
-  await requireStaffPage("customers.read");
+  const actor = await requireStaffPage("customers.read");
   const sp = await searchParams;
   const page = parsePage(sp.page);
   const territories = await prisma.serviceLocation.findMany({ where: { territory: { not: null } }, distinct: ["territory"], select: { territory: true } });
@@ -29,9 +31,17 @@ export default async function Locations({ searchParams }: { searchParams: Promis
     prisma.serviceLocation.findMany({ where, include: { organization: { select: { id: true, name: true } }, _count: { select: { assets: { where: { deletedAt: null } } } }, plans: { where: { status: "ACTIVE" }, select: { nextServiceDate: true }, orderBy: { nextServiceDate: "asc" }, take: 1 } }, orderBy: { name: "asc" }, skip: (page - 1) * 25, take: 25 }),
     prisma.serviceLocation.count({ where }),
   ]);
+  const missingCoords = integrations.maps()
+    ? await prisma.serviceLocation.findMany({ where: { deletedAt: null, status: "ACTIVE", OR: [{ latitude: null }, { longitude: null }] }, select: { id: true, name: true, addressLine1: true, city: true, state: true, postalCode: true }, take: 25 })
+    : [];
   return (
     <div>
       <PageHeader title="Service locations" description="Every physical site across all customers." />
+      {integrations.maps() && hasPermission(actor, "customers.write") && (
+        <div className="mb-3">
+          <AutoGeocode items={missingCoords.map((l) => ({ id: l.id, name: l.name, address: `${l.addressLine1}, ${l.city}, ${l.state} ${l.postalCode}` }))} />
+        </div>
+      )}
       <Card>
         <FilterBar search={{ placeholder: "Name, address, ZIP, phone, customer…" }} selects={[{ param: "status", label: "Status", options: [{ value: "ACTIVE", label: "Active" }, { value: "INACTIVE", label: "Inactive" }] }, { param: "territory", label: "Territory", options: territories.map((t) => ({ value: t.territory!, label: t.territory! })) }]} />
         {items.length === 0 ? <EmptyState icon={MapPin} title="No locations found" /> : (

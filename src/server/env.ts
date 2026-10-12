@@ -31,7 +31,7 @@ const schema = z.object({
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
   STRIPE_ENABLE_ACH: z.enum(["true", "false"]).default("false"),
-  /** Live keys (sk_live_…) stay disabled until the test-mode checklist in docs/integrations.md is signed off. */
+  /** Live keys (sk_live_… or restricted rk_live_…) stay disabled until the test-mode checklist in docs/integrations.md is signed off. */
   STRIPE_LIVE_APPROVED: z.enum(["true", "false"]).default("false"),
 
   RESEND_API_KEY: z.string().optional(),
@@ -48,9 +48,28 @@ export type Env = z.infer<typeof schema>;
 
 let cached: Env | null = null;
 
+/** Trim whitespace and one pair of matching surrounding quotes; blank becomes undefined. */
+export function cleanValue(v: string | undefined): string | undefined {
+  if (typeof v !== "string") return undefined;
+  let s = v.trim();
+  if (s.length >= 2 && (s[0] === '"' || s[0] === "'") && s.at(-1) === s[0]) s = s.slice(1, -1).trim();
+  return s === "" ? undefined : s;
+}
+
+/** For admin diagnostics: shows which key is in use without revealing it (like Stripe's dashboard). */
+export function maskSecret(v: string | undefined): string {
+  if (!v) return "not set";
+  const prefix = v.match(/^[a-z]+_(live|test)_/)?.[0] ?? v.slice(0, 3);
+  return `${prefix}…${v.slice(-4)}`;
+}
+
 export function env(): Env {
   if (cached) return cached;
-  const parsed = schema.safeParse(process.env);
+  // Values pasted into hosting dashboards often carry stray spaces or newlines; blank means unset.
+  const cleaned = Object.fromEntries(
+    Object.entries(process.env).map(([k, v]) => [k, cleanValue(v)]),
+  );
+  const parsed = schema.safeParse(cleaned);
   if (!parsed.success) {
     const issues = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
     throw new Error(`Invalid environment configuration: ${issues}`);
@@ -59,11 +78,16 @@ export function env(): Env {
   return cached;
 }
 
+/** Secret (sk_) and restricted (rk_) keys both come in test and live variants. */
+export function isLiveStripeKey(key: string | undefined) {
+  return /^(sk|rk)_live_/.test(key?.trim() ?? "");
+}
+
 export const integrations = {
   stripe: () => {
     const e = env();
     if (!e.STRIPE_SECRET_KEY || !e.STRIPE_WEBHOOK_SECRET) return false;
-    return !e.STRIPE_SECRET_KEY.startsWith("sk_live_") || e.STRIPE_LIVE_APPROVED === "true";
+    return !isLiveStripeKey(e.STRIPE_SECRET_KEY) || e.STRIPE_LIVE_APPROVED === "true";
   },
   email: () => Boolean(env().RESEND_API_KEY && env().EMAIL_FROM),
   sms: () => Boolean(env().TWILIO_ACCOUNT_SID && env().TWILIO_AUTH_TOKEN && env().TWILIO_FROM_NUMBER),

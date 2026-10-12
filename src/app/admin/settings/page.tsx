@@ -1,6 +1,6 @@
 import { requireStaffPage, hasPermission } from "@/server/authz/guards";
 import { prisma } from "@/server/db";
-import { env, integrations } from "@/server/env";
+import { env, integrations, maskSecret } from "@/server/env";
 import { getAllSettings } from "@/server/services/settings";
 import { PERMISSIONS, SYSTEM_ROLES, type Permission } from "@/server/authz/permissions";
 import { stripeIsLiveKey } from "@/server/services/payments";
@@ -71,7 +71,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             <THead><tr><TH>Integration</TH><TH>Status</TH><TH>Environment variables</TH></tr></THead>
             <TBody>
               {[
-                ["Stripe payments", integrations.stripe() ? (stripeIsLiveKey() ? "Live mode" : "Test mode") : stripeIsLiveKey() ? "Live key present but disabled — set STRIPE_LIVE_APPROVED after test-mode sign-off" : "Not configured", "STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_ENABLE_ACH, STRIPE_LIVE_APPROVED"],
+                ["Stripe payments", `${integrations.stripe() ? (stripeIsLiveKey() ? "Live mode" : "Test mode") : stripeIsLiveKey() ? "Live key present but disabled — set STRIPE_LIVE_APPROVED after test-mode sign-off" : "Not configured"}${env().STRIPE_SECRET_KEY ? ` · key ${maskSecret(env().STRIPE_SECRET_KEY)}` : ""}`, "STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_ENABLE_ACH, STRIPE_LIVE_APPROVED"],
                 ["Email (Resend)", integrations.email() ? "Configured" : "Not configured — emails are logged as skipped", "RESEND_API_KEY, EMAIL_FROM"],
                 ["SMS (Twilio)", integrations.sms() ? "Configured" : "Not configured (optional)", "TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM_NUMBER"],
                 ["Document storage", integrations.s3() ? `S3 bucket ${env().S3_BUCKET}` : `Local disk (${env().NODE_ENV === "production" ? "not allowed in production" : "development only"})`, "STORAGE_DRIVER, S3_BUCKET, S3_REGION, S3_ENDPOINT, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY"],

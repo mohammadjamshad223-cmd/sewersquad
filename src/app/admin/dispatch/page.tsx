@@ -12,6 +12,8 @@ import { addDays, dateFromKey, formatDateKey, formatWindow, isDateKey, keyFromDa
 import { companyTimeZone } from "@/server/services/settings";
 import { integrations } from "@/server/env";
 import { DispatchBoard, type BoardColumn, type BoardJob } from "./board";
+import { StopsMap } from "@/components/maps/stops-map";
+import { AutoGeocode } from "@/components/maps/auto-geocode";
 import { cn } from "@/lib/utils";
 
 export const metadata = { title: "Dispatch board" };
@@ -35,7 +37,7 @@ export default async function Dispatch({ searchParams }: { searchParams: Promise
   const range = view === "week" ? { gte: dateFromKey(weekStart), lte: dateFromKey(addDays(weekStart, 6)) } : dateFromKey(date);
   const jobs = await prisma.job.findMany({
     where: { scheduledDate: range, status: { in: [...VISIBLE] } },
-    include: { location: { select: { name: true, city: true, latitude: true, longitude: true, territory: true } } },
+    include: { location: { select: { id: true, name: true, addressLine1: true, city: true, state: true, postalCode: true, latitude: true, longitude: true, territory: true } } },
     orderBy: [{ priority: "desc" }, { routeOrder: { sort: "asc", nulls: "last" } }, { windowStart: "asc" }],
   });
   const card = (j: (typeof jobs)[number]): BoardJob => ({ id: j.id, jobNumber: j.jobNumber, status: j.status, priority: j.priority, location: j.location.name, city: j.location.city, window: formatWindow(j.windowStart, j.windowEnd), estimatedGallons: j.estimatedGallons, driverId: j.driverId, vehicleId: j.vehicleId, routeOrder: j.routeOrder });
@@ -97,23 +99,53 @@ export default async function Dispatch({ searchParams }: { searchParams: Promise
           </Table>
         </Card>
       )}
-      {view === "map" && <GeoView jobs={jobs.map((j) => ({ id: j.id, name: j.location.name, lat: j.location.latitude, lng: j.location.longitude, driverId: j.driverId, territory: j.location.territory }))} drivers={drivers.map((d) => ({ id: d.id, name: d.user.name }))} mapsConfigured={integrations.maps()} />}
+      {view === "map" && <GeoView jobs={jobs.map((j) => ({ id: j.id, jobNumber: j.jobNumber, name: j.location.name, lat: j.location.latitude, lng: j.location.longitude, driverId: j.driverId, territory: j.location.territory, locationId: j.location.id, address: `${j.location.addressLine1}, ${j.location.city}, ${j.location.state} ${j.location.postalCode}` }))} drivers={drivers.map((d) => ({ id: d.id, name: d.user.name }))} mapsConfigured={integrations.maps()} />}
     </div>
   );
 }
 
-/** Schematic geographic grouping (no basemap tiles). Shows where stops cluster by driver. */
-function GeoView({ jobs, drivers, mapsConfigured }: { jobs: { id: string; name: string; lat: number | null; lng: number | null; driverId: string | null; territory: string | null }[]; drivers: { id: string; name: string }[]; mapsConfigured: boolean }) {
+type GeoJob = { id: string; jobNumber: string; name: string; lat: number | null; lng: number | null; driverId: string | null; territory: string | null; locationId: string; address: string };
+
+/** Stops colored by driver: a Google map when a Maps key is configured, otherwise a schematic plot. */
+function GeoView({ jobs, drivers, mapsConfigured }: { jobs: GeoJob[]; drivers: { id: string; name: string }[]; mapsConfigured: boolean }) {
   const pts = jobs.filter((j) => j.lat !== null && j.lng !== null);
-  // Scatter: only the first three categorical slots stay distinguishable pairwise; more drivers fold into "Other".
+  // Only the first three categorical slots stay distinguishable pairwise; more drivers fold into "Other".
   const palette = ["#2a78d6", "#eb6834", "#1baf7a"];
   const OTHER = "#a3a29c";
+  const UNASSIGNED = "#52514e";
   const color = (driverId: string | null) => {
-    if (!driverId) return "#52514e";
+    if (!driverId) return UNASSIGNED;
     const i = drivers.findIndex((d) => d.id === driverId);
     return i >= 0 && i < palette.length ? palette[i]! : OTHER;
   };
-  if (pts.length === 0) return <Card><CardBody className="text-sm text-muted-foreground">No stops with coordinates for this day. Add latitude/longitude on locations to see geographic grouping.</CardBody></Card>;
+  const driverName = (driverId: string | null) => drivers.find((d) => d.id === driverId)?.name ?? "Unassigned";
+  const missing = [...new Map(jobs.filter((j) => j.lat === null || j.lng === null).map((j) => [j.locationId, { id: j.locationId, name: j.name, address: j.address }])).values()];
+  const legend = (
+    <ul className="mt-3 flex flex-wrap gap-4 text-[12px]">
+      <li className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: UNASSIGNED }} />Unassigned</li>
+      {drivers.slice(0, 3).map((d) => <li key={d.id} className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: color(d.id) }} />{d.name}</li>)}
+      {drivers.length > 3 && <li className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: OTHER }} />Other drivers ({drivers.length - 3})</li>}
+    </ul>
+  );
+
+  if (mapsConfigured) {
+    return (
+      <Card>
+        <CardHeader title="Stop map" description={`${pts.length} of ${jobs.length} stops placed. Click a dot for the job.`} />
+        <CardBody className="space-y-2">
+          <AutoGeocode items={missing} />
+          <StopsMap label="Map of stops colored by driver" points={pts.map((p) => ({ id: p.id, lat: p.lat!, lng: p.lng!, title: p.name, subtitle: `${p.jobNumber} · ${driverName(p.driverId)}`, color: color(p.driverId), href: `/admin/jobs/${p.id}` }))} />
+          {legend}
+        </CardBody>
+      </Card>
+    );
+  }
+  return <SchematicView pts={pts} color={color} legend={legend} />;
+}
+
+/** Schematic geographic grouping (no basemap tiles), used until a Maps key is configured. */
+function SchematicView({ pts, color, legend }: { pts: GeoJob[]; color: (driverId: string | null) => string; legend: React.ReactNode }) {
+  if (pts.length === 0) return <Card><CardBody className="text-sm text-muted-foreground">No stops with coordinates for this day. Add latitude/longitude on locations, or add a Google Maps key so addresses are placed automatically.</CardBody></Card>;
   const lats = pts.map((p) => p.lat!), lngs = pts.map((p) => p.lng!);
   const [minLat, maxLat, minLng, maxLng] = [Math.min(...lats), Math.max(...lats), Math.min(...lngs), Math.max(...lngs)];
   const pad = 0.05;
@@ -121,7 +153,7 @@ function GeoView({ jobs, drivers, mapsConfigured }: { jobs: { id: string; name: 
   const y = (lat: number) => 380 - ((lat - minLat + pad) / (maxLat - minLat + 2 * pad || 1)) * 360;
   return (
     <Card>
-      <CardHeader title="Stop locations (schematic)" description={mapsConfigured ? "Positions are relative; open a job for turn-by-turn navigation in Google or Apple Maps." : "No maps provider is configured (NEXT_PUBLIC_GOOGLE_MAPS_API_KEY), so this is a schematic plot without streets."} />
+      <CardHeader title="Stop locations (schematic)" description="No maps provider is configured (NEXT_PUBLIC_GOOGLE_MAPS_API_KEY), so this is a schematic plot without streets." />
       <CardBody>
         <svg viewBox="0 0 800 400" className="w-full rounded-md border bg-white" role="img" aria-label="Schematic plot of stop locations colored by driver">
           {pts.map((p) => (
@@ -131,11 +163,7 @@ function GeoView({ jobs, drivers, mapsConfigured }: { jobs: { id: string; name: 
             </g>
           ))}
         </svg>
-        <ul className="mt-3 flex flex-wrap gap-4 text-[12px]">
-          <li className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: "#52514e" }} />Unassigned</li>
-          {drivers.slice(0, 3).map((d) => <li key={d.id} className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: color(d.id) }} />{d.name}</li>)}
-          {drivers.length > 3 && <li className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-full" style={{ background: OTHER }} />Other drivers ({drivers.length - 3})</li>}
-        </ul>
+        {legend}
       </CardBody>
     </Card>
   );

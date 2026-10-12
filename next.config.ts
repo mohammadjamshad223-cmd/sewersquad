@@ -9,16 +9,21 @@ const isDev = process.env.NODE_ENV !== "production";
  * document photos redirect to short-lived signed object-storage URLs. Stripe Checkout is a
  * top-level redirect, allowed as a form target for the no-JS fallback.
  */
+// Google Maps (only when a key is set at build time): sources from Google's Maps JavaScript API
+// CSP guide. 'unsafe-eval' is not included; add it only if the map reports CSP violations.
+const maps = Boolean(process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim());
+const g = (list: string) => (maps ? ` ${list}` : "");
+
 const csp = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
-  "style-src 'self' 'unsafe-inline'",
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}${g("https://*.googleapis.com https://*.gstatic.com https://*.google.com blob:")}`,
+  `style-src 'self' 'unsafe-inline'${g("https://fonts.googleapis.com")}`,
   "img-src 'self' data: blob: https:",
-  "font-src 'self' data:",
-  `connect-src 'self'${isDev ? " ws:" : ""}`,
+  `font-src 'self' data:${g("https://fonts.gstatic.com")}`,
+  `connect-src 'self'${isDev ? " ws:" : ""}${g("https://*.googleapis.com https://*.google.com https://*.gstatic.com data: blob:")}`,
   "media-src 'self' blob:",
   "worker-src 'self' blob:",
-  "frame-src 'none'",
+  `frame-src ${maps ? "https://*.google.com" : "'none'"}`,
   "frame-ancestors 'none'",
   "object-src 'none'",
   "base-uri 'self'",

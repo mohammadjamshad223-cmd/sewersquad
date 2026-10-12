@@ -66,3 +66,23 @@ describe("owner-operator: field mode & office uploads", () => {
     expect(await prisma.auditLog.count({ where: { action: "job.files_attached", entityId: done.id } })).toBe(3);
   });
 });
+
+describe("map positions", () => {
+  it("an address change clears stale coordinates unless coordinates were edited too", async () => {
+    const { updateLocation } = await import("@/server/services/customers");
+    const admin = await staff("admin");
+    const O = await org("Geo Co", { locations: 1 });
+    const loc = await prisma.serviceLocation.update({ where: { id: O.locations[0]!.id }, data: { latitude: 29.76, longitude: -95.37, state: "TX" } });
+    const base = { name: loc.name, addressLine1: loc.addressLine1, city: loc.city, state: "TX", postalCode: loc.postalCode, latitude: 29.76, longitude: -95.37 };
+
+    await updateLocation(admin, loc.id, { ...base, name: "Renamed" } as never);
+    expect((await prisma.serviceLocation.findUniqueOrThrow({ where: { id: loc.id } })).latitude).toBe(29.76);
+
+    await updateLocation(admin, loc.id, { ...base, addressLine1: "500 New St" } as never);
+    const moved = await prisma.serviceLocation.findUniqueOrThrow({ where: { id: loc.id } });
+    expect([moved.latitude, moved.longitude]).toEqual([null, null]);
+
+    await updateLocation(admin, loc.id, { ...base, addressLine1: "600 Other St", latitude: 29.8, longitude: -95.4 } as never);
+    expect((await prisma.serviceLocation.findUniqueOrThrow({ where: { id: loc.id } })).latitude).toBe(29.8);
+  });
+});
