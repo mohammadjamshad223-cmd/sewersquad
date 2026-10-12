@@ -5,6 +5,7 @@ import { createDisposalBill, disposalBillSummary, setDisposalBillStatus, billSch
 import { authorizeDocument } from "@/server/services/documents";
 
 const IMPORT_SQL = readFileSync("prisma/migrations/20261012011000_import_disposal_bills_2026_06_08/migration.sql", "utf8");
+const SOUTHWASTE_SQL = readFileSync("prisma/migrations/20261012020000_import_southwaste_bills/migration.sql", "utf8");
 
 describe("disposal vendor bills", () => {
   let facilityId: string;
@@ -63,5 +64,17 @@ describe("disposal vendor bills", () => {
     expect(imported.reduce((s, b) => s + b.totalCents, 0)).toBe(270_075);
     for (const b of imported) expect(b.lines.reduce((s, l) => s + l.amountCents, 0)).toBe(b.totalCents);
     expect(await prisma.disposalFacility.count({ where: { name: "DownStream Environmental" } })).toBe(1);
+  });
+
+  it("the Southwaste import matches the vendor statement (16 invoices, $3,562.35)", async () => {
+    await prisma.$executeRawUnsafe(SOUTHWASTE_SQL);
+    await prisma.$executeRawUnsafe(SOUTHWASTE_SQL);
+    const sw = await prisma.disposalBill.findMany({ where: { facility: { name: "Southwaste Disposal" } }, include: { lines: true } });
+    expect(sw).toHaveLength(16);
+    expect(sw.reduce((s, b) => s + b.totalCents, 0)).toBe(356_235);
+    for (const b of sw) expect(b.lines.reduce((s, l) => s + l.amountCents, 0)).toBe(b.totalCents);
+    const withGallons = sw.flatMap((b) => b.lines).filter((l) => l.gallons !== null);
+    expect(withGallons.reduce((s, l) => s + l.gallons!, 0)).toBe(9_905);
+    expect(withGallons.every((l) => l.amountCents === l.gallons! * 17)).toBe(true);
   });
 });

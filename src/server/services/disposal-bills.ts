@@ -164,12 +164,13 @@ export async function listDisposalBills(f: BillFilters) {
   });
 }
 
-type SummaryBill = { facilityId: string; facilityName: string; invoiceDate: Date; status: DisposalBillStatus; totalCents: number; gallons: number };
+/** gallonCostCents = the part of the total on lines that list gallons (statement-only lines have none). */
+type SummaryBill = { facilityId: string; facilityName: string; invoiceDate: Date; status: DisposalBillStatus; totalCents: number; gallons: number; gallonCostCents: number };
 
 /** Pure roll-up so it can be unit tested. Void bills are excluded from every figure. */
 export function summarizeBills(bills: SummaryBill[]) {
   const live = bills.filter((b) => b.status !== "VOID");
-  const sum = (xs: SummaryBill[], k: "totalCents" | "gallons") => xs.reduce((s, b) => s + b[k], 0);
+  const sum = (xs: SummaryBill[], k: "totalCents" | "gallons" | "gallonCostCents") => xs.reduce((s, b) => s + b[k], 0);
   const billedCents = sum(live, "totalCents");
   const gallons = sum(live, "gallons");
   const byVendor = new Map<string, { facilityId: string; name: string; bills: number; billedCents: number; openCents: number; gallons: number }>();
@@ -194,17 +195,17 @@ export function summarizeBills(bills: SummaryBill[]) {
     paidCents: sum(live.filter((b) => b.status === "PAID"), "totalCents"),
     gallons,
     /** Average cost per gallon in cents, over lines that list gallons. */
-    centsPerGallon: gallons > 0 ? billedCents / gallons : null,
+    centsPerGallon: gallons > 0 ? sum(live, "gallonCostCents") / gallons : null,
     byVendor: [...byVendor.values()].sort((a, b) => b.billedCents - a.billedCents),
     byMonth: [...byMonth.values()].sort((a, b) => a.month.localeCompare(b.month)),
   };
 }
 
 export async function disposalBillSummary(f: BillFilters) {
-  const bills = await prisma.disposalBill.findMany({ where: billWhere(f), include: { facility: { select: { name: true } }, lines: { select: { gallons: true } } } });
+  const bills = await prisma.disposalBill.findMany({ where: billWhere(f), include: { facility: { select: { name: true } }, lines: { select: { gallons: true, amountCents: true } } } });
   const openAll = await prisma.disposalBill.aggregate({ where: { status: "OPEN" }, _sum: { totalCents: true }, _count: true });
   return {
-    ...summarizeBills(bills.map((b) => ({ facilityId: b.facilityId, facilityName: b.facility.name, invoiceDate: b.invoiceDate, status: b.status, totalCents: b.totalCents, gallons: b.lines.reduce((s, l) => s + (l.gallons ?? 0), 0) }))),
+    ...summarizeBills(bills.map((b) => ({ facilityId: b.facilityId, facilityName: b.facility.name, invoiceDate: b.invoiceDate, status: b.status, totalCents: b.totalCents, gallons: b.lines.reduce((s, l) => s + (l.gallons ?? 0), 0), gallonCostCents: b.lines.reduce((s, l) => s + (l.gallons !== null ? l.amountCents : 0), 0) }))),
     /** Everything still owed, regardless of the date filter. */
     openAllCents: openAll._sum.totalCents ?? 0,
     openAllCount: openAll._count,
