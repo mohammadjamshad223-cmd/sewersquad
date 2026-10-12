@@ -17,7 +17,7 @@ import { companyTimeZone } from "@/server/services/settings";
 import { titleCase } from "@/lib/utils";
 
 export const metadata = { title: "Documents" };
-const TYPES: DocumentType[] = ["MANIFEST", "MANIFEST_OFFICIAL", "INVOICE", "RECEIPT", "SERVICE_PHOTO", "CONTRACT", "AGREEMENT", "PERMIT", "OTHER"];
+const TYPES: DocumentType[] = ["MANIFEST", "MANIFEST_OFFICIAL", "INVOICE", "RECEIPT", "SERVICE_PHOTO", "CONTRACT", "AGREEMENT", "PERMIT", "PROPOSAL", "SERVICE_REPORT", "OTHER"];
 
 export default async function Documents({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const sp = await searchParams;

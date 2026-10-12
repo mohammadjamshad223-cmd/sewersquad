@@ -25,6 +25,8 @@ import {
   Wrench,
   Recycle,
   Inbox,
+  FileSignature,
+  NotebookPen,
   type LucideIcon,
 } from "lucide-react";
 
@@ -63,6 +65,8 @@ export const ADMIN_NAV: NavGroup[] = [
     items: [
       { href: "/admin/manifests", label: "Manifests", icon: ClipboardCheck, permission: "manifests.read" },
       { href: "/admin/invoices", label: "Invoices", icon: Receipt, permission: "invoices.read" },
+      { href: "/admin/proposals", label: "Proposals & Quotes", icon: FileSignature, permission: "invoices.read" },
+      { href: "/admin/service-reports", label: "Service Reports", icon: NotebookPen, permission: "jobs.read" },
       { href: "/admin/payments", label: "Payments", icon: CreditCard, permission: "payments.read" },
       { href: "/admin/documents", label: "Documents", icon: FolderOpen, permission: "documents.read" },
     ],

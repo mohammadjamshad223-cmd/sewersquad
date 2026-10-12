@@ -37,6 +37,8 @@ function invoiceInput(fd: FormData) {
     serviceDate: fd.get("serviceDate") || undefined,
     paymentTermsDays: fd.get("paymentTermsDays") || undefined,
     poNumber: fd.get("poNumber") || undefined,
+    serviceTitle: fd.get("serviceTitle") || undefined,
+    nextServiceDate: fd.get("nextServiceDate") || undefined,
     notes: fd.get("notes") || undefined,
     lines: linesFrom(fd),
   });

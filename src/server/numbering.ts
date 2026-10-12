@@ -23,7 +23,11 @@ export const numbers = {
   plan: async (db: Db) => `SP-${pad(await nextSequence(db, "plan"), 5)}`,
   job: async (db: Db) => `J-${year()}-${pad(await nextSequence(db, `job-${year()}`), 6)}`,
   manifest: async (db: Db) => `MF-${year()}-${pad(await nextSequence(db, `manifest-${year()}`), 6)}`,
-  invoice: async (db: Db) => `INV-${year()}-${pad(await nextSequence(db, `invoice-${year()}`), 6)}`,
+  // Continues the owner's paper numbering (001–072 were issued before the portal).
+  invoice: async (db: Db) => pad(await nextSequence(db, "invoice", 73), 3),
+  proposal: async (db: Db) => `P-${pad(await nextSequence(db, "proposal", 70), 3)}`,
+  quote: async (db: Db) => `Q-${pad(await nextSequence(db, "quote", 61), 3)}`,
+  report: async (db: Db) => `R-${pad(await nextSequence(db, "report", 1), 3)}`,
   payment: async (db: Db) => `PAY-${year()}-${pad(await nextSequence(db, `payment-${year()}`), 6)}`,
   emergency: async (db: Db) => `ER-${year()}-${pad(await nextSequence(db, `emergency-${year()}`), 5)}`,
   ticket: async (db: Db) => `T-${pad(await nextSequence(db, "ticket", 1001), 5)}`,

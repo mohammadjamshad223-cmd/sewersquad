@@ -202,6 +202,8 @@ model Organization {
   supportTickets    SupportTicket[]
   documents         Document[]
   pricingRules      PricingRule[]
+  proposals         Proposal[]
+  serviceReports    ServiceReport[]
 
   @@index([name])
   @@index([status])
@@ -253,6 +255,8 @@ model ServiceLocation {
   status              RecordStatus    @default(ACTIVE)
   billingProfileId    String?         @db.Uuid
   billingProfile      BillingProfile? @relation("LocationBilling", fields: [billingProfileId], references: [id])
+  /// Which manifest fee (a percentage of the trap service) this location's invoices carry.
+  manifestFee         ManifestFeeType @default(NONE)
   isDemo              Boolean         @default(false)
   createdById         String?         @db.Uuid
   updatedById         String?         @db.Uuid
@@ -271,10 +275,19 @@ model ServiceLocation {
   emergencyRequests EmergencyRequest[]
   supportTickets    SupportTicket[]
   documents         Document[]
+  proposals         Proposal[]
+  serviceReports    ServiceReport[]
 
   @@index([organizationId])
   @@index([city])
   @@index([postalCode])
+}
+
+enum ManifestFeeType {
+  NONE
+  STANDARD // "Manifest fee"
+  CITY_OF_HOUSTON // "City of Houston manifest fee"
+  WAIVED
 }
 
 model LocationMembership {
@@ -732,6 +745,7 @@ model Job {
   invoices         Invoice[]
   charges          JobCharge[]
   emergencyRequest EmergencyRequest?
+  serviceReports   ServiceReport[]
   documents        Document[]
   issues           IssueReport[]
   loadAllocations  DisposalLoadAllocation[]
@@ -992,6 +1006,8 @@ enum DocumentType {
   INSPECTION
   EQUIPMENT_PHOTO
   SUPPORT_ATTACHMENT
+  PROPOSAL
+  SERVICE_REPORT
   OTHER
 }
 
@@ -1031,6 +1047,10 @@ model Document {
   disposalEvent      DisposalEvent?     @relation(fields: [disposalEventId], references: [id])
   disposalBillId     String?            @db.Uuid
   disposalBill       DisposalBill?      @relation(fields: [disposalBillId], references: [id])
+  proposalId         String?            @db.Uuid
+  proposal           Proposal?          @relation(fields: [proposalId], references: [id])
+  serviceReportId    String?            @db.Uuid
+  serviceReport      ServiceReport?     @relation(fields: [serviceReportId], references: [id])
   emergencyRequestId String?            @db.Uuid
   emergencyRequest   EmergencyRequest?  @relation(fields: [emergencyRequestId], references: [id])
   supportTicketId    String?            @db.Uuid
@@ -1049,6 +1069,8 @@ model Document {
   @@index([manifestId])
   @@index([invoiceId])
   @@index([disposalBillId])
+  @@index([proposalId])
+  @@index([serviceReportId])
 }
 
 model DocumentVersion {
@@ -1214,6 +1236,7 @@ enum LineItemKind {
   AFTER_HOURS
   ADDITIONAL_EQUIPMENT
   DISPOSAL_FEE
+  MANIFEST_FEE
   DISCOUNT
   LATE_FEE
   OTHER
@@ -1248,6 +1271,12 @@ model Invoice {
   balanceCents      Int
   allowPartial      Boolean          @default(true)
   poNumber          String?
+  /// Headline under "SERVICE" on the invoice, e.g. "Grit Trap Pumping & Disposal".
+  serviceTitle      String?
+  /// Printed as "NEXT SERVICE DATE" on the invoice.
+  nextServiceDate   DateTime?        @db.Date
+  /// Original file for invoices imported from records kept before the portal.
+  legacySource      String?
   notes             String?
   sentAt            DateTime?
   viewedAt          DateTime?
@@ -1264,6 +1293,7 @@ model Invoice {
   allocations PaymentAllocation[]
   documents   Document[]
   tickets     SupportTicket[]
+  reports     ServiceReport[]
 
   @@index([organizationId, status])
   @@index([status, dueDate])
@@ -1634,4 +1664,125 @@ model CompanySetting {
 model NumberSequence {
   key   String @id
   value Int
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Proposals / quotes and service reports (branded customer documents)
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum ProposalKind {
+  PROPOSAL
+  QUOTE
+}
+
+enum ProposalStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  DECLINED
+}
+
+/// A priced scope of work for a customer or a prospect (no portal account needed).
+model Proposal {
+  id             String            @id @default(uuid()) @db.Uuid
+  number         String            @unique // P-070, Q-061
+  kind           ProposalKind      @default(PROPOSAL)
+  status         ProposalStatus    @default(DRAFT)
+  organizationId String?           @db.Uuid
+  organization   Organization?     @relation(fields: [organizationId], references: [id])
+  locationId     String?           @db.Uuid
+  location       ServiceLocation?  @relation(fields: [locationId], references: [id])
+  preparedFor    String
+  addressLine1   String
+  city           String
+  state          String            @default("TX")
+  postalCode     String
+  date           DateTime          @db.Date
+  scopeTitle     String
+  scopeSubtitle  String?
+  intro          String?
+  note           String?
+  /// Shown instead of the total when pricing is a range or still to be confirmed.
+  priceNote      String?
+  totalCents     Int               @default(0)
+  sentAt         DateTime?
+  decidedAt      DateTime?
+  decisionNote   String?
+  legacySource   String?
+  createdById    String?           @db.Uuid
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  sections       ProposalSection[]
+  documents      Document[]
+
+  @@index([status])
+  @@index([organizationId])
+}
+
+model ProposalSection {
+  id            String         @id @default(uuid()) @db.Uuid
+  proposalId    String         @db.Uuid
+  proposal      Proposal       @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  /// e.g. "HOLLANDS COFFEE — Grease Trap Service"; blank for a single-section proposal.
+  title         String?
+  /// e.g. "Hollands subtotal"; blank hides the subtotal row.
+  subtotalLabel String?
+  sortOrder     Int            @default(0)
+  lines         ProposalLine[]
+
+  @@index([proposalId])
+}
+
+model ProposalLine {
+  id             String          @id @default(uuid()) @db.Uuid
+  sectionId      String          @db.Uuid
+  section        ProposalSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  kind           LineItemKind
+  description    String
+  quantity       Decimal         @db.Decimal(12, 3)
+  unitPriceCents Decimal         @db.Decimal(14, 4)
+  amountCents    Int
+  sortOrder      Int             @default(0)
+
+  @@index([sectionId])
+}
+
+enum ServiceReportStatus {
+  DRAFT
+  FINAL
+}
+
+/// Written findings and recommendations for a site visit.
+model ServiceReport {
+  id             String              @id @default(uuid()) @db.Uuid
+  number         String              @unique
+  status         ServiceReportStatus @default(DRAFT)
+  organizationId String?             @db.Uuid
+  organization   Organization?       @relation(fields: [organizationId], references: [id])
+  locationId     String?             @db.Uuid
+  location       ServiceLocation?    @relation(fields: [locationId], references: [id])
+  jobId          String?             @db.Uuid
+  job            Job?                @relation(fields: [jobId], references: [id])
+  invoiceId      String?             @db.Uuid
+  invoice        Invoice?            @relation(fields: [invoiceId], references: [id])
+  preparedFor    String
+  addressLine1   String
+  city           String
+  state          String              @default("TX")
+  postalCode     String
+  serviceDate    DateTime            @db.Date
+  subject        String
+  /// [{ "title": "FINDINGS", "body": "Paragraphs separated by blank lines; lines starting with • are bullets." }]
+  sections       Json
+  /// Closing line printed in italics before the footer.
+  closing        String?
+  finalizedAt    DateTime?
+  legacySource   String?
+  createdById    String?             @db.Uuid
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  documents      Document[]
+
+  @@index([organizationId])
+  @@index([jobId])
 }

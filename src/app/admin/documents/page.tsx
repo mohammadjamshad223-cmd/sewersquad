@@ -17,8 +17,8 @@ import { titleCase } from "@/lib/utils";
 import { DocActions, UploadDialog } from "./doc-forms";
 
 export const metadata = { title: "Documents" };
-const TYPES: DocumentType[] = ["MANIFEST", "MANIFEST_OFFICIAL", "INVOICE", "RECEIPT", "DISPOSAL_TICKET", "SERVICE_PHOTO", "SIGNATURE", "CONTRACT", "AGREEMENT", "PERMIT", "INSPECTION", "EQUIPMENT_PHOTO", "SUPPORT_ATTACHMENT", "OTHER"];
-const GENERATED: DocumentType[] = ["MANIFEST", "INVOICE", "RECEIPT", "SIGNATURE"];
+const TYPES: DocumentType[] = ["MANIFEST", "MANIFEST_OFFICIAL", "INVOICE", "RECEIPT", "DISPOSAL_TICKET", "SERVICE_PHOTO", "SIGNATURE", "CONTRACT", "AGREEMENT", "PERMIT", "INSPECTION", "EQUIPMENT_PHOTO", "SUPPORT_ATTACHMENT", "PROPOSAL", "SERVICE_REPORT", "DISPOSAL_INVOICE", "OTHER"];
+const GENERATED: DocumentType[] = ["MANIFEST", "INVOICE", "RECEIPT", "SIGNATURE", "PROPOSAL", "SERVICE_REPORT"];
 
 export default async function Documents({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const actor = await requireStaffPage("documents.read");

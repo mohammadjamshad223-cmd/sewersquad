@@ -16,7 +16,7 @@ export default async function NewInvoice() {
   return (
     <div>
       <PageHeader title="New invoice" description="Create a manual invoice. Invoices for completed jobs are generated automatically on approval." breadcrumbs={[{ label: "Invoices", href: "/admin/invoices" }, { label: "New" }]} />
-      <Card><CardBody><InvoiceEditor orgs={orgs} taxRateBps={billing.defaultTaxRateBps} /></CardBody></Card>
+      <Card><CardBody><InvoiceEditor orgs={orgs} taxRateBps={billing.defaultTaxRateBps} manifestFeeBps={billing.manifestFeeBps} /></CardBody></Card>
     </div>
   );
 }

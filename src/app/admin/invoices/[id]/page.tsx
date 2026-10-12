@@ -1,3 +1,4 @@
+import { getSetting } from "@/server/services/settings";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { idParam } from "@/server/params";
@@ -51,8 +52,8 @@ export default async function AdminInvoice({ params, searchParams }: { params: P
       {inv.notes?.startsWith("Pricing required") && <Alert tone="warning" title="Pricing required">No contracted or default price matched this service. Set the price on the line item before sending.</Alert>}
       {editing ? (
         <Card><CardHeader title="Edit draft" /><CardBody>
-          <InvoiceEditor orgs={[{ id: inv.organization.id, name: inv.organization.name, locations: inv.organization.locations, billingProfiles: inv.organization.billingProfiles }]} taxRateBps={inv.taxRateBps}
-            invoice={{ id: inv.id, organizationId: inv.organizationId, serviceLocationId: inv.serviceLocationId, billingProfileId: inv.billingProfileId, serviceDate: inv.serviceDate ? keyFromDate(inv.serviceDate) : null, paymentTermsDays: inv.paymentTermsDays, poNumber: inv.poNumber, notes: inv.notes, lines: inv.lineItems.map((l) => ({ kind: l.kind, description: l.description, quantity: l.quantity.toString(), unitPrice: (Number(l.unitPriceCents) / 100).toFixed(Number(l.unitPriceCents) % 1 ? 4 : 2), taxable: l.taxable })) }} />
+          <InvoiceEditor orgs={[{ id: inv.organization.id, name: inv.organization.name, locations: inv.organization.locations, billingProfiles: inv.organization.billingProfiles }]} taxRateBps={inv.taxRateBps} manifestFeeBps={(await getSetting("billing")).manifestFeeBps}
+            invoice={{ id: inv.id, organizationId: inv.organizationId, serviceLocationId: inv.serviceLocationId, billingProfileId: inv.billingProfileId, serviceDate: inv.serviceDate ? keyFromDate(inv.serviceDate) : null, paymentTermsDays: inv.paymentTermsDays, poNumber: inv.poNumber, serviceTitle: inv.serviceTitle, nextServiceDate: inv.nextServiceDate ? keyFromDate(inv.nextServiceDate) : null, notes: inv.notes, lines: inv.lineItems.map((l) => ({ kind: l.kind, description: l.description, quantity: l.quantity.toString(), unitPrice: (Number(l.unitPriceCents) / 100).toFixed(Number(l.unitPriceCents) % 1 ? 4 : 2), taxable: l.taxable })) }} />
         </CardBody></Card>
       ) : (
         <div className="grid grid-cols-[minmax(0,1fr)] gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">

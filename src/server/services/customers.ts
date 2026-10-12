@@ -55,6 +55,7 @@ export const locationSchema = z.object({
   latitude: z.coerce.number().min(-90).max(90).optional().nullable(),
   longitude: z.coerce.number().min(-180).max(180).optional().nullable(),
   billingProfileId: z.string().uuid().optional().or(z.literal("").transform(() => undefined)).transform((v) => v ?? null),
+  manifestFee: z.enum(["NONE", "STANDARD", "CITY_OF_HOUSTON", "WAIVED"]).default("NONE"),
 });
 
 export const contactSchema = z.object({
