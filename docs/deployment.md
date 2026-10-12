@@ -54,7 +54,9 @@ It refuses to run when `NODE_ENV=production`.
 On Vercel, run `db:deploy` from CI before promoting a deployment, or add it to the build command:
 `npm run db:deploy && npm run build`.
 
-Preview deployments (pull-request branches) are skipped by `ignoreCommand` in `vercel.json`. The
+Preview deployments (pull-request branches) are skipped by `ignoreCommand` in `vercel.json`. It skips
+builds of branches other than `main`; `main` always builds, and if the branch name is unavailable the
+build runs, so production deploys are never skipped by mistake. The
 environment variables are Production-only, so a preview would have no database or storage. Only
 `main` builds and deploys. To use previews, give them their own database branch and variables,
 then remove that line.
