@@ -4,31 +4,48 @@ import * as React from "react";
 import { Loader2, MapPinOff } from "lucide-react";
 import { loadGoogleMaps, onMapsAuthFailure, type GMap } from "./google-maps";
 
-export type MapPoint = { id: string; lat: number; lng: number; title: string; subtitle?: string; color: string; href?: string };
+export type MapPoint = { id: string; lat: number; lng: number; title: string; subtitle?: string; color: string; href?: string; /** Short marker label, e.g. the stop number. */ label?: string };
 
 function escapeHtml(s: string) {
   return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 }
 
 /** Google map with one colored dot per point; click a dot for its name and a link. */
-export function StopsMap({ points, height = 420, label }: { points: MapPoint[]; height?: number; label: string }) {
+/** `route` joins the points in order with a line (the day's stop order). */
+export function StopsMap({ points, height = 420, label, route = false }: { points: MapPoint[]; height?: number; label: string; route?: boolean }) {
   const ref = React.useRef<HTMLDivElement>(null);
   const [state, setState] = React.useState<"loading" | "ready" | "error">("loading");
   const [error, setError] = React.useState("");
-  const key = points.map((p) => `${p.id}:${p.lat},${p.lng}:${p.color}`).join("|");
+  const key = `${route}|` + points.map((p) => `${p.id}:${p.lat},${p.lng}:${p.color}:${p.label ?? ""}`).join("|");
 
-  React.useEffect(() => onMapsAuthFailure(() => {
+  React.useEffect(() => onMapsAuthFailure((why) => {
     setState("error");
-    setError("Google rejected the Maps API key. Check that it allows this website and has the Maps JavaScript API enabled.");
+    setError(why);
   }), []);
 
   React.useEffect(() => {
     let cancelled = false;
     const markers: { setMap(m: GMap | null): void }[] = [];
+    let line: { setMap(m: GMap | null): void } | null = null;
     loadGoogleMaps()
       .then((g) => {
         if (cancelled || !ref.current) return;
-        const map = new g.Map(ref.current, { mapTypeControl: false, streetViewControl: false, fullscreenControl: true, clickableIcons: false, gestureHandling: "cooperative" });
+        const map = new g.Map(ref.current, {
+          mapTypeControl: false,
+          streetViewControl: false,
+          fullscreenControl: true,
+          clickableIcons: false,
+          gestureHandling: "cooperative",
+          // Quiet basemap so the stops stand out.
+          styles: [
+            { featureType: "poi", stylers: [{ visibility: "off" }] },
+            { featureType: "transit", stylers: [{ visibility: "off" }] },
+            { featureType: "road", elementType: "labels.icon", stylers: [{ visibility: "off" }] },
+          ],
+        });
+        if (route && points.length > 1) {
+          line = new g.Polyline({ map, path: points.map((p) => ({ lat: p.lat, lng: p.lng })), strokeColor: "#002957", strokeOpacity: 0.55, strokeWeight: 3, geodesic: true });
+        }
         const info = new g.InfoWindow();
         const bounds = new g.LatLngBounds();
         for (const p of points) {
@@ -36,7 +53,8 @@ export function StopsMap({ points, height = 420, label }: { points: MapPoint[]; 
             map,
             position: { lat: p.lat, lng: p.lng },
             title: p.title,
-            icon: { path: g.SymbolPath.CIRCLE, scale: 8, fillColor: p.color, fillOpacity: 1, strokeColor: "#ffffff", strokeWeight: 2 },
+            icon: { path: g.SymbolPath.CIRCLE, scale: p.label ? 12 : 8, fillColor: p.color, fillOpacity: 1, strokeColor: "#ffffff", strokeWeight: 2 },
+            ...(p.label ? { label: { text: p.label, color: "#ffffff", fontSize: "12px", fontWeight: "700" } } : {}),
           });
           m.addListener("click", () => {
             info.setContent(
@@ -68,6 +86,7 @@ export function StopsMap({ points, height = 420, label }: { points: MapPoint[]; 
     return () => {
       cancelled = true;
       markers.forEach((m) => m.setMap(null));
+      line?.setMap(null);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);

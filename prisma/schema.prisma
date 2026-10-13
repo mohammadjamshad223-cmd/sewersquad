@@ -1821,3 +1821,57 @@ model ServiceReport {
   @@index([organizationId])
   @@index([jobId])
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Leads (sales inquiries arriving by email, phone or web)
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUOTED
+  WON
+  LOST
+}
+
+model Lead {
+  id                 String         @id @default(uuid()) @db.Uuid
+  leadNumber         String         @unique
+  status             LeadStatus     @default(NEW)
+  source             String // "email", "phone", "website", "referral", "other"
+  /// The mailbox it arrived in, e.g. sales@sewersquadservices.com.
+  inbox              String?
+  name               String?
+  company            String?
+  email              String?
+  phone              String?
+  subject            String?
+  message            String?
+  receivedAt         DateTime       @default(now())
+  firstContactedAt   DateTime?
+  firstContactedById String?        @db.Uuid
+  firstContactMethod String?
+  nextFollowUpAt     DateTime?
+  organizationId     String?        @db.Uuid
+  /// Provider message id of the email that created it (duplicate deliveries are ignored).
+  providerMessageId  String?        @unique
+  createdById        String?        @db.Uuid
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  activities         LeadActivity[]
+
+  @@index([status, receivedAt])
+  @@index([email])
+}
+
+model LeadActivity {
+  id         String   @id @default(uuid()) @db.Uuid
+  leadId     String   @db.Uuid
+  lead       Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  kind       String // "email_in", "email_out", "call", "text", "note", "status"
+  body       String?
+  actorId    String?  @db.Uuid
+  occurredAt DateTime @default(now())
+
+  @@index([leadId, occurredAt])
+}

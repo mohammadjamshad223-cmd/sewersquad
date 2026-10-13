@@ -14,7 +14,7 @@ import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { ActionButton } from "@/components/ui/form";
 import { JobFilesForm } from "@/components/admin/job-files-form";
 import { ReasonDialog, FieldInput } from "@/components/admin/dialogs";
-import { AssignControl } from "@/components/admin/assign-control";
+import { CompleteJobButton } from "@/app/admin/dispatch/today";
 import { DocLink } from "@/components/portal/doc-link";
 import { approveJobAction, cancelJobAction, markMissedAction, rejectJobAction, rescheduleJobAction, reviewChargeAction } from "@/app/admin/_actions/ops";
 import { generateInvoiceAction } from "@/app/admin/_actions/billing";
@@ -33,10 +33,6 @@ export default async function AdminJobDetail({ params, searchParams }: { params:
   const job = await jobDetail(id);
   if (!job) notFound();
   const tz = await companyTimeZone();
-  const [drivers, vehicles] = await Promise.all([
-    prisma.driver.findMany({ where: { status: "ACTIVE" }, select: { id: true, defaultVehicleId: true, user: { select: { name: true } } } }),
-    prisma.vehicle.findMany({ select: { id: true, unitNumber: true, status: true }, orderBy: { unitNumber: "asc" } }),
-  ]);
   const rec = job.serviceRecord;
   const gallons = rec?.assetRecords.reduce((s, a) => s + a.gallonsPumped, 0) ?? 0;
   const reviewable = job.status === "SUBMITTED" && hasPermission(actor, "jobs.approve");
@@ -63,7 +59,6 @@ export default async function AdminJobDetail({ params, searchParams }: { params:
               <ReasonDialog trigger={{ label: "Reschedule" }} title="Reschedule job" description={job.planId ? "The plan's contractual occurrence date is preserved; only this visit moves." : undefined} action={rescheduleJobAction} hidden={{ jobId: job.id }} submitLabel="Reschedule">
                 <FieldInput label="New date" name="date" type="date" required defaultValue={keyFromDate(job.scheduledDate)} />
                 <div className="grid grid-cols-2 gap-3"><FieldInput label="Window start" name="windowStart" type="time" defaultValue={job.windowStart ?? ""} /><FieldInput label="Window end" name="windowEnd" type="time" defaultValue={job.windowEnd ?? ""} /></div>
-                {job.driverId && <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="keepDriver" defaultChecked className="h-4 w-4" /> Keep current driver assignment</label>}
               </ReasonDialog>
             )}
             {canWrite && ["SCHEDULED", "ASSIGNED", "ACCEPTED"].includes(job.status) && <ReasonDialog trigger={{ label: "Mark missed" }} title="Mark as missed" action={markMissedAction} hidden={{ jobId: job.id }} reasonName="note" reasonLabel="What happened?" submitLabel="Mark missed" />}
@@ -71,7 +66,7 @@ export default async function AdminJobDetail({ params, searchParams }: { params:
           </>
         }
       />
-      {sp.created && <Alert tone="success" title="Job created">The customer has been notified{job.driver ? " and the driver has been assigned" : ""}.</Alert>}
+      {sp.created && <Alert tone="success" title="Job created">The customer has been notified.</Alert>}
       {job.emergencyRequest && <Alert tone="danger" title={`Emergency request ${job.emergencyRequest.requestNumber}`}><Link href={`/admin/emergencies/${job.emergencyRequest.id}`} className="underline">Open request</Link></Alert>}
 
       {reviewable && (
@@ -189,17 +184,14 @@ export default async function AdminJobDetail({ params, searchParams }: { params:
         </div>
 
         <div className="space-y-6">
-          <Card>
-            <CardHeader title="Dispatch" />
-            <CardBody className="space-y-3">
-              <AssignControl jobId={job.id} driverId={job.driverId} vehicleId={job.vehicleId} drivers={drivers.map((d) => ({ id: d.id, name: d.user.name, vehicleId: d.defaultVehicleId }))} vehicles={vehicles.map((v) => ({ id: v.id, unitNumber: v.unitNumber, unavailable: v.status === "MAINTENANCE" || v.status === "OUT_OF_SERVICE" }))} disabled={!hasPermission(actor, "jobs.dispatch") || !["SCHEDULED", "ASSIGNED", "ACCEPTED"].includes(job.status)} />
-              {job.assignments.length > 0 && (
-                <details className="text-[13px]"><summary className="cursor-pointer text-muted-foreground">Assignment history ({job.assignments.length})</summary>
-                  <ul className="mt-2 space-y-1">{job.assignments.map((a) => <li key={a.id}>{a.driver?.user.name ?? "—"} · {a.vehicle?.unitNumber ?? "no truck"} · {formatInstant(a.assignedAt, tz)}{a.endedAt ? " (ended)" : ""}</li>)}</ul>
-                </details>
-              )}
-            </CardBody>
-          </Card>
+          {hasPermission(actor, "jobs.approve") && !["CANCELLED"].includes(job.status) && (
+            <Card>
+              <CardHeader title={job.status === "COMPLETED" ? "Customer paperwork" : "Finish this job"} description={job.status === "COMPLETED" ? "Send the photos, manifest and invoice to the customer again." : "Record gallons, photos and signatures. The manifest is finalized, the invoice sent, and the customer gets everything by email and text."} />
+              <CardBody>
+                <CompleteJobButton completed={job.status === "COMPLETED"} job={{ id: job.id, status: job.status, location: job.location.name, cityManifest: job.location.manifestFee === "CITY_OF_HOUSTON", assets: job.assets.map((a) => ({ id: a.asset.id, label: a.asset.name || ASSET_TYPE_LABEL[a.asset.type] || "Equipment", capacity: a.asset.capacityGallons })) }} />
+              </CardBody>
+            </Card>
+          )}
           <Card>
             <CardHeader title="Documents & billing" />
             <CardBody className="space-y-3 text-sm">

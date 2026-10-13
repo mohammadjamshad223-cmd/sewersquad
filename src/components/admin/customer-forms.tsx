@@ -202,8 +202,9 @@ export function PlanForm({ locationId, assets, drivers, vehicles, plan, today, o
       )}
       <Field label="Minimum charge ($)" name="minimumCharge"><Input inputMode="decimal" defaultValue={centsToDollarInput(plan?.minimumChargeCents)} /></Field>
       <Field label="Route / territory" name="territory"><Input defaultValue={plan?.territory ?? ""} /></Field>
-      <Field label="Default driver" name="defaultDriverId"><Select defaultValue={plan?.defaultDriverId ?? ""}><option value="">Assign on dispatch board</option>{drivers.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}</Select></Field>
-      <Field label="Default truck" name="defaultVehicleId"><Select defaultValue={plan?.defaultVehicleId ?? ""}><option value="">—</option>{vehicles.map((v) => <option key={v.id} value={v.id}>{v.unitNumber}</option>)}</Select></Field>
+      {/* No driver/truck assignment while the owners run the one truck; existing values are kept. */}
+      <input type="hidden" name="defaultDriverId" value={plan?.defaultDriverId ?? ""} />
+      <input type="hidden" name="defaultVehicleId" value={plan?.defaultVehicleId ?? ""} />
       <Field label="Special instructions" name="specialInstructions" className="sm:col-span-2"><Textarea rows={2} defaultValue={plan?.specialInstructions ?? ""} /></Field>
       <p className="text-[12px] text-muted-foreground sm:col-span-2">Intervals are customer-specific service schedules, not regulatory requirements.</p>
       <div className="sm:col-span-2"><SubmitButton>{plan ? "Save plan" : "Create plan"}</SubmitButton></div>

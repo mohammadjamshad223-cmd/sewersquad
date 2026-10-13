@@ -23,9 +23,9 @@ const flush = () => after(() => processDueDeliveries());
 
 const _createJob = formAction(jobs.jobSchema, async (input) => {
   const actor = await assertStaff("jobs.write");
-  const job = await jobs.createJob(actor, input);
+  const jobId = await jobs.scheduleService(actor, input);
   flush();
-  redirect(`/admin/jobs/${job.id}?created=1`);
+  redirect(jobId ? `/admin/jobs/${jobId}?created=1` : "/admin/dispatch");
 });
 export async function createJobAction(p: ActionResult, fd: FormData) { return _createJob(p, fd); }
 

@@ -250,3 +250,45 @@ export async function serviceContribution(fromKey: DateKey, toKey: DateKey) {
 export function bigintSafe<T>(rows: T[]): T[] {
   return JSON.parse(JSON.stringify(rows, (_k, v) => (typeof v === "bigint" ? Number(v) : v instanceof Prisma.Decimal ? v.toString() : v)));
 }
+
+/**
+ * Gross profit by month: invoiced revenue minus estimated disposal cost, where disposal cost is
+ * the gallons invoiced that month × the average cost per gallon across all disposal-site bills.
+ * Gallons come from the job's service record, or the per-gallon lines of invoices without a job.
+ */
+export async function grossProfitByMonth(months = 6) {
+  const tz = await companyTimeZone();
+  const start = addMonths(startOfMonthKey(todayKey(tz)), -(months - 1));
+  const [rows, cost] = await Promise.all([
+    prisma.$queryRaw<{ m: string; rev: bigint; gal: Prisma.Decimal | null; invoices: bigint }[]>`
+      WITH inv AS (
+        SELECT i.id, i."jobId", to_char(date_trunc('month', i."issueDate"), 'YYYY-MM') AS m, (i."subtotalCents" - i."discountCents") AS rev
+        FROM "Invoice" i
+        WHERE i."status" IN ('SENT','VIEWED','PARTIALLY_PAID','PAID','OVERDUE') AND i."issueDate" >= ${start}::date
+      )
+      SELECT inv.m, SUM(inv.rev)::bigint AS rev, COUNT(*)::bigint AS invoices,
+        SUM(COALESCE(
+          (SELECT SUM(sar."gallonsPumped") FROM "ServiceRecord" sr JOIN "ServiceAssetRecord" sar ON sar."serviceRecordId" = sr.id WHERE sr."jobId" = inv."jobId"),
+          (SELECT SUM(li."quantity") FROM "InvoiceLineItem" li WHERE li."invoiceId" = inv.id AND li."kind" = 'PER_GALLON'),
+          0)) AS gal
+      FROM inv GROUP BY inv.m ORDER BY inv.m`,
+    prisma.$queryRaw<{ cents: bigint | null; gal: bigint | null }[]>`
+      SELECT SUM(l."amountCents")::bigint AS cents, SUM(l."gallons")::bigint AS gal
+      FROM "DisposalBillLine" l JOIN "DisposalBill" b ON b.id = l."billId"
+      WHERE b."status" <> 'VOID' AND l."gallons" IS NOT NULL AND l."gallons" > 0`,
+  ]);
+  const costGal = Number(cost[0]?.gal ?? 0);
+  const centsPerGallon = costGal > 0 ? Number(cost[0]!.cents ?? 0) / costGal : null;
+  const keys: string[] = [];
+  for (let i = 0; i < months; i++) keys.push(addMonths(start, i).slice(0, 7));
+  const label = (k: string) => new Date(`${k}-01T00:00:00Z`).toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
+  const out = keys.map((k) => {
+    const r = rows.find((x) => x.m === k);
+    const revenueCents = Number(r?.rev ?? 0);
+    const gallons = Math.round(Number(r?.gal ?? 0));
+    const disposalCents = centsPerGallon !== null ? Math.round(gallons * centsPerGallon) : 0;
+    const profitCents = revenueCents - disposalCents;
+    return { month: k, label: label(k), invoices: Number(r?.invoices ?? 0), revenueCents, gallons, disposalCents, profitCents, marginPct: revenueCents > 0 ? (profitCents / revenueCents) * 100 : null };
+  });
+  return { centsPerGallon, months: out.reverse() };
+}

@@ -21,7 +21,7 @@ export default async function Customers({ searchParams }: { searchParams: Promis
   const { items, total, pageSize } = await listOrganizations({ q: sp.q, status: sp.status, type: sp.type, page });
   return (
     <div>
-      <PageHeader title="Customers" description="Customer organizations and their service locations." actions={hasPermission(actor, "customers.write") && <Button asChild><Link href="/admin/customers/new"><Plus /> New customer</Link></Button>} />
+      <PageHeader title="Customers" description="Customer organizations and their service locations." actions={hasPermission(actor, "customers.write") && <Button asChild><Link href="/admin/new-customer"><Plus /> New Customer</Link></Button>} />
       <Card>
         <FilterBar
           search={{ placeholder: "Name, account #, phone, address…" }}

@@ -21,6 +21,7 @@ export type GoogleMaps = {
   Marker: new (opts: Record<string, unknown>) => GMarker;
   InfoWindow: new (opts?: Record<string, unknown>) => GInfoWindow;
   Geocoder: new () => Geocoder;
+  Polyline: new (opts: Record<string, unknown>) => { setMap(m: GMap | null): void };
   SymbolPath: { CIRCLE: number };
 };
 
@@ -37,21 +38,59 @@ export const mapsEnabled = KEY.length > 0;
 
 let loading: Promise<GoogleMaps> | null = null;
 let authFailed = false;
-const authListeners = new Set<() => void>();
+let lastError: string | null = null;
+const authListeners = new Set<(why: string) => void>();
 
-/** Subscribe to Google's "invalid key / referrer not allowed" callback. */
-export function onMapsAuthFailure(fn: () => void) {
-  if (authFailed) fn();
+/**
+ * Google only says *why* it rejected a key in the browser console ("Google Maps JavaScript API
+ * error: RefererNotAllowedMapError"). Each code maps to the one setting to change in Google Cloud.
+ */
+const FIXES: Record<string, string> = {
+  RefererNotAllowedMapError: "this website isn't on the key's allowed list. In Google Cloud → Credentials → your key → Website restrictions, add https://portal.sewersquadservices.com/*",
+  ApiNotActivatedMapError: "the Maps JavaScript API is not turned on. In Google Cloud → APIs & Services → Library, enable “Maps JavaScript API” (and “Geocoding API”).",
+  ApiTargetBlockedMapError: "the key's API restrictions don't include Maps. In Google Cloud → Credentials → your key → API restrictions, allow “Maps JavaScript API” and “Geocoding API”.",
+  BillingNotEnabledMapError: "billing isn't turned on for the Google Cloud project. Link a billing account (Google's free monthly credit covers normal use).",
+  InvalidKeyMapError: "the key itself is wrong. Copy it again from Google Cloud → Credentials into the Vercel variable NEXT_PUBLIC_GOOGLE_MAPS_API_KEY, then redeploy.",
+  MissingKeyMapError: "no key was sent. Set NEXT_PUBLIC_GOOGLE_MAPS_API_KEY in Vercel, then redeploy.",
+  ExpiredKeyMapError: "the key has expired or was deleted. Create a new one in Google Cloud → Credentials and update Vercel.",
+  DeletedApiProjectMapError: "the Google Cloud project for this key was deleted. Create a new key and update Vercel.",
+  OverQuotaMapError: "the daily usage limit was reached. Raise the quota in Google Cloud → APIs & Services → Quotas.",
+};
+
+export function mapsErrorMessage(code: string | null) {
+  const fix = code ? FIXES[code] : null;
+  return fix ? `Google rejected the Maps key (${code}): ${fix}` : `Google rejected the Maps key${code ? ` (${code})` : ""}. Check that the key allows https://portal.sewersquadservices.com/*, has the Maps JavaScript API enabled, and billing is on.`;
+}
+
+/** Subscribe to Google's "invalid key / referrer not allowed" callback. Receives a plain-language fix. */
+export function onMapsAuthFailure(fn: (why: string) => void) {
+  if (authFailed) fn(mapsErrorMessage(lastError));
   authListeners.add(fn);
   return () => void authListeners.delete(fn);
+}
+
+function watchConsoleForMapsErrors() {
+  for (const level of ["error", "warn"] as const) {
+    const original = console[level].bind(console);
+    console[level] = (...args: unknown[]) => {
+      const m = /Google Maps JavaScript API (?:error|warning): (\w+)/.exec(args.map(String).join(" "));
+      if (m && m[1] && (FIXES[m[1]] || !lastError)) {
+        lastError = m[1];
+        if (authFailed) authListeners.forEach((fn) => fn(mapsErrorMessage(lastError)));
+      }
+      original(...args);
+    };
+  }
 }
 
 export function loadGoogleMaps(): Promise<GoogleMaps> {
   if (!mapsEnabled) return Promise.reject(new Error("Maps are not configured."));
   loading ??= new Promise<GoogleMaps>((resolve, reject) => {
+    watchConsoleForMapsErrors();
     window.gm_authFailure = () => {
       authFailed = true;
-      authListeners.forEach((fn) => fn());
+      // Google logs the error code right around this callback; report after it lands.
+      setTimeout(() => authListeners.forEach((fn) => fn(mapsErrorMessage(lastError))), 0);
     };
     window.__ssMapsReady = async () => {
       try {
@@ -64,6 +103,7 @@ export function loadGoogleMaps(): Promise<GoogleMaps> {
           InfoWindow: pick("InfoWindow"),
           Geocoder: pick("Geocoder"),
           LatLngBounds: pick("LatLngBounds"),
+          Polyline: pick("Polyline"),
           SymbolPath: pick("SymbolPath"),
         } as unknown as GoogleMaps);
       } catch (e) {

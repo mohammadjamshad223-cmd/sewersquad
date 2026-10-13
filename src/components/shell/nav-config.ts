@@ -21,6 +21,7 @@ import {
   Siren,
   Truck,
   User,
+  UserPlus,
   Users,
   Wrench,
   Recycle,
@@ -36,6 +37,7 @@ export type NavGroup = { label?: string; items: NavItem[] };
 export const ADMIN_NAV: NavGroup[] = [
   {
     items: [
+      { href: "/admin/new-customer", label: "New Customer", icon: UserPlus, permission: "customers.write" },
       { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
       { href: "/admin/dispatch", label: "Dispatch Board", icon: Route, permission: "jobs.read" },
       { href: "/admin/calendar", label: "Service Calendar", icon: CalendarDays, permission: "jobs.read" },
@@ -48,7 +50,8 @@ export const ADMIN_NAV: NavGroup[] = [
     items: [
       { href: "/admin/customers", label: "Customers", icon: Building2, permission: "customers.read" },
       { href: "/admin/locations", label: "Service Locations", icon: MapPin, permission: "customers.read" },
-      { href: "/admin/support", label: "Inquiries", icon: Inbox, permission: "support.manage", badgeKey: "support" },
+      { href: "/admin/leads", label: "Leads & Inquiries", icon: Inbox, permission: "support.manage", badgeKey: "leads" },
+      { href: "/admin/support", label: "Portal Messages", icon: LifeBuoy, permission: "support.manage", badgeKey: "support" },
     ],
   },
   {
