@@ -96,6 +96,7 @@ docs/              deployment, integrations, security, architecture, admin guide
 
 - **[Go-live guide](docs/go-live.md): start here to put the portal into use (no programming needed)**
 - [Deployment](docs/deployment.md) — Vercel or self-hosted, database, storage, cron, webhooks
+- [Agent API](docs/agent-api.md) — read-only JSON API for AI agents (invoices, jobs, customers, payments)
 - [Integrations & go-live blockers](docs/integrations.md) — Stripe, Resend, Twilio, S3, maps, brand assets
 - [Admin guide & onboarding](docs/admin-guide.md) — first-time setup, staff, customers, drivers
 - [Security](docs/security.md) — auth, MFA, RBAC, data isolation, documents, payments, known limitations
