@@ -45,6 +45,12 @@ const schema = z.object({
 
   NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: z.string().optional(),
 
+  /**
+   * Key for the read-only agent API (/api/v1). Requests must send "Authorization: Bearer <key>".
+   * Keys shorter than 32 characters are ignored (the API then refuses everything) rather than
+   * failing the whole app.
+   */
+  AGENT_API_KEY: z.string().optional(),
   /** Signing secret (whsec_…) of the Resend "email.received" webhook that turns forwarded emails into leads. */
   RESEND_INBOUND_WEBHOOK_SECRET: z.string().optional(),
   /** Our own mailboxes, comma separated. Mail they send is matched to leads as "contacted". */
