@@ -273,11 +273,11 @@ export async function buildJobLines(db: Db, jobId: string): Promise<{ lines: Lin
 }
 
 /** Idempotent: a job has at most one invoice (unique jobId). Returns the existing one if present. */
-export async function generateInvoiceForJob(actor: Actor, jobId: string, opts: { db?: Db; send?: boolean } = {}) {
+export async function generateInvoiceForJob(actor: Actor, jobId: string, opts: { db?: Db; send?: boolean; quiet?: boolean } = {}) {
   assertStaffActor(actor, ["invoices.write", "jobs.approve"]);
   const run = async (tx: Db) => {
     const existing = await tx.invoice.findUnique({ where: { jobId } });
-    if (existing) return existing;
+    if (existing) return opts.send && existing.status === "DRAFT" && existing.totalCents > 0 ? sendInvoice(actor, existing.id, { db: tx, quiet: opts.quiet }).catch(() => existing) : existing;
     const job = await tx.job.findUniqueOrThrow({ where: { id: jobId }, include: { manifest: true, plan: { select: { nextServiceDate: true, status: true } } } });
     if (job.status !== "COMPLETED") throw badRequest("Invoices are generated from approved (completed) jobs.");
     const b = await resolveBilling(tx, job.organizationId, job.locationId);
@@ -314,7 +314,7 @@ export async function generateInvoiceForJob(actor: Actor, jobId: string, opts: {
     const t = await writeLines(tx, invoice.id, lines, b.taxRateBps);
     const saved = await tx.invoice.update({ where: { id: invoice.id }, data: { subtotalCents: t.subtotalCents, discountCents: t.discountCents, taxCents: t.taxCents, totalCents: t.totalCents, balanceCents: t.totalCents } });
     await audit(tx, { actorId: actor.userId, action: "invoice.generate_from_job", entityType: "Invoice", entityId: invoice.id, organizationId: job.organizationId, after: { jobId, totals: t, needsPricing } });
-    if (opts.send && !needsPricing && t.totalCents > 0) return sendInvoice(actor, invoice.id, { db: tx });
+    if (opts.send && !needsPricing && t.totalCents > 0) return sendInvoice(actor, invoice.id, { db: tx, quiet: opts.quiet });
     return saved;
   };
   return opts.db ? run(opts.db) : prisma.$transaction(run, { timeout: 30_000 });
@@ -332,7 +332,8 @@ async function invoiceRecipients(db: Db, inv: Pick<Invoice, "organizationId" | "
   return customerRecipientsForLocation(db, inv.organizationId, inv.serviceLocationId ?? inv.billingLocationId);
 }
 
-export async function sendInvoice(actor: Actor, invoiceId: string, opts: { db?: Db } = {}) {
+/** `quiet`: the caller sends its own message (e.g. the job-completion email), so skip the invoice notice. */
+export async function sendInvoice(actor: Actor, invoiceId: string, opts: { db?: Db; quiet?: boolean } = {}) {
   assertStaffActor(actor, ["invoices.write", "jobs.approve"]);
   const run = async (tx: Db) => {
     const inv = await tx.invoice.findUnique({ where: { id: invoiceId }, include: { lineItems: true } });
@@ -350,7 +351,7 @@ export async function sendInvoice(actor: Actor, invoiceId: string, opts: { db?: 
     if (!inv.jobId) await (await import("./manifests")).generateInvoiceManifest(tx, invoiceId, actor.userId);
     await renderAndStoreInvoicePdf(tx, invoiceId, actor.userId);
     await audit(tx, { actorId: actor.userId, action: "invoice.send", entityType: "Invoice", entityId: invoiceId, organizationId: inv.organizationId, after: { status: "SENT", totalCents: inv.totalCents } });
-    await notify(tx, {
+    if (!opts.quiet) await notify(tx, {
       userIds: await invoiceRecipients(tx, inv),
       contacts: { organizationId: inv.organizationId, locationId: inv.serviceLocationId ?? inv.billingLocationId },
       type: "invoice.issued",

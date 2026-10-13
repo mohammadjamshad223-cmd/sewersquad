@@ -78,7 +78,7 @@ function pricingFields(v: z.infer<typeof planSchema>) {
   };
 }
 
-export async function createPlan(actor: Actor, input: z.infer<typeof planSchema>) {
+export async function createPlan(actor: Actor, input: z.infer<typeof planSchema>, opts: { db?: Db } = {}) {
   assertStaffActor(actor, "plans.write");
   const tz = await companyTimeZone();
   const rule: Rule = {
@@ -91,7 +91,7 @@ export async function createPlan(actor: Actor, input: z.infer<typeof planSchema>
   const problem = validateRule(rule);
   if (problem) throw badRequest(problem);
 
-  const plan = await prisma.$transaction(async (tx) => {
+  const run = async (tx: Db) => {
     const loc = await tx.serviceLocation.findFirst({ where: { id: input.locationId, deletedAt: null } });
     if (!loc) throw notFound("Location not found.");
     const assets = await tx.serviceAsset.findMany({ where: { id: { in: input.assetIds }, locationId: loc.id, deletedAt: null, status: "ACTIVE" } });
@@ -128,8 +128,8 @@ export async function createPlan(actor: Actor, input: z.infer<typeof planSchema>
     await audit(tx, { actorId: actor.userId, action: "plan.create", entityType: "ServicePlan", entityId: plan.id, organizationId: loc.organizationId, after: { ...input, rule } });
     await materializePlan(tx, plan.id, actor.userId);
     return plan;
-  });
-  return plan;
+  };
+  return opts.db ? run(opts.db) : prisma.$transaction(run);
 }
 
 export async function updatePlan(actor: Actor, planId: string, input: z.infer<typeof planSchema>, reason?: string) {

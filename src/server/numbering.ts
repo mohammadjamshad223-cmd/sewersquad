@@ -45,5 +45,6 @@ export const numbers = {
   ticket: async (db: Db) => `T-${pad(await nextSequence(db, "ticket", 1001), 5)}`,
   disposal: async (db: Db) => `DE-${year()}-${pad(await nextSequence(db, `disposal-${year()}`), 5)}`,
   issue: async (db: Db) => `IR-${pad(await nextSequence(db, "issue", 1), 5)}`,
+  lead: async (db: Db) => `L-${pad(await nextSequence(db, "lead", 1001), 5)}`,
   employee: async (db: Db) => `D-${pad(await nextSequence(db, "employee", 101), 4)}`,
 };

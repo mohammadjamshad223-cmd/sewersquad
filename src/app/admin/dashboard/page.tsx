@@ -1,107 +1,112 @@
 import Link from "next/link";
-import { AlertTriangle, Building2, CalendarCheck, CheckCircle2, CircleDollarSign, Droplets, Landmark, MapPin, Siren, Wallet } from "lucide-react";
+import { AlertTriangle, CircleDollarSign, Droplets, Landmark, TrendingUp, Wallet } from "lucide-react";
 import { requireStaffPage, hasPermission } from "@/server/authz/guards";
-import { adminKpis, attentionItems, monthlySeries, receivablesAging } from "@/server/services/analytics";
+import { adminKpis, attentionItems, grossProfitByMonth, monthlySeries } from "@/server/services/analytics";
 import { prisma } from "@/server/db";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader, Stat } from "@/components/ui/misc";
-import { StatusBadge } from "@/components/ui/status-badge";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { BarSeries } from "@/components/charts/charts";
 import { Delta } from "@/components/portal/delta";
-import { addDays, dateFromKey, formatDateKey, formatWindow } from "@/lib/dates";
+import { addDays, dateFromKey, formatDateKey } from "@/lib/dates";
 import { formatCents, formatGallons } from "@/lib/money";
+import { SERVICE_TYPE_LABEL } from "@/lib/status";
 import { cn } from "@/lib/utils";
 
-/** Download endpoint (an API route, not a page — a plain link is correct here). */
-const AGING_CSV = "/api/export/aging";
-
 export const metadata = { title: "Dashboard" };
+
+const pct = (v: number | null) => (v === null ? "—" : `${v.toFixed(0)}%`);
 
 export default async function AdminDashboard() {
   const actor = await requireStaffPage();
   const fin = hasPermission(actor, "reports.financial");
-  const [k, attention, series, aging] = await Promise.all([adminKpis(), attentionItems(), monthlySeries(12), fin ? receivablesAging() : Promise.resolve([])]);
+  const [k, attention, series, profit] = await Promise.all([adminKpis(), attentionItems(), fin ? monthlySeries(12) : Promise.resolve([]), fin ? grossProfitByMonth(6) : Promise.resolve(null)]);
   const upcoming = await prisma.job.findMany({
-    where: { scheduledDate: { gte: dateFromKey(k.today), lte: dateFromKey(addDays(k.today, 3)) }, status: { in: ["SCHEDULED", "ASSIGNED", "ACCEPTED", "EN_ROUTE", "ARRIVED", "IN_PROGRESS"] } },
-    include: { location: { select: { name: true, city: true } }, driver: { select: { user: { select: { name: true } } } } },
-    orderBy: [{ scheduledDate: "asc" }, { priority: "desc" }, { windowStart: "asc" }],
-    take: 10,
+    where: { scheduledDate: { gte: dateFromKey(k.today), lte: dateFromKey(addDays(k.today, 7)) }, status: { in: ["SCHEDULED", "ASSIGNED", "ACCEPTED", "EN_ROUTE", "ARRIVED", "IN_PROGRESS"] } },
+    include: { location: { select: { name: true, city: true } } },
+    orderBy: [{ scheduledDate: "asc" }, { priority: "desc" }],
+    take: 8,
   });
-  const agingMax = Math.max(1, ...aging.map((a) => a.cents));
-  const open = attention.filter((a) => a.count > 0);
+  const open = attention.filter((a) => a.count > 0 && !["emergencies", "unassigned", "overdueInvoices"].includes(a.key)).map((a) => (a.key === "overdueServices" ? { ...a, href: "/admin/dispatch" } : a));
+  const thisMonth = profit?.months[0];
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Dashboard" description={`Operations and finance at a glance · ${formatDateKey(k.today, "long")}`} />
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        {fin && <Stat label="Revenue this month" value={formatCents(k.revenueMonth.value)} hint={<Delta value={k.revenueMonth.value} previous={k.revenueMonth.previous} />} icon={CircleDollarSign} tone="brand" href="/admin/reports" />}
-        {fin && <Stat label="Payments collected" value={formatCents(k.collectedMonth.value)} hint={<Delta value={k.collectedMonth.value} previous={k.collectedMonth.previous} />} icon={Wallet} tone="success" href="/admin/payments" />}
-        {fin && <Stat label="Outstanding receivables" value={formatCents(k.outstanding.value)} hint={`${k.outstanding.count} open invoices`} icon={Landmark} href="/admin/invoices?status=OPEN" />}
-        {fin && <Stat label="Overdue receivables" value={formatCents(k.overdue.value)} hint={`${k.overdue.count} overdue invoices`} icon={AlertTriangle} tone={k.overdue.value ? "danger" : "neutral"} href="/admin/invoices?status=OVERDUE" />}
-        <Stat label="Gallons pumped this month" value={formatGallons(k.gallonsMonth.value)} hint={<Delta value={k.gallonsMonth.value} previous={k.gallonsMonth.previous} />} icon={Droplets} tone="brand" />
-        <Stat label="Active customers" value={k.activeCustomers} icon={Building2} href="/admin/customers" />
-        <Stat label="Active service locations" value={k.activeLocations} icon={MapPin} href="/admin/locations" />
-        <Stat label="Jobs scheduled today" value={k.scheduledToday} icon={CalendarCheck} href="/admin/dispatch" />
-        <Stat label="Jobs completed today" value={k.completedToday} icon={CheckCircle2} tone="success" />
-        <Stat label="Open emergency requests" value={k.emergencies} icon={Siren} tone={k.emergencies ? "danger" : "neutral"} href="/admin/emergencies" />
-      </div>
+      <PageHeader title="Dashboard" description={formatDateKey(k.today, "long")} />
 
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
+      {fin && (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <Stat label="Revenue this month" value={formatCents(k.revenueMonth.value)} hint={<Delta value={k.revenueMonth.value} previous={k.revenueMonth.previous} />} icon={CircleDollarSign} tone="brand" href="/admin/invoices" />
+          <Stat label="Payments collected" value={formatCents(k.collectedMonth.value)} hint={<Delta value={k.collectedMonth.value} previous={k.collectedMonth.previous} />} icon={Wallet} tone="success" href="/admin/payments" />
+          <Stat label="Outstanding" value={formatCents(k.outstanding.value)} hint={k.outstanding.count ? `${k.outstanding.count} open invoice${k.outstanding.count > 1 ? "s" : ""}${k.overdue.count ? ` · ${k.overdue.count} past due` : ""}` : "All paid up"} icon={Landmark} tone={k.overdue.value ? "warning" : "neutral"} href="/admin/invoices?status=OPEN" />
+          <Stat label="Gross profit this month" value={thisMonth ? formatCents(thisMonth.profitCents) : "—"} hint={thisMonth ? `${pct(thisMonth.marginPct)} margin after disposal` : undefined} icon={TrendingUp} tone="success" />
+        </div>
+      )}
+
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
         <div className="space-y-6">
+          {profit && (
+            <Card>
+              <CardHeader
+                title="Gross profitability"
+                description={profit.centsPerGallon !== null ? `Revenue minus disposal, at your average disposal cost of $${(profit.centsPerGallon / 100).toFixed(3)} per gallon (from disposal-site bills).` : "Add disposal-site bills (Disposal → Fees & bills) to calculate disposal cost per gallon."}
+              />
+              <Table>
+                <THead>
+                  <tr><TH>Month</TH><TH className="text-right">Revenue</TH><TH className="hidden text-right sm:table-cell">Gallons</TH><TH className="hidden text-right sm:table-cell">Disposal cost</TH><TH className="text-right">Gross profit</TH><TH className="text-right">Margin</TH></tr>
+                </THead>
+                <TBody>
+                  {profit.months.map((m, i) => (
+                    <TR key={m.month} className={cn(i === 0 && "bg-brand-soft/40 font-medium")}>
+                      <TD className="whitespace-nowrap">{m.label}{i === 0 && <Badge className="ml-2 hidden sm:inline-flex">This month</Badge>}</TD>
+                      <TD className="text-right tabular-nums">{formatCents(m.revenueCents)}</TD>
+                      <TD className="hidden text-right tabular-nums sm:table-cell">{m.gallons ? m.gallons.toLocaleString() : "—"}</TD>
+                      <TD className="hidden text-right tabular-nums text-muted-foreground sm:table-cell">{m.disposalCents ? `−${formatCents(m.disposalCents)}` : "—"}</TD>
+                      <TD className={cn("text-right font-semibold tabular-nums", m.profitCents < 0 && "text-danger")}>{formatCents(m.profitCents)}</TD>
+                      <TD className="text-right tabular-nums">{pct(m.marginPct)}</TD>
+                    </TR>
+                  ))}
+                </TBody>
+              </Table>
+            </Card>
+          )}
           {fin && (
             <Card>
-              <CardHeader title="Monthly revenue" description="Invoiced revenue (excluding tax) by issue month, last 12 months." />
+              <CardHeader title="Revenue by month" description="Invoiced revenue (before tax), last 12 months." />
               <CardBody><BarSeries data={series} xKey="label" yKey="revenueCents" format="cents" seriesName="Revenue" /></CardBody>
             </Card>
           )}
-          <Card>
-            <CardHeader title="Gallons pumped by month" description="From submitted and approved service records." />
-            <CardBody><BarSeries data={series} xKey="label" yKey="gallons" format="gallons" seriesName="Gallons" /></CardBody>
-          </Card>
-          <Card>
-            <CardHeader title="Upcoming services" description="Next 3 days" action={<Link href="/admin/dispatch" className="text-[13px] font-medium text-brand hover:underline">Dispatch board</Link>} />
-            <Table>
-              <THead><tr><TH>Date</TH><TH>Location</TH><TH>Window</TH><TH>Driver</TH><TH>Status</TH></tr></THead>
-              <TBody>
-                {upcoming.map((j) => (
-                  <TR key={j.id}>
-                    <TD className="whitespace-nowrap"><Link href={`/admin/jobs/${j.id}`} className="font-medium hover:text-brand">{formatDateKey(j.scheduledDate, "weekday")}</Link>{j.priority === "EMERGENCY" && <Badge tone="danger" className="ml-2">Emergency</Badge>}</TD>
-                    <TD>{j.location.name}<span className="block text-[12px] text-muted-foreground">{j.location.city}</span></TD>
-                    <TD className="whitespace-nowrap text-[13px]">{formatWindow(j.windowStart, j.windowEnd)}</TD>
-                    <TD>{j.driver?.user.name ?? <span className="text-warning">Unassigned</span>}</TD>
-                    <TD><StatusBadge kind="job" status={j.status} /></TD>
-                  </TR>
-                ))}
-                {upcoming.length === 0 && <TR><TD colSpan={5} className="py-8 text-center text-muted-foreground">Nothing scheduled in the next 3 days.</TD></TR>}
-              </TBody>
-            </Table>
-          </Card>
         </div>
+
         <div className="space-y-6">
           <Card>
-            <CardHeader title="Attention required" />
-            <CardBody className="space-y-1 p-2">
-              {open.length === 0 && <p className="px-3 py-4 text-sm text-muted-foreground">Nothing needs attention right now.</p>}
-              {open.map((a) => (
-                <Link key={a.key} href={a.href} className="flex items-center justify-between gap-3 rounded-md px-3 py-2.5 text-sm hover:bg-subtle">
-                  <span className="flex items-center gap-2"><AlertTriangle className={cn("h-4 w-4", a.tone === "danger" ? "text-danger" : "text-warning")} aria-hidden />{a.label}</span>
-                  <Badge tone={a.tone}>{a.count}</Badge>
-                </Link>
-              ))}
+            <CardHeader title="This week" action={<Link href="/admin/dispatch" className="text-[13px] font-medium text-brand hover:underline">Dispatch board</Link>} />
+            <CardBody className="space-y-3 pt-0">
+              <div className="grid grid-cols-2 gap-3 text-center">
+                <Link href="/admin/dispatch" className="rounded-lg border p-3 hover:border-brand/30"><p className="text-xl font-semibold tabular-nums">{k.scheduledToday}</p><p className="text-[12px] text-muted-foreground">Jobs today</p></Link>
+                <div className="rounded-lg border p-3"><p className="flex items-center justify-center gap-1 text-xl font-semibold tabular-nums"><Droplets className="h-4 w-4 text-brand" />{formatGallons(k.gallonsMonth.value).replace(/ gal$/, "")}</p><p className="text-[12px] text-muted-foreground">Gallons this month</p></div>
+              </div>
+              <ul className="divide-y text-[14px]">
+                {upcoming.map((j) => (
+                  <li key={j.id} className="flex items-center justify-between gap-3 py-2">
+                    <Link href={`/admin/jobs/${j.id}`} className="min-w-0 hover:text-brand"><span className="block truncate font-medium">{j.location.name}</span><span className="block truncate text-[12px] text-muted-foreground">{SERVICE_TYPE_LABEL[j.serviceType]} · {j.location.city}</span></Link>
+                    <span className="shrink-0 text-[13px] tabular-nums text-muted-foreground">{formatDateKey(j.scheduledDate, "weekday")}</span>
+                  </li>
+                ))}
+                {upcoming.length === 0 && <li className="py-4 text-center text-muted-foreground">Nothing scheduled this week.</li>}
+              </ul>
             </CardBody>
           </Card>
-          {fin && (
+          {open.length > 0 && (
             <Card>
-              <CardHeader title="Accounts receivable aging" action={<a href={AGING_CSV} download className="text-[13px] font-medium text-brand hover:underline">CSV</a>} />
-              <CardBody className="space-y-3">
-                {aging.map((a, i) => (
-                  <div key={a.key} className="text-[13px]">
-                    <div className="flex justify-between"><span>{a.label}</span><span className="tabular-nums">{formatCents(a.cents)}</span></div>
-                    {/* Sequential single hue (brand green), older buckets darker. */}
-                    <div className="mt-1 h-2 rounded-full bg-subtle"><div className="h-2 rounded-full" style={{ width: `${Math.max(a.cents ? 2 : 0, (a.cents / agingMax) * 100)}%`, background: ["#b7dc8f", "#8dc35a", "#65aa27", "#4a841b", "#2f5a10"][i] }} /></div>
-                  </div>
+              <CardHeader title="Needs attention" />
+              <CardBody className="space-y-1 p-2">
+                {open.map((a) => (
+                  <Link key={a.key} href={a.href} className="flex items-center justify-between gap-3 rounded-md px-3 py-2.5 text-sm hover:bg-subtle">
+                    <span className="flex items-center gap-2"><AlertTriangle className={cn("h-4 w-4", a.tone === "danger" ? "text-danger" : "text-warning")} aria-hidden />{a.label}</span>
+                    <Badge tone={a.tone}>{a.count}</Badge>
+                  </Link>
                 ))}
               </CardBody>
             </Card>

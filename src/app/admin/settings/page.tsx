@@ -78,6 +78,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
                 ["Email (Resend)", integrations.email() ? "Configured" : "Not configured — emails are logged as skipped", "RESEND_API_KEY, EMAIL_FROM"],
                 ["SMS (Twilio)", integrations.sms() ? `Configured${env().TWILIO_MESSAGING_SERVICE_SID ? " · Messaging Service" : " · From number"}` : "Not configured (optional)", "TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_MESSAGING_SERVICE_SID (or TWILIO_FROM_NUMBER)"],
                 ["Document storage", integrations.s3() ? `S3 bucket ${env().S3_BUCKET}` : `Local disk (${env().NODE_ENV === "production" ? "not allowed in production" : "development only"})`, "STORAGE_DRIVER, S3_BUCKET, S3_REGION, S3_ENDPOINT, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY"],
+                ["Leads inbox (email → leads)", integrations.leadsInbound() ? `Connected · ${env().LEAD_INBOXES}` : "Not configured — see the steps below", "RESEND_INBOUND_WEBHOOK_SECRET, LEAD_INBOXES"],
                 ["Maps", integrations.maps() ? "Configured" : "Not configured — schematic views only", "NEXT_PUBLIC_GOOGLE_MAPS_API_KEY"],
                 ["Scheduled jobs", env().CRON_SECRET ? "Secret set" : "CRON_SECRET missing", "CRON_SECRET (see vercel.json)"],
                 ["Admin MFA enforcement", env().REQUIRE_ADMIN_MFA === "true" ? "Required for super admin, admin, accounting" : "DISABLED (development)", "REQUIRE_ADMIN_MFA"],
@@ -85,6 +86,21 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             </TBody>
           </Table>
           {canWrite && <CardBody className="border-t"><TestTextForm /></CardBody>}
+        </Card>
+      )}
+      {tab === "integrations" && (
+        <Card className="mt-6">
+          <CardHeader title="Connect the Gmail and sales@ inboxes to Leads" description="Emails are forwarded to a private receiving address; each new sender becomes a lead." />
+          <CardBody>
+            <ol className="list-decimal space-y-1.5 pl-5 text-[14px]">
+              <li>In Resend → <strong>Receiving</strong>, copy your receiving address (it ends in <code>.resend.app</code>).</li>
+              <li>In Resend → <strong>Webhooks</strong>, add <code>{env().APP_URL.replace(/\/$/, "")}/api/inbound/email</code> for the event <code>email.received</code>, and copy its signing secret (starts with <code>whsec_</code>).</li>
+              <li>In Vercel → Settings → Environment Variables, add <code>RESEND_INBOUND_WEBHOOK_SECRET</code> with that secret, then redeploy.</li>
+              <li>In Gmail (sewersquadservices@gmail.com) → Settings → <strong>Forwarding and POP/IMAP</strong> → Add a forwarding address → paste the receiving address. Gmail sends a confirmation — it appears in your portal notifications with the link to click. Then choose “Forward a copy… and keep Gmail’s copy”.</li>
+              <li>Do the same for sales@sewersquadservices.com in its email provider.</li>
+              <li>Tip: when you answer a lead from Gmail, add the receiving address in <strong>BCC</strong> and the lead is marked contacted automatically, with the response time.</li>
+            </ol>
+          </CardBody>
         </Card>
       )}
       {tab === "integrations" && <RecentTexts />}

@@ -22,7 +22,9 @@ const hhmm = z
 export const jobSchema = z.object({
   locationId: z.string().uuid(),
   serviceType: z.enum(["GREASE_TRAP_PUMPING", "INTERCEPTOR_PUMPING", "SEPTIC_PUMPING", "GRIT_TRAP_CLEANING", "LINT_TRAP_CLEANING", "LIFT_STATION_SERVICE", "HYDRO_JETTING", "LINE_CLEANING", "INSPECTION", "OTHER"]),
-  type: z.enum(["ONE_TIME", "EMERGENCY"]).default("ONE_TIME"),
+  type: z.enum(["RECURRING", "ONE_TIME", "EMERGENCY"]).default("ONE_TIME"), // the form preselects Recurring
+  intervalDays: z.coerce.number().int().min(7, "At least 7 days.").max(730).default(90),
+  pricingModel: z.enum(["PER_GALLON", "FLAT_RATE"]).default("FLAT_RATE"),
   priority: z.enum(["NORMAL", "HIGH", "EMERGENCY"]).default("NORMAL"),
   scheduledDate: z.string().refine(isDateKey, "Enter a valid date."),
   windowStart: hhmm,
@@ -65,8 +67,55 @@ export async function syncEmergencyForJob(db: Db, jobId: string, jobStatus: JobS
 
 // ── Creation ─────────────────────────────────────────────────────────────────
 
-export async function createJob(actor: Actor, input: z.infer<typeof jobSchema>, opts: { emergencyRequestId?: string; db?: Db } = {}) {
+/**
+ * The job form: recurring service becomes a plan (which creates its first visit); one-time and
+ * emergency visits are single jobs. Returns the first visit's job id.
+ */
+export async function scheduleService(actor: Actor, input: z.infer<typeof jobSchema>): Promise<string | null> {
+  if (input.type !== "RECURRING") {
+    if (input.pricingModel === "PER_GALLON" && input.quotedPrice) {
+      // A per-gallon price for a single visit is saved as this customer's rate for the service.
+      const { parseDollarRateToCentsString } = await import("@/lib/money");
+      const rate = parseDollarRateToCentsString(input.quotedPrice);
+      if (!rate) throw badRequest("Enter a rate such as 0.89");
+      const loc = await prisma.serviceLocation.findUnique({ where: { id: input.locationId }, select: { organizationId: true } });
+      if (!loc) throw notFound("Location not found.");
+      const { Prisma } = await import("@prisma/client");
+      await prisma.pricingRule.create({ data: { organizationId: loc.organizationId, name: "Per-gallon rate", kind: "PER_GALLON", serviceType: input.serviceType, amountCents: new Prisma.Decimal(rate) } });
+    }
+    return (await createJob(actor, input)).id;
+  }
+  const { createPlan } = await import("./plans");
+  const { SERVICE_TYPE_LABEL } = await import("@/lib/status");
+  let assetIds = input.assetIds;
+  if (!assetIds.length) {
+    const assets = await prisma.serviceAsset.findMany({ where: { locationId: input.locationId, deletedAt: null, status: "ACTIVE" }, select: { id: true } });
+    assetIds = assets.map((a) => a.id);
+    if (!assetIds.length) throw badRequest("Add the trap (equipment) to this location first, or choose One-time.");
+  }
+  const plan = await createPlan(actor, {
+    locationId: input.locationId,
+    name: `${SERVICE_TYPE_LABEL[input.serviceType] ?? "Service"} — every ${input.intervalDays} days`,
+    serviceType: input.serviceType,
+    assetIds,
+    unit: "DAY",
+    interval: input.intervalDays,
+    anchor: "COMPLETION_DATE",
+    startDate: input.scheduledDate,
+    preferredWindowStart: input.windowStart,
+    preferredWindowEnd: input.windowEnd,
+    pricingModel: input.pricingModel,
+    flatPrice: input.pricingModel === "FLAT_RATE" ? input.quotedPrice : undefined,
+    perGallonPrice: input.pricingModel === "PER_GALLON" ? input.quotedPrice : undefined,
+    specialInstructions: input.instructions,
+  });
+  const job = await prisma.job.findFirst({ where: { planId: plan.id }, orderBy: { scheduledDate: "asc" }, select: { id: true } });
+  return job?.id ?? null;
+}
+
+export async function createJob(actor: Actor, input: Omit<z.infer<typeof jobSchema>, "intervalDays" | "pricingModel"> & { intervalDays?: number; pricingModel?: string }, opts: { emergencyRequestId?: string; db?: Db } = {}) {
   assertStaffActor(actor, "jobs.write");
+  if (input.type === "RECURRING") throw badRequest("Recurring service is set up as a plan.");
   const run = async (tx: Db) => {
     const loc = await tx.serviceLocation.findFirst({ where: { id: input.locationId, deletedAt: null } });
     if (!loc) throw notFound("Location not found.");
@@ -95,7 +144,7 @@ export async function createJob(actor: Actor, input: z.infer<typeof jobSchema>, 
         vehicleId: input.vehicleId ?? null,
         instructions: input.instructions ?? null,
         internalNotes: input.internalNotes ?? null,
-        quotedPriceCents: input.quotedPrice ? parseDollarsToCents(input.quotedPrice) : null,
+        quotedPriceCents: input.quotedPrice && input.pricingModel !== "PER_GALLON" ? parseDollarsToCents(input.quotedPrice) : null,
         isDemo: loc.isDemo,
         createdById: actor.userId,
         assets: { create: assets.map((a) => ({ assetId: a.id })) },

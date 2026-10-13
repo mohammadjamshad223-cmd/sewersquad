@@ -212,6 +212,36 @@ export async function submissionProblems(db: Db, jobId: string): Promise<string[
   return problems;
 }
 
+type SignatureInput = Pick<z.infer<typeof submitSchema>, "customerSignature" | "customerSignerName" | "customerSignerTitle" | "customerUnavailable" | "customerUnavailableReason" | "driverSignature">;
+
+/** Store the customer's and driver's signatures (or the documented reason the customer could not sign). */
+export async function signManifest(tx: Db, p: { job: { id: string; organizationId: string; locationId: string }; manifestId: string; manifestNumber: string; actor: Actor; input: SignatureInput; ip: string | null }) {
+  const { job, actor, input } = p;
+  const sign = async (role: "CUSTOMER" | "DRIVER", dataUrl: string | undefined, signerName: string, signerTitle: string | null, unavailable = false, reason: string | null = null) => {
+    let docId: string | null = null;
+    if (dataUrl && !unavailable) {
+      const doc = await storeDocument(tx, {
+        bytes: decodeSignature(dataUrl),
+        fileName: `${role.toLowerCase()}-signature.png`,
+        title: `${role === "CUSTOMER" ? "Customer" : "Driver"} signature — ${p.manifestNumber}`,
+        type: "SIGNATURE",
+        organizationId: job.organizationId,
+        locationId: job.locationId,
+        jobId: job.id,
+        manifestId: p.manifestId,
+        uploadedById: actor.userId,
+        trusted: { mime: "image/png", ext: "png" },
+      });
+      docId = doc.id;
+    }
+    await tx.manifestSignature.create({
+      data: { manifestId: p.manifestId, role, signerName, signerTitle, signerUserId: role === "DRIVER" ? actor.userId : null, signatureDocumentId: docId, unavailable, unavailableReason: reason, ipAddress: p.ip },
+    });
+  };
+  await sign("CUSTOMER", input.customerSignature, input.customerUnavailable ? "" : input.customerSignerName!, input.customerSignerTitle ?? null, input.customerUnavailable, input.customerUnavailable ? input.customerUnavailableReason! : null);
+  await sign("DRIVER", input.driverSignature, actor.name, "Driver");
+}
+
 export async function submitService(actor: Actor, jobId: string, input: z.infer<typeof submitSchema>, meta: { ip?: string | null }) {
   const driver = assertDriverActor(actor);
   const tz = await companyTimeZone();
@@ -224,29 +254,7 @@ export async function submitService(actor: Actor, jobId: string, input: z.infer<
       if (problems.length) throw badRequest(problems.join(" "));
 
       const manifest = await ensureManifest(tx, jobId);
-      const sign = async (role: "CUSTOMER" | "DRIVER", dataUrl: string | undefined, signerName: string, signerTitle: string | null, unavailable = false, reason: string | null = null) => {
-        let docId: string | null = null;
-        if (dataUrl && !unavailable) {
-          const doc = await storeDocument(tx, {
-            bytes: decodeSignature(dataUrl),
-            fileName: `${role.toLowerCase()}-signature.png`,
-            title: `${role === "CUSTOMER" ? "Customer" : "Driver"} signature — ${manifest.manifestNumber}`,
-            type: "SIGNATURE",
-            organizationId: job.organizationId,
-            locationId: job.locationId,
-            jobId,
-            manifestId: manifest.id,
-            uploadedById: actor.userId,
-            trusted: { mime: "image/png", ext: "png" },
-          });
-          docId = doc.id;
-        }
-        await tx.manifestSignature.create({
-          data: { manifestId: manifest.id, role, signerName, signerTitle, signerUserId: role === "DRIVER" ? actor.userId : null, signatureDocumentId: docId, unavailable, unavailableReason: reason, ipAddress: meta.ip ?? null },
-        });
-      };
-      await sign("CUSTOMER", input.customerSignature, input.customerUnavailable ? "" : input.customerSignerName!, input.customerSignerTitle ?? null, input.customerUnavailable, input.customerUnavailable ? input.customerUnavailableReason! : null);
-      await sign("DRIVER", input.driverSignature, actor.name, "Driver");
+      await signManifest(tx, { job, manifestId: manifest.id, manifestNumber: manifest.manifestNumber, actor, input, ip: meta.ip ?? null });
 
       const now = new Date();
       await tx.serviceRecord.update({ where: { jobId }, data: { finishedAt: job.serviceRecord?.finishedAt ?? now, submittedAt: now, reviewStatus: "SUBMITTED" } });
@@ -323,7 +331,7 @@ export async function reviewJobCharge(actor: Actor, chargeId: string, approve: b
 
 // ── Office review ────────────────────────────────────────────────────────────
 
-export async function approveJob(actor: Actor, jobId: string, note?: string) {
+export async function approveJob(actor: Actor, jobId: string, note?: string, opts: { invoice?: { send: boolean; quiet: boolean } } = {}) {
   assertStaffActor(actor, "jobs.approve");
   const billing = await getSetting("billing");
   const result = await prisma.$transaction(
@@ -345,9 +353,9 @@ export async function approveJob(actor: Actor, jobId: string, note?: string) {
       await syncEmergencyForJob(tx, jobId, "COMPLETED", actor.userId);
       await audit(tx, { actorId: actor.userId, action: "job.approve", entityType: "Job", entityId: jobId, organizationId: job.organizationId, reason: note ?? null });
       let invoiceId: string | null = null;
-      if (billing.autoInvoiceOnApproval) {
+      if (opts.invoice || billing.autoInvoiceOnApproval) {
         const { generateInvoiceForJob } = await import("./invoices");
-        invoiceId = (await generateInvoiceForJob(actor, jobId, { db: tx, send: billing.autoSendInvoices }))?.id ?? null;
+        invoiceId = (await generateInvoiceForJob(actor, jobId, { db: tx, send: opts.invoice?.send ?? billing.autoSendInvoices, quiet: opts.invoice?.quiet }))?.id ?? null;
       }
       return { invoiceId };
     },

@@ -25,14 +25,11 @@ test.describe.serial("Workflow A (office & customer)", () => {
     await expect(page.locator("tbody tr").first()).toContainText("INV-");
   });
 
-  test("dispatcher can assign the unassigned job from the dispatch board", async ({ page }) => {
-    await signIn(page, "dispatch@demo.sewersquad.test");
-    await page.goto("/admin/jobs?status=UNASSIGNED");
-    await page.locator("tbody tr").first().getByRole("link", { name: /^J-/ }).click();
-    await expect(page).toHaveURL(/\/admin\/jobs\/[0-9a-f-]{36}/, { timeout: 90_000 });
-    await page.getByRole("combobox", { name: "Driver" }).selectOption({ label: "Sam Whitaker" });
-    await page.getByRole("combobox", { name: "Truck" }).selectOption({ label: "T-102" });
-    await page.getByRole("button", { name: "Save" }).first().click();
-    await expect(page.getByText("Assigned — driver notified.")).toBeVisible();
+  test("the dispatch board lists today's jobs, most overdue first, with call buttons", async ({ page }) => {
+    await signIn(page, "admin@demo.sewersquad.test");
+    await page.goto("/admin/dispatch");
+    await expect(page.getByText("Today's list · most overdue first")).toBeVisible();
+    await expect(page.getByRole("link", { name: /^Call / }).first()).toBeVisible();
+    await expect(page.getByRole("button", { name: /Completed|Approve & send/ }).first()).toBeVisible();
   });
 });
