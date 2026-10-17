@@ -7,7 +7,8 @@ describe("locations that share a name get their street added", () => {
   let admin: Awaited<ReturnType<typeof staff>>;
   let orgId: string;
   const add = (name: string, addressLine1: string) => createLocation(admin, orgId, locationSchema.parse({ name, addressLine1, city: "Houston", state: "TX", postalCode: "77002" }));
-  const names = async () => (await prisma.serviceLocation.findMany({ where: { organizationId: orgId }, orderBy: { addressLine1: "asc" } })).map((l) => l.name);
+  // Sorted in JS: database collation differs between machines.
+  const names = async () => (await prisma.serviceLocation.findMany({ where: { organizationId: orgId } })).map((l) => l.name).sort((a, b) => a.localeCompare(b, "en"));
 
   beforeAll(async () => {
     await resetDb();
@@ -27,9 +28,9 @@ describe("locations that share a name get their street added", () => {
       "Corner Store",
       "Now & Forever Gas Station — 13450 Westheimer Rd",
       "Now & Forever Gas Station — 13905 Westheimer Rd",
-      "Now & Forever Gas Station — W Parker Rd",
       "now & forever gas station — S Main St",
-    ]);
+      "Now & Forever Gas Station — W Parker Rd",
+    ].sort((a, b) => a.localeCompare(b, "en")));
     expect(await disambiguateLocationNames(prisma)).toBe(0); // safe to run again
   });
 });
