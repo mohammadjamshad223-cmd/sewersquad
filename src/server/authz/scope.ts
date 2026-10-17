@@ -3,6 +3,7 @@ import { cache } from "react";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "../db";
 import { notFound, forbidden } from "../errors";
+import { withLocationLabels } from "@/lib/location-label";
 import type { Actor } from "../auth/session";
 
 /**
@@ -39,7 +40,7 @@ export async function buildCustomerScope(actor: Actor): Promise<CustomerScope> {
         organizationId: { in: orgIds },
         OR: [{ organizationId: { in: orgAdminOrgIds } }, { id: { in: actor.locationIds } }],
       },
-      select: { id: true, name: true, organizationId: true, city: true, code: true },
+      select: { id: true, name: true, organizationId: true, city: true, code: true, addressLine1: true },
       orderBy: { name: "asc" },
     }),
   ]);
@@ -48,7 +49,8 @@ export async function buildCustomerScope(actor: Actor): Promise<CustomerScope> {
       const m = actor.memberships.find((x) => x.organizationId === o.id)!;
       return { ...o, role: m.role, canPay: m.canPay };
     }),
-    locations,
+    // Same-named locations read "Name — Street" so customers can tell them apart too.
+    locations: withLocationLabels(locations).map(({ label, addressLine1: _a, ...l }) => (void _a, { ...l, name: label })),
     locationIds: locations.map((l) => l.id),
     orgAdminOrgIds: orgAdminOrgIds.filter((id) => orgs.some((o) => o.id === id)),
     orgIds: orgs.map((o) => o.id),

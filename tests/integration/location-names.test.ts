@@ -32,6 +32,10 @@ describe("locations that share a name get their street added", () => {
       "Now & Forever Gas Station — W Parker Rd",
     ].sort((a, b) => a.localeCompare(b, "en")));
     expect(await disambiguateLocationNames(prisma)).toBe(0); // safe to run again
+    // Look-alike names (non-breaking or double spaces) are treated as the same name.
+    await prisma.serviceLocation.create({ data: { organizationId: orgId, code: "L-X", name: "Corner\u00a0 Store", addressLine1: "9 Oak Ave", city: "Houston", postalCode: "77002" } });
+    await disambiguateLocationNames(prisma);
+    expect((await names()).filter((n) => n.startsWith("Corner"))).toEqual(["Corner Store — Elm St", "Corner Store — Oak Ave"]);
   });
 });
 
@@ -39,7 +43,7 @@ describe("the deploy migration", () => {
   it("runs the same statement as the app", async () => {
     const { readFileSync } = await import("node:fs");
     const { DISAMBIGUATE_LOCATION_NAMES_SQL } = await import("@/server/services/location-names");
-    const file = readFileSync("prisma/migrations/20261017000000_location_street_names/migration.sql", "utf8").split("\n").filter((l) => !l.startsWith("--")).join("\n");
+    const file = readFileSync("prisma/migrations/20261018000000_location_street_names_again/migration.sql", "utf8").split("\n").filter((l) => !l.startsWith("--")).join("\n");
     expect(file.trim().replace(/;$/, "")).toBe(DISAMBIGUATE_LOCATION_NAMES_SQL.trim());
   });
 });

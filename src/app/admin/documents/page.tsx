@@ -14,6 +14,7 @@ import { SelectAll, SelectionCount } from "@/components/portal/select-table";
 import { formatInstant } from "@/lib/dates";
 import { companyTimeZone } from "@/server/services/settings";
 import { titleCase } from "@/lib/utils";
+import { withLocationLabels } from "@/lib/location-label";
 import { DocActions, UploadDialog } from "./doc-forms";
 
 export const metadata = { title: "Documents" };
@@ -35,12 +36,12 @@ export default async function Documents({ searchParams }: { searchParams: Promis
   const [items, total, orgs] = await Promise.all([
     prisma.document.findMany({ where, include: { organization: { select: { name: true } }, location: { select: { name: true } }, job: { select: { jobNumber: true } }, versions: { orderBy: { version: "desc" }, take: 1 } }, orderBy: { createdAt: "desc" }, skip: (page - 1) * 30, take: 30 }),
     prisma.document.count({ where }),
-    prisma.organization.findMany({ where: { deletedAt: null }, select: { id: true, name: true, locations: { where: { deletedAt: null }, select: { id: true, name: true } } }, orderBy: { name: "asc" } }),
+    prisma.organization.findMany({ where: { deletedAt: null }, select: { id: true, name: true, locations: { where: { deletedAt: null }, select: { id: true, name: true, addressLine1: true } } }, orderBy: { name: "asc" } }),
   ]);
   const uploaders = await prisma.user.findMany({ where: { id: { in: items.map((i) => i.uploadedById).filter((x): x is string => !!x) } }, select: { id: true, name: true } });
   return (
     <div>
-      <PageHeader title="Documents" description="Private document repository. Files are only served through authorized, short-lived downloads." actions={hasPermission(actor, "documents.write") && <UploadDialog orgs={orgs} />} />
+      <PageHeader title="Documents" description="Private document repository. Files are only served through authorized, short-lived downloads." actions={hasPermission(actor, "documents.write") && <UploadDialog orgs={orgs.map((o) => ({ ...o, locations: withLocationLabels(o.locations).map((l) => ({ id: l.id, name: l.label })) }))} />} />
       <Card>
         <FilterBar search={{ placeholder: "Title, customer, location" }} selects={[{ param: "type", label: "Type", options: TYPES.map((t) => ({ value: t, label: titleCase(t) })) }, { param: "visibility", label: "Visibility", options: [{ value: "CUSTOMER", label: "Shared with customer" }, { value: "INTERNAL", label: "Internal" }] }, { param: "org", label: "Customer", options: orgs.map((o) => ({ value: o.id, label: o.name })) }]} />
         {items.length === 0 ? <EmptyState icon={FileText} title="No documents found" /> : (

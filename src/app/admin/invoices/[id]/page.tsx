@@ -17,6 +17,7 @@ import { AuditTrail } from "@/components/admin/audit-trail";
 import { regenerateInvoicePdfAction, sendInvoiceAction, voidInvoiceAction } from "@/app/admin/_actions/billing";
 import { formatDateKey, formatInstant, keyFromDate } from "@/lib/dates";
 import { formatCents, formatRateCents } from "@/lib/money";
+import { withLocationLabels } from "@/lib/location-label";
 import { companyTimeZone } from "@/server/services/settings";
 
 export const metadata = { title: "Invoice" };
@@ -24,7 +25,7 @@ export const metadata = { title: "Invoice" };
 export default async function AdminInvoice({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ created?: string; edit?: string }> }) {
   const [id, sp] = await Promise.all([idParam(params), searchParams]);
   const actor = await requireStaffPage("invoices.read");
-  const inv = await prisma.invoice.findUnique({ where: { id }, include: { lineItems: { orderBy: { sortOrder: "asc" } }, organization: { select: { id: true, name: true, accountNumber: true, locations: { where: { deletedAt: null }, select: { id: true, name: true } }, billingProfiles: { select: { id: true, name: true } } } }, serviceLocation: true, billingProfile: true, job: { select: { id: true, jobNumber: true } }, manifest: { select: { id: true, manifestNumber: true } }, documents: { where: { deletedAt: null }, orderBy: { createdAt: "desc" } }, allocations: { include: { payment: true } } } });
+  const inv = await prisma.invoice.findUnique({ where: { id }, include: { lineItems: { orderBy: { sortOrder: "asc" } }, organization: { select: { id: true, name: true, accountNumber: true, locations: { where: { deletedAt: null }, select: { id: true, name: true, addressLine1: true } }, billingProfiles: { select: { id: true, name: true } } } }, serviceLocation: true, billingProfile: true, job: { select: { id: true, jobNumber: true } }, manifest: { select: { id: true, manifestNumber: true } }, documents: { where: { deletedAt: null }, orderBy: { createdAt: "desc" } }, allocations: { include: { payment: true } } } });
   if (!inv) notFound();
   const tz = await companyTimeZone();
   const canWrite = hasPermission(actor, "invoices.write");
@@ -55,7 +56,7 @@ export default async function AdminInvoice({ params, searchParams }: { params: P
       {inv.notes?.startsWith("Pricing required") && <Alert tone="warning" title="Pricing required">No contracted or default price matched this service. Set the price on the line item before sending.</Alert>}
       {editing ? (
         <Card><CardHeader title="Edit draft" /><CardBody>
-          <InvoiceEditor orgs={[{ id: inv.organization.id, name: inv.organization.name, locations: inv.organization.locations, billingProfiles: inv.organization.billingProfiles }]} taxRateBps={inv.taxRateBps} manifestFeeBps={(await getSetting("billing")).manifestFeeBps}
+          <InvoiceEditor orgs={[{ id: inv.organization.id, name: inv.organization.name, locations: withLocationLabels(inv.organization.locations).map((l) => ({ id: l.id, name: l.label })), billingProfiles: inv.organization.billingProfiles }]} taxRateBps={inv.taxRateBps} manifestFeeBps={(await getSetting("billing")).manifestFeeBps}
             invoice={{ id: inv.id, organizationId: inv.organizationId, serviceLocationId: inv.serviceLocationId, billingProfileId: inv.billingProfileId, serviceDate: inv.serviceDate ? keyFromDate(inv.serviceDate) : null, paymentTermsDays: inv.paymentTermsDays, poNumber: inv.poNumber, serviceTitle: inv.serviceTitle, nextServiceDate: inv.nextServiceDate ? keyFromDate(inv.nextServiceDate) : null, notes: inv.notes, lines: inv.lineItems.map((l) => ({ kind: l.kind, description: l.description, quantity: l.quantity.toString(), unitPrice: (Number(l.unitPriceCents) / 100).toFixed(Number(l.unitPriceCents) % 1 ? 4 : 2), taxable: l.taxable })) }} />
         </CardBody></Card>
       ) : (

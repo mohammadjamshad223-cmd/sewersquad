@@ -7,13 +7,17 @@ import type { Db } from "../db";
  * A street already added earlier is recognised, so names are compared without it and upgraded to
  * the full address when a later location lands on the same street. Safe to run any time.
  *
- * The same statement is the 20261017000000_location_street_names migration (checked by a test).
+ * The same statement is the 20261018000000_location_street_names_again migration (checked by a test).
  */
 export const DISAMBIGUATE_LOCATION_NAMES_SQL = `
 WITH live AS (
-  SELECT id, btrim(name) AS name, btrim("addressLine1") AS addr,
-         btrim(regexp_replace(btrim("addressLine1"), '^\\d+[0-9A-Za-z-]*\\s+', '')) AS street
-  FROM "ServiceLocation" WHERE "deletedAt" IS NULL
+  SELECT id, name, addr, btrim(regexp_replace(addr, '^\\d+[0-9A-Za-z-]*\\s+', '')) AS street
+  FROM (
+    -- Non-breaking and repeated spaces count as one space, so look-alike names match.
+    SELECT id, btrim(regexp_replace(translate(name, chr(160), ' '), '\\s+', ' ', 'g')) AS name,
+           btrim(regexp_replace(translate("addressLine1", chr(160), ' '), '\\s+', ' ', 'g')) AS addr
+    FROM "ServiceLocation" WHERE "deletedAt" IS NULL
+  ) raw
 ), based AS (
   SELECT id, name, addr, street,
          CASE
