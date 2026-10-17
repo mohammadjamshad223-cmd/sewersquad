@@ -17,6 +17,7 @@ import { formatCents } from "@/lib/money";
 import { ORG_ROLE_LABEL } from "@/lib/status";
 import { formatAddress, titleCase } from "@/lib/utils";
 import { companyTimeZone } from "@/server/services/settings";
+import { withLocationLabels } from "@/lib/location-label";
 import { AuditTrail } from "@/components/admin/audit-trail";
 
 export const metadata = { title: "Customer" };
@@ -44,7 +45,7 @@ export default async function CustomerDetail({ params, searchParams }: { params:
     tab === "history" || tab === "overview" ? prisma.job.findMany({ where: { organizationId: id }, orderBy: { scheduledDate: "desc" }, take: tab === "overview" ? 6 : 100, include: { location: { select: { name: true } } } }) : Promise.resolve([]),
     tab === "invoices" ? prisma.invoice.findMany({ where: { organizationId: id }, orderBy: { issueDate: "desc" }, take: 100, include: { serviceLocation: { select: { name: true } } } }) : Promise.resolve([]),
   ]);
-  const locOptions = org.locations.map((l) => ({ id: l.id, name: l.name }));
+  const locOptions = withLocationLabels(org.locations).map((l) => ({ id: l.id, name: l.label }));
   return (
     <div>
       <PageHeader
