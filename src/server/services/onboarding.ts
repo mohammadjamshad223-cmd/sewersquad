@@ -12,6 +12,7 @@ import { parseDollarRateToCentsString, parseDollarsToCents } from "@/lib/money";
 import { SERVICE_TYPE_LABEL } from "@/lib/status";
 import { createJob } from "./jobs";
 import { createPlan } from "./plans";
+import { disambiguateLocationNames } from "./location-names";
 
 /**
  * "New Customer": the customer, their contact, every location and its first service, in one
@@ -179,6 +180,7 @@ export async function createCustomerWithService(actor: Actor, input: NewCustomer
           await tx.leadActivity.create({ data: { leadId: lead.id, kind: "status", body: `Became a customer: ${org.name}`, actorId: actor.userId } });
         }
       }
+      await disambiguateLocationNames(tx);
       await audit(tx, { actorId: actor.userId, action: "customer.onboard", entityType: "Organization", entityId: org.id, organizationId: org.id, after: { ...input, locations } });
       return { organizationId: org.id, scheduled };
     },

@@ -7,6 +7,7 @@ import { badRequest, notFound } from "../errors";
 import { numbers } from "../numbering";
 import type { Actor } from "../auth/session";
 import { assertStaffActor } from "../authz/check";
+import { disambiguateLocationNames } from "./location-names";
 
 // ── Validation schemas (shared with server actions) ──────────────────────────
 
@@ -199,6 +200,7 @@ export async function createLocation(actor: Actor, organizationId: string, input
       data: { ...input, organizationId, code: await numbers.location(tx), isDemo: org.isDemo, createdById: actor.userId, updatedById: actor.userId },
     });
     await audit(tx, { actorId: actor.userId, action: "location.create", entityType: "ServiceLocation", entityId: loc.id, organizationId, after: input });
+    await disambiguateLocationNames(tx);
     return loc;
   });
 }
@@ -222,6 +224,7 @@ export async function updateLocation(actor: Actor, id: string, input: z.infer<ty
     const loc = await tx.serviceLocation.update({ where: { id }, data: { ...input, ...coords, updatedById: actor.userId } });
     const d = diff(before as unknown as Record<string, unknown>, input);
     if (d.changed) await audit(tx, { actorId: actor.userId, action: "location.update", entityType: "ServiceLocation", entityId: id, organizationId: before.organizationId, before: d.before, after: d.after });
+    await disambiguateLocationNames(tx);
     return loc;
   });
 }
