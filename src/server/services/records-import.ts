@@ -13,6 +13,7 @@ import { renderAndStoreInvoicePdf } from "./invoices";
 import { storeProposalPdf } from "./proposals";
 import { storeReportPdf } from "./service-reports";
 import { materializePlan } from "./plans";
+import { disambiguateLocationNames } from "./location-names";
 import records from "../import/records-2026.json";
 
 /**
@@ -152,6 +153,7 @@ async function importCustomers(tx: Db, actor: Actor) {
       locs++;
     }
   }
+  await disambiguateLocationNames(tx);
   await audit(tx, { actorId: actor.userId, action: "import.customers", entityType: "Import", entityId: "records-2026", after: { orgs, locs } });
   return [`${orgs} customers and ${locs} locations added (${RECORDS.organizations.length - orgs} customers already existed).`];
 }
