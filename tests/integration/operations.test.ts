@@ -4,7 +4,7 @@ import { createPlan, materializePlan, advancePlan } from "@/server/services/plan
 import { cancelJob, rescheduleJob, driverTransition } from "@/server/services/jobs";
 import { saveServiceDraft, uploadJobPhoto, submitService, approveJob, rejectJob } from "@/server/services/field";
 import { correctManifest } from "@/server/services/manifests";
-import { generateInvoiceForJob } from "@/server/services/invoices";
+import { confirmJobInvoice, invoiceSchema, proposeJobInvoice } from "@/server/services/invoices";
 import { recordDisposal } from "@/server/services/disposal";
 import { addDays, keyFromDate } from "@/lib/dates";
 
@@ -92,7 +92,7 @@ describe("field workflow → review → manifest → invoice", () => {
     expect(submitted.status).toBe("SUBMITTED");
     expect(submitted.manifest?.status).toBe("PENDING_REVIEW");
 
-    const res = await approveJob(admin, j.id);
+    await approveJob(admin, j.id);
     const m = await prisma.manifest.findUniqueOrThrow({ where: { jobId: j.id }, include: { versions: true } });
     expect(m.status).toBe("FINALIZED");
     const final = m.versions.find((v) => v.isFinal)!;
@@ -109,12 +109,14 @@ describe("field workflow → review → manifest → invoice", () => {
     expect(after.versions.find((v) => v.id === final.id)!.data).toEqual(final.data); // original preserved
     expect(await prisma.auditLog.count({ where: { action: "manifest.correct", entityId: m.id } })).toBe(1);
 
-    // Invoice was generated once; regenerating returns the same invoice.
-    expect(res.invoiceId).toBeTruthy();
-    const again = await generateInvoiceForJob(admin, j.id);
-    expect(again.id).toBe(res.invoiceId);
+    // Approval no longer creates an invoice; the operator confirms one, once.
+    expect(await prisma.invoice.count({ where: { jobId: j.id } })).toBe(0);
+    const p = await proposeJobInvoice(j.id);
+    const input = invoiceSchema.parse({ organizationId: p.job.organizationId, serviceLocationId: p.job.locationId, lines: p.defaults.lines });
+    const res = await confirmJobInvoice(admin, j.id, input);
+    await expectCode(confirmJobInvoice(admin, j.id, input), "BAD_REQUEST");
     expect(await prisma.invoice.count({ where: { jobId: j.id } })).toBe(1);
-    const inv = await prisma.invoice.findUniqueOrThrow({ where: { id: res.invoiceId! } });
+    const inv = await prisma.invoice.findUniqueOrThrow({ where: { id: res.invoiceId } });
     expect(inv.totalCents).toBe(800 * 30); // 800 gal × $0.30 company rule
   });
 

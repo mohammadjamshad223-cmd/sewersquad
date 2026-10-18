@@ -20,7 +20,7 @@ const include = {
   organization: { select: { id: true, name: true, primaryPhone: true, contacts: { where: { phone: { not: null }, locationId: null }, select: { name: true, phone: true, isPrimary: true }, orderBy: { isPrimary: "desc" as const }, take: 2 } } },
   assets: { include: { asset: { select: { id: true, type: true, name: true, capacityGallons: true, customTypeLabel: true } } } },
   plan: { select: { lastCompletedAt: true, recurrenceRule: { select: { anchorDate: true } } } },
-  invoices: { select: { invoiceNumber: true, status: true }, take: 1 },
+  invoices: { where: { status: { not: "VOID" } }, select: { invoiceNumber: true, status: true }, take: 1 },
 } as const;
 
 export default async function Dispatch() {

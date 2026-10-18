@@ -11,6 +11,7 @@ import { recordManualPayment, refundPayment } from "@/server/services/payments";
 import { correctManifest, finalizeManifest, uploadOfficialManifest } from "@/server/services/manifests";
 import { addDocumentVersion, archiveDocument, readUploadedFile, storeDocument } from "@/server/services/documents";
 import { processDueDeliveries } from "@/server/services/notifications";
+import { isUuid } from "@/server/params";
 import { badRequest } from "@/server/errors";
 import { parseDollarsToCents } from "@/lib/money";
 import { prisma } from "@/server/db";
@@ -63,11 +64,17 @@ export async function sendInvoiceAction(invoiceId: string) {
   });
 }
 
-export async function generateInvoiceAction(jobId: string) {
-  return runAction(async () => {
-    const i = await inv.generateInvoiceForJob(await assertStaff("invoices.write"), jobId);
-    return { id: i.id };
+/** The operator confirmed a completed job's invoice: create it, send it, and send the customer their paperwork. */
+export async function confirmJobInvoiceAction(p: ActionResult, fd: FormData): Promise<ActionResult> {
+  const res = await runAction(async () => {
+    const jobId = String(fd.get("jobId") ?? "");
+    if (!isUuid(jobId)) throw badRequest("Invalid job.");
+    const r = await inv.confirmJobInvoice(await assertStaff("invoices.write"), jobId, invoiceInput(fd));
+    flush();
+    const sent = ["Invoice sent", r.emailedTo.length ? `emailed ${r.emailedTo.join(", ")}` : null, r.texted ? `texted ${r.texted} contact${r.texted > 1 ? "s" : ""}` : null].filter(Boolean).join(" · ");
+    return [`${sent}.`, ...r.problems].join(" ");
   });
+  return res.ok ? { ok: true, message: res.data } : res;
 }
 
 export async function regenerateInvoicePdfAction(invoiceId: string) {

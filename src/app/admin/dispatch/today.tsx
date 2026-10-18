@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { AlertTriangle, CalendarClock, Camera, CheckCircle2, ChevronDown, MapPin, MessageSquare, Navigation, Phone, Repeat, Siren, Truck } from "lucide-react";
+import { AlertTriangle, CalendarClock, Camera, CheckCircle2, ChevronDown, MapPin, MessageSquare, Navigation, Phone, Receipt, Repeat, Siren, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox, Input, Textarea } from "@/components/ui/input";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -210,7 +210,7 @@ function StopCard({ s, n, canComplete, canReschedule, today, onComplete }: { s: 
       <div className="mt-3 flex items-center gap-2 border-t pt-3">
         {canComplete && (
           <Button onClick={onComplete} className="h-11 flex-1 bg-accent-strong text-[15px] hover:bg-accent-strong/90 sm:flex-none sm:px-6" disabled={pending}>
-            <CheckCircle2 /> {s.status === "SUBMITTED" ? "Approve & send" : "Completed"}
+            <CheckCircle2 /> {s.status === "SUBMITTED" ? "Approve" : "Completed"}
           </Button>
         )}
         {canReschedule && ["SCHEDULED", "ASSIGNED", "ACCEPTED", "MISSED", "UNABLE_TO_SERVICE"].includes(s.status) && (
@@ -239,7 +239,8 @@ function DoneRow({ s, canResend }: { s: BoardStop; canResend: boolean }) {
         <Link href={`/admin/jobs/${s.id}`} className="flex items-center gap-1.5 truncate text-[14px] font-medium hover:text-brand"><CheckCircle2 className="h-4 w-4 shrink-0 text-accent-strong" />{s.location}</Link>
         <p className="truncate text-[12px] text-muted-foreground">{s.service}{s.invoice ? ` · Invoice ${s.invoice}` : ""}</p>
       </div>
-      {canResend && <Button size="sm" variant="secondary" onClick={resend} disabled={pending}>{pending ? "Sending…" : "Resend to customer"}</Button>}
+      {canResend && !s.invoice && <Button asChild size="sm"><Link href={`/admin/jobs/${s.id}/invoice?from=dispatch`}><Receipt /> Confirm invoice</Link></Button>}
+      {canResend && s.invoice && <Button size="sm" variant="secondary" onClick={resend} disabled={pending}>{pending ? "Sending…" : "Resend to customer"}</Button>}
     </li>
   );
 }
@@ -280,9 +281,11 @@ function PhotoPicker({ label, name, files, setFiles, accept = "image/*" }: { lab
 type CompletableJob = Pick<BoardStop, "id" | "status" | "location" | "assets" | "cityManifest">;
 
 /** "Completed" / "Resend to customer" for the job page. */
-export function CompleteJobButton({ job, completed }: { job: CompletableJob; completed: boolean }) {
+export function CompleteJobButton({ job, completed, invoiced }: { job: CompletableJob; completed: boolean; invoiced: boolean }) {
   const [open, setOpen] = React.useState(false);
   const [pending, start] = React.useTransition();
+  if (completed && !invoiced)
+    return <Button asChild className="h-11 w-full text-[15px]"><Link href={`/admin/jobs/${job.id}/invoice`}><Receipt /> Confirm invoice</Link></Button>;
   if (completed)
     return (
       <Button variant="secondary" className="w-full" disabled={pending} onClick={() => start(async () => {
@@ -293,7 +296,7 @@ export function CompleteJobButton({ job, completed }: { job: CompletableJob; com
     );
   return (
     <>
-      <Button className="h-11 w-full bg-accent-strong text-[15px] hover:bg-accent-strong/90" onClick={() => setOpen(true)}><CheckCircle2 /> {job.status === "SUBMITTED" ? "Approve & send" : "Completed"}</Button>
+      <Button className="h-11 w-full bg-accent-strong text-[15px] hover:bg-accent-strong/90" onClick={() => setOpen(true)}><CheckCircle2 /> {job.status === "SUBMITTED" ? "Approve" : "Completed"}</Button>
       {open && <CompleteDialog stop={job} onClose={() => setOpen(false)} />}
     </>
   );
@@ -364,9 +367,9 @@ function CompleteDialog({ stop: s, onClose }: { stop: CompletableJob; onClose: (
         } catch {
           /* ignore */
         }
-        reportResult(res.data);
+        toast.success("Service saved and manifest finalized. Now confirm the invoice.");
         onClose();
-        router.refresh();
+        router.push(`/admin/jobs/${res.data.jobId}/invoice?from=dispatch`);
       } else if (!res.ok) {
         setErrors(res.fieldErrors ?? {});
         toast.error(res.error);
@@ -377,7 +380,7 @@ function CompleteDialog({ stop: s, onClose }: { stop: CompletableJob; onClose: (
 
   return (
     <Dialog open onOpenChange={(o) => !o && !pending && onClose()}>
-      <DialogContent size="lg" title={approveOnly ? `Approve & send — ${s.location}` : `Complete ${s.location}`} description={approveOnly ? "Already documented in the driver app. This finalizes the manifest, sends the invoice and emails the customer." : "Saves the service, finalizes the manifest, sends the invoice, and emails & texts the customer the photos, manifest and invoice."}>
+      <DialogContent size="lg" title={approveOnly ? `Approve — ${s.location}` : `Complete ${s.location}`} description={approveOnly ? "Already documented in the driver app. This finalizes the manifest; next you confirm the invoice." : "Saves the service and finalizes the manifest. Next you confirm the invoice; the customer gets the photos, manifest and invoice once you do."}>
         <form onSubmit={submit} className="space-y-5">
           {!approveOnly && (
             <>
@@ -435,7 +438,7 @@ function CompleteDialog({ stop: s, onClose }: { stop: CompletableJob; onClose: (
             </>
           )}
           <div className="flex gap-2">
-            <Button type="submit" className="h-11 flex-1 bg-accent-strong text-[15px] hover:bg-accent-strong/90" disabled={pending}>{pending ? "Sending…" : approveOnly ? "Approve & send to customer" : "Complete & send to customer"}</Button>
+            <Button type="submit" className="h-11 flex-1 bg-accent-strong text-[15px] hover:bg-accent-strong/90" disabled={pending}>{pending ? "Saving…" : approveOnly ? "Approve & confirm invoice" : "Complete & confirm invoice"}</Button>
             <Button type="button" variant="secondary" className="h-11" onClick={onClose} disabled={pending}>Cancel</Button>
           </div>
         </form>

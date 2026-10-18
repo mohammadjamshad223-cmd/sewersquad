@@ -113,41 +113,47 @@ function linesFromInput(input: z.infer<typeof invoiceSchema>["lines"], manifestF
 
 export async function createInvoice(actor: Actor, input: z.infer<typeof invoiceSchema>) {
   assertStaffActor(actor, "invoices.write");
-  const tz = await companyTimeZone();
   return prisma.$transaction(async (tx) => {
-    const b = await resolveBilling(tx, input.organizationId, input.serviceLocationId ?? null, input.billingProfileId);
-    const issue = todayKey(tz);
-    const terms = input.paymentTermsDays ?? b.termsDays;
-    const invoice = await tx.invoice.create({
-      data: {
-        invoiceNumber: await numbers.invoice(tx),
-        organizationId: b.org.id,
-        billingProfileId: b.profile?.id ?? null,
-        billingLocationId: b.billingLocationId,
-        serviceLocationId: input.serviceLocationId ?? null,
-        serviceDate: input.serviceDate ? dateFromKey(input.serviceDate) : null,
-        issueDate: dateFromKey(issue),
-        dueDate: dateFromKey(addDays(issue, terms)),
-        paymentTermsDays: terms,
-        subtotalCents: 0,
-        totalCents: 0,
-        balanceCents: 0,
-        taxRateBps: b.taxRateBps,
-        allowPartial: b.allowPartial,
-        poNumber: input.poNumber ?? b.profile?.poNumber ?? null,
-        serviceTitle: input.serviceTitle ?? null,
-        nextServiceDate: input.nextServiceDate ? dateFromKey(input.nextServiceDate) : null,
-        notes: input.notes ?? null,
-        isDemo: b.org.isDemo,
-        createdById: actor.userId,
-        updatedById: actor.userId,
-      },
-    });
-    const t = await writeLines(tx, invoice.id, linesFromInput(input.lines, (await getSetting("billing", tx)).manifestFeeBps), b.taxRateBps);
-    const saved = await tx.invoice.update({ where: { id: invoice.id }, data: { subtotalCents: t.subtotalCents, discountCents: t.discountCents, taxCents: t.taxCents, totalCents: t.totalCents, balanceCents: t.totalCents } });
-    await audit(tx, { actorId: actor.userId, action: "invoice.create", entityType: "Invoice", entityId: invoice.id, organizationId: b.org.id, after: { ...input, totals: t } });
+    const saved = await insertInvoice(tx, actor, input);
+    await audit(tx, { actorId: actor.userId, action: "invoice.create", entityType: "Invoice", entityId: saved.id, organizationId: saved.organizationId, after: { ...input, totalCents: saved.totalCents } });
     return saved;
   });
+}
+
+async function insertInvoice(tx: Db, actor: Actor, input: z.infer<typeof invoiceSchema>, link: { jobId?: string; manifestId?: string | null } = {}) {
+  const tz = await companyTimeZone(tx);
+  const b = await resolveBilling(tx, input.organizationId, input.serviceLocationId ?? null, input.billingProfileId);
+  const issue = todayKey(tz);
+  const terms = input.paymentTermsDays ?? b.termsDays;
+  const invoice = await tx.invoice.create({
+    data: {
+      invoiceNumber: await numbers.invoice(tx),
+      organizationId: b.org.id,
+      billingProfileId: b.profile?.id ?? null,
+      billingLocationId: b.billingLocationId,
+      serviceLocationId: input.serviceLocationId ?? null,
+      jobId: link.jobId ?? null,
+      manifestId: link.manifestId ?? null,
+      serviceDate: input.serviceDate ? dateFromKey(input.serviceDate) : null,
+      issueDate: dateFromKey(issue),
+      dueDate: dateFromKey(addDays(issue, terms)),
+      paymentTermsDays: terms,
+      subtotalCents: 0,
+      totalCents: 0,
+      balanceCents: 0,
+      taxRateBps: b.taxRateBps,
+      allowPartial: b.allowPartial,
+      poNumber: input.poNumber ?? b.profile?.poNumber ?? null,
+      serviceTitle: input.serviceTitle ?? null,
+      nextServiceDate: input.nextServiceDate ? dateFromKey(input.nextServiceDate) : null,
+      notes: input.notes ?? null,
+      isDemo: b.org.isDemo,
+      createdById: actor.userId,
+      updatedById: actor.userId,
+    },
+  });
+  const t = await writeLines(tx, invoice.id, linesFromInput(input.lines, (await getSetting("billing", tx)).manifestFeeBps), b.taxRateBps);
+  return tx.invoice.update({ where: { id: invoice.id }, data: { subtotalCents: t.subtotalCents, discountCents: t.discountCents, taxCents: t.taxCents, totalCents: t.totalCents, balanceCents: t.totalCents } });
 }
 
 export async function updateDraftInvoice(actor: Actor, invoiceId: string, input: z.infer<typeof invoiceSchema>, reason?: string) {
@@ -272,52 +278,58 @@ export async function buildJobLines(db: Db, jobId: string): Promise<{ lines: Lin
   return { lines, needsPricing, gallons };
 }
 
-/** Idempotent: a job has at most one invoice (unique jobId). Returns the existing one if present. */
-export async function generateInvoiceForJob(actor: Actor, jobId: string, opts: { db?: Db; send?: boolean; quiet?: boolean } = {}) {
-  assertStaffActor(actor, ["invoices.write", "jobs.approve"]);
-  const run = async (tx: Db) => {
-    const existing = await tx.invoice.findUnique({ where: { jobId } });
-    if (existing) return opts.send && existing.status === "DRAFT" && existing.totalCents > 0 ? sendInvoice(actor, existing.id, { db: tx, quiet: opts.quiet }).catch(() => existing) : existing;
-    const job = await tx.job.findUniqueOrThrow({ where: { id: jobId }, include: { manifest: true, plan: { select: { nextServiceDate: true, status: true } } } });
-    if (job.status !== "COMPLETED") throw badRequest("Invoices are generated from approved (completed) jobs.");
-    const b = await resolveBilling(tx, job.organizationId, job.locationId);
-    const { lines, needsPricing } = await buildJobLines(tx, jobId);
-    const tz = await companyTimeZone(tx);
-    const issue = todayKey(tz);
-    const invoice = await tx.invoice.create({
-      data: {
-        invoiceNumber: await numbers.invoice(tx),
-        organizationId: job.organizationId,
-        billingProfileId: b.profile?.id ?? null,
-        billingLocationId: b.billingLocationId,
-        serviceLocationId: job.locationId,
-        jobId,
-        manifestId: job.manifest?.id ?? null,
-        serviceDate: job.scheduledDate,
-        serviceTitle: SERVICE_TITLE[job.serviceType] ?? null,
-        nextServiceDate: await nextServiceDateFor(tx, job),
-        issueDate: dateFromKey(issue),
-        dueDate: dateFromKey(addDays(issue, b.termsDays)),
-        paymentTermsDays: b.termsDays,
-        subtotalCents: 0,
-        totalCents: 0,
-        balanceCents: 0,
-        taxRateBps: b.taxRateBps,
-        allowPartial: b.allowPartial,
-        poNumber: b.profile?.poNumber ?? null,
-        notes: needsPricing ? "Pricing required: no contracted or default price was found for this service." : null,
-        isDemo: job.isDemo,
-        createdById: actor.userId,
-        updatedById: actor.userId,
-      },
-    });
-    const t = await writeLines(tx, invoice.id, lines, b.taxRateBps);
-    const saved = await tx.invoice.update({ where: { id: invoice.id }, data: { subtotalCents: t.subtotalCents, discountCents: t.discountCents, taxCents: t.taxCents, totalCents: t.totalCents, balanceCents: t.totalCents } });
-    await audit(tx, { actorId: actor.userId, action: "invoice.generate_from_job", entityType: "Invoice", entityId: invoice.id, organizationId: job.organizationId, after: { jobId, totals: t, needsPricing } });
-    if (opts.send && !needsPricing && t.totalCents > 0) return sendInvoice(actor, invoice.id, { db: tx, quiet: opts.quiet });
-    return saved;
+/** Editable dollars for a stored cents rate: "89" → "0.89", "35000" → "350.00", "18.5" → "0.185". */
+function dollarsInput(unitPriceCents: string) {
+  const fixed = (Number(unitPriceCents) / 100).toFixed(6);
+  return fixed.replace(/(\.\d\d\d*?)0+$/, "$1");
+}
+
+/**
+ * Starting point for the "Confirm invoice" screen after a job is completed: the job's lines priced
+ * from its plan, quote or the customer's rates. Nothing is created until the operator confirms.
+ */
+export async function proposeJobInvoice(jobId: string) {
+  const job = await prisma.job.findUnique({ where: { id: jobId }, include: { location: true, organization: { select: { id: true, name: true } }, plan: { select: { nextServiceDate: true, status: true } }, invoices: { select: { id: true, invoiceNumber: true, status: true } } } });
+  if (!job) throw notFound();
+  const { lines, needsPricing, gallons } = await buildJobLines(prisma, jobId);
+  const next = await nextServiceDateFor(prisma, job);
+  return {
+    job: { id: job.id, jobNumber: job.jobNumber, status: job.status, serviceType: job.serviceType, organizationId: job.organizationId, organizationName: job.organization.name, locationId: job.locationId, locationName: job.location.name },
+    invoice: job.invoices.find((i) => i.status !== "VOID") ?? null,
+    gallons,
+    needsPricing,
+    defaults: {
+      serviceDate: keyFromDate(job.scheduledDate),
+      serviceTitle: SERVICE_TITLE[job.serviceType] ?? "",
+      nextServiceDate: next ? keyFromDate(next) : null,
+      // A missing price comes through blank so it has to be filled in before confirming.
+      lines: lines.map((l) => (l.description.endsWith("PRICING REQUIRED") ? { kind: l.kind === "SERVICE" ? "FLAT_RATE" : l.kind, description: l.description.replace(/ — PRICING REQUIRED$/, ""), quantity: "1", unitPrice: "", taxable: l.taxable } : { kind: l.kind, description: l.description, quantity: l.quantity, unitPrice: dollarsInput(l.unitPriceCents), taxable: l.taxable })),
+    },
   };
-  return opts.db ? run(opts.db) : prisma.$transaction(run, { timeout: 30_000 });
+}
+
+/**
+ * The operator confirmed the invoice for a completed job (prices and lines as they set them):
+ * create it, send it, and email/text the customer their paperwork. The only way a job is invoiced.
+ */
+export async function confirmJobInvoice(actor: Actor, jobId: string, input: z.infer<typeof invoiceSchema>) {
+  assertStaffActor(actor, "invoices.write");
+  const job = await prisma.job.findUnique({ where: { id: jobId }, include: { manifest: { select: { id: true } }, invoices: true } });
+  if (!job) throw notFound();
+  if (job.status !== "COMPLETED") throw badRequest("Complete the job before confirming its invoice.");
+  const live = job.invoices.find((i) => i.status !== "VOID");
+  if (live) throw badRequest(`This job already has invoice ${live.invoiceNumber}.`);
+  if (input.organizationId !== job.organizationId) throw badRequest("The invoice must be for this job's customer.");
+  const invoice = await prisma.$transaction(async (tx) => {
+    // A voided invoice keeps its history but releases the job so it can be invoiced again.
+    for (const v of job.invoices) await tx.invoice.update({ where: { id: v.id }, data: { jobId: null } });
+    const created = await insertInvoice(tx, actor, { ...input, serviceLocationId: input.serviceLocationId ?? job.locationId }, { jobId, manifestId: job.manifest?.id ?? null });
+    await audit(tx, { actorId: actor.userId, action: "invoice.confirm_for_job", entityType: "Invoice", entityId: created.id, organizationId: job.organizationId, after: { jobId, totalCents: created.totalCents } });
+    if (created.totalCents <= 0) throw badRequest("The invoice total must be more than $0.");
+    return sendInvoice(actor, created.id, { db: tx, quiet: true });
+  }, { timeout: 30_000 });
+  const { sendCompletionPackage } = await import("./job-completion");
+  return { invoiceId: invoice.id, ...(await sendCompletionPackage(actor, jobId)) };
 }
 
 /** The plan's next visit when there is one, else the service date + the configured interval. */
