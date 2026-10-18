@@ -331,10 +331,10 @@ export async function reviewJobCharge(actor: Actor, chargeId: string, approve: b
 
 // ── Office review ────────────────────────────────────────────────────────────
 
-export async function approveJob(actor: Actor, jobId: string, note?: string, opts: { invoice?: { send: boolean; quiet: boolean } } = {}) {
+/** Finalizes the manifest. The invoice is confirmed separately by the operator (confirmJobInvoice). */
+export async function approveJob(actor: Actor, jobId: string, note?: string) {
   assertStaffActor(actor, "jobs.approve");
-  const billing = await getSetting("billing");
-  const result = await prisma.$transaction(
+  await prisma.$transaction(
     async (tx) => {
       const job = await tx.job.findUnique({ where: { id: jobId }, include: { manifest: true, charges: true } });
       if (!job) throw notFound();
@@ -352,16 +352,9 @@ export async function approveJob(actor: Actor, jobId: string, note?: string, opt
       await tx.document.updateMany({ where: { jobId, type: "SERVICE_PHOTO", photoPhase: { in: ["BEFORE", "AFTER"] }, deletedAt: null }, data: { visibility: "CUSTOMER" } });
       await syncEmergencyForJob(tx, jobId, "COMPLETED", actor.userId);
       await audit(tx, { actorId: actor.userId, action: "job.approve", entityType: "Job", entityId: jobId, organizationId: job.organizationId, reason: note ?? null });
-      let invoiceId: string | null = null;
-      if (opts.invoice || billing.autoInvoiceOnApproval) {
-        const { generateInvoiceForJob } = await import("./invoices");
-        invoiceId = (await generateInvoiceForJob(actor, jobId, { db: tx, send: opts.invoice?.send ?? billing.autoSendInvoices, quiet: opts.invoice?.quiet }))?.id ?? null;
-      }
-      return { invoiceId };
     },
     { timeout: 60_000 },
   );
-  return result;
 }
 
 export async function rejectJob(actor: Actor, jobId: string, reason: string) {

@@ -17,7 +17,6 @@ import { ReasonDialog, FieldInput } from "@/components/admin/dialogs";
 import { CompleteJobButton } from "@/app/admin/dispatch/today";
 import { DocLink } from "@/components/portal/doc-link";
 import { approveJobAction, cancelJobAction, markMissedAction, rejectJobAction, rescheduleJobAction, reviewChargeAction } from "@/app/admin/_actions/ops";
-import { generateInvoiceAction } from "@/app/admin/_actions/billing";
 import { formatDateKey, formatInstant, formatWindow, keyFromDate } from "@/lib/dates";
 import { formatCents, formatGallons, formatRateCents } from "@/lib/money";
 import { ASSET_TYPE_LABEL, JOB_STATUS, SERVICE_TYPE_LABEL } from "@/lib/status";
@@ -186,9 +185,9 @@ export default async function AdminJobDetail({ params, searchParams }: { params:
         <div className="space-y-6">
           {hasPermission(actor, "jobs.approve") && !["CANCELLED"].includes(job.status) && (
             <Card>
-              <CardHeader title={job.status === "COMPLETED" ? "Customer paperwork" : "Finish this job"} description={job.status === "COMPLETED" ? "Send the photos, manifest and invoice to the customer again." : "Record gallons, photos and signatures. The manifest is finalized, the invoice sent, and the customer gets everything by email and text."} />
+              <CardHeader title={job.status !== "COMPLETED" ? "Finish this job" : job.invoices.some((i) => i.status !== "VOID") ? "Customer paperwork" : "Invoice not confirmed yet"} description={job.status !== "COMPLETED" ? "Record gallons, photos and signatures and finalize the manifest. Then you confirm the invoice; the customer gets everything once you do." : job.invoices.some((i) => i.status !== "VOID") ? "Send the photos, manifest and invoice to the customer again." : "Check the price and lines, then confirm. The invoice and paperwork go to the customer when you do."} />
               <CardBody>
-                <CompleteJobButton completed={job.status === "COMPLETED"} job={{ id: job.id, status: job.status, location: job.location.name, cityManifest: job.location.manifestFee === "CITY_OF_HOUSTON", assets: job.assets.map((a) => ({ id: a.asset.id, label: a.asset.name || ASSET_TYPE_LABEL[a.asset.type] || "Equipment", capacity: a.asset.capacityGallons })) }} />
+                <CompleteJobButton completed={job.status === "COMPLETED"} invoiced={job.invoices.some((i) => i.status !== "VOID")} job={{ id: job.id, status: job.status, location: job.location.name, cityManifest: job.location.manifestFee === "CITY_OF_HOUSTON", assets: job.assets.map((a) => ({ id: a.asset.id, label: a.asset.name || ASSET_TYPE_LABEL[a.asset.type] || "Equipment", capacity: a.asset.capacityGallons })) }} />
               </CardBody>
             </Card>
           )}
@@ -203,8 +202,8 @@ export default async function AdminJobDetail({ params, searchParams }: { params:
               <div className="flex items-center justify-between">
                 <span>Invoice</span>
                 {job.invoices[0] ? <Link href={`/admin/invoices/${job.invoices[0].id}`} className="flex items-center gap-2 font-medium text-brand hover:underline">{job.invoices[0].invoiceNumber} <StatusBadge kind="invoice" status={job.invoices[0].status} /></Link>
-                  : job.status === "COMPLETED" && hasPermission(actor, "invoices.write") ? <ActionButton size="sm" variant="secondary" action={generateInvoiceAction.bind(null, job.id)} successMessage="Draft invoice generated.">Generate invoice</ActionButton>
-                  : <span className="text-muted-foreground">After approval</span>}
+                  : job.status === "COMPLETED" && hasPermission(actor, "invoices.write") ? <Button asChild size="sm"><Link href={`/admin/jobs/${job.id}/invoice`}>Confirm invoice</Link></Button>
+                  : <span className="text-muted-foreground">After the job is completed</span>}
               </div>
             </CardBody>
           </Card>

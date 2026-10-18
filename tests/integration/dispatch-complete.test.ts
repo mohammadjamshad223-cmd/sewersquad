@@ -10,6 +10,7 @@ import { createHmac } from "node:crypto";
 import { prisma, resetDb, seedRbac, staff, PNG, SIGNATURE, today } from "./helpers";
 import { createCustomerWithService, newCustomerSchema } from "@/server/services/onboarding";
 import { completeJobFromBoard, completeJobSchema } from "@/server/services/job-completion";
+import { confirmJobInvoice, invoiceSchema, proposeJobInvoice } from "@/server/services/invoices";
 import { sharedJob } from "@/server/services/job-share";
 import { jobShareToken, verifyJobShareToken } from "@/server/share";
 import { extractFields, ingestInboundEmail, leadStats, logLeadContact, parseAddress, verifyResendWebhook } from "@/server/services/leads";
@@ -69,23 +70,35 @@ describe("New Customer → dispatch board → Completed", () => {
     await expect(createCustomerWithService(admin, input)).rejects.toThrow(/already exists/);
   });
 
-  it("Completed finalizes the manifest, sends the invoice, and emails + texts the customer their paperwork", async () => {
+  it("Completed finalizes the manifest but sends nothing until the operator confirms the invoice", async () => {
     const job = await prisma.job.findFirstOrThrow({ where: { organizationId: orgId, type: "RECURRING" }, include: { assets: true } });
     const sent = stubFetch();
     const input = completeJobSchema.parse({ jobId: job.id, "assetIds": [job.assets[0]!.assetId], assetGallons: ["750"], customerSignerName: "Ana Ruiz", customerSignature: SIGNATURE, driverSignature: SIGNATURE, certify: "on" });
-    const res = await completeJobFromBoard(admin, input, [{ bytes: PNG, name: "after.png", phase: "AFTER" }, { bytes: PNG, name: "coh.png", phase: "CITY_MANIFEST" }], { ip: "127.0.0.1" });
+    expect(await completeJobFromBoard(admin, input, [{ bytes: PNG, name: "after.png", phase: "AFTER" }, { bytes: PNG, name: "coh.png", phase: "CITY_MANIFEST" }], { ip: "127.0.0.1" })).toEqual({ jobId: job.id });
 
-    const done = await prisma.job.findUniqueOrThrow({ where: { id: job.id }, include: { manifest: true, invoices: { include: { lineItems: true } }, driver: true } });
+    const done = await prisma.job.findUniqueOrThrow({ where: { id: job.id }, include: { manifest: true, invoices: true, driver: true } });
     expect(done.status).toBe("COMPLETED");
     expect(done.manifest!.status).toBe("FINALIZED");
     expect(done.driver!.userId).toBe(admin.userId); // owner's field profile, created automatically
     const truck = await prisma.vehicle.findFirstOrThrow();
     expect(truck.tankCapacityGallons).toBe(2500);
-    const inv = done.invoices[0]!;
+    // No invoice, no email, no text yet.
+    expect(done.invoices).toHaveLength(0);
+    expect(sent.filter((s) => s.url.includes("api.resend.com/emails"))).toHaveLength(0);
+    expect(await prisma.contactText.count({ where: { organizationId: orgId, type: "service.completed" } })).toBe(0);
+
+    // The confirm screen starts from the plan's price; the operator adds 3¢/gal and a line item.
+    const proposal = await proposeJobInvoice(job.id);
+    expect(proposal.defaults.lines.map((l) => [l.kind, l.quantity, l.unitPrice])).toEqual([["PER_GALLON", "750", "0.89"], ["MANIFEST_FEE", "1", "26.70"]]);
+    const lines = [{ ...proposal.defaults.lines[0]!, unitPrice: "0.92" }, { kind: "OTHER", description: "Trench drain clearing", quantity: "1", unitPrice: "79.99", taxable: true }, proposal.defaults.lines[1]!];
+    const res = await confirmJobInvoice(admin, job.id, invoiceSchema.parse({ organizationId: orgId, serviceLocationId: job.locationId, serviceDate: proposal.defaults.serviceDate, serviceTitle: proposal.defaults.serviceTitle, lines }));
+    const inv = await prisma.invoice.findUniqueOrThrow({ where: { id: res.invoiceId }, include: { lineItems: true } });
     expect(inv.status).toBe("SENT");
-    expect(inv.lineItems.find((l) => l.kind === "PER_GALLON")!.amountCents).toBe(66750); // 750 × $0.89
-    expect(inv.lineItems.some((l) => l.kind === "MANIFEST_FEE")).toBe(true);
+    expect(inv.jobId).toBe(job.id);
+    expect(inv.lineItems.find((l) => l.kind === "PER_GALLON")!.amountCents).toBe(69000); // 750 × $0.92
+    expect(inv.lineItems.find((l) => l.kind === "MANIFEST_FEE")!.amountCents).toBe(2760); // 4% of the edited pumping line (extras aren't part of the fee base)
     expect(res).toMatchObject({ invoiceSent: true, invoiceNumber: inv.invoiceNumber, emailedTo: ["ana@tacotown.test"], texted: 1, problems: [] });
+    await expect(confirmJobInvoice(admin, job.id, invoiceSchema.parse({ organizationId: orgId, lines }))).rejects.toThrow(/already has invoice/);
 
     const email = sent.find((s) => s.url.includes("api.resend.com/emails"))!.body as { to: string[]; subject: string; text: string; attachments: { filename: string }[]; reply_to: string };
     expect(email.to).toEqual(["ana@tacotown.test"]);

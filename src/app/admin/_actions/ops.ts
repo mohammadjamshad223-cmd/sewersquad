@@ -82,9 +82,10 @@ export async function updateJobDetailsAction(p: ActionResult, fd: FormData) { re
 
 const _approve = formAction(z.object({ jobId: id, note: z.string().trim().max(1000).optional() }), async (i) => {
   const actor = await assertStaff("jobs.approve");
-  const res = await approveJob(actor, i.jobId, i.note);
+  await approveJob(actor, i.jobId, i.note);
   flush();
-  return { ok: true, message: res.invoiceId ? "Approved. Manifest finalized and invoice generated." : "Approved and manifest finalized." };
+  // Next step: the operator confirms the invoice before anything goes to the customer.
+  redirect(`/admin/jobs/${i.jobId}/invoice`);
 });
 export async function approveJobAction(p: ActionResult, fd: FormData) { return _approve(p, fd); }
 

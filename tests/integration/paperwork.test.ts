@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { prisma, resetDb, seedRbac, staff, org, driver, job, expectCode, PNG, SIGNATURE } from "./helpers";
 import { driverTransition } from "@/server/services/jobs";
 import { saveServiceDraft, uploadJobPhoto, submitService, approveJob, uploadCityManifest } from "@/server/services/field";
-import { createInvoice, sendInvoice, invoiceSchema } from "@/server/services/invoices";
+import { confirmJobInvoice, createInvoice, sendInvoice, invoiceSchema, proposeJobInvoice } from "@/server/services/invoices";
 import { createProposal, proposalSchema, setProposalStatus, priceSections } from "@/server/services/proposals";
 import { createReport, finalizeReport, reportSchema } from "@/server/services/service-reports";
 import { authorizeDocument } from "@/server/services/documents";
@@ -31,9 +31,11 @@ describe("Sewer Squad paperwork", () => {
     const city = await uploadCityManifest(D.actor, j.id, { bytes: PNG, name: "coh.png" });
     await expectCode(uploadCityManifest(await (await driver()).actor, j.id, { bytes: PNG, name: "x.png" }), "NOT_FOUND");
     await submitService(D.actor, j.id, { customerSignerName: "Pat", customerSignature: SIGNATURE, driverSignature: SIGNATURE, certify: "on", customerUnavailable: false }, { ip: null });
-    const res = await approveJob(admin, j.id);
+    await approveJob(admin, j.id);
+    const p = await proposeJobInvoice(j.id);
+    const res = await confirmJobInvoice(admin, j.id, invoiceSchema.parse({ organizationId: p.job.organizationId, serviceLocationId: p.job.locationId, serviceDate: p.defaults.serviceDate, serviceTitle: p.defaults.serviceTitle, nextServiceDate: p.defaults.nextServiceDate ?? undefined, lines: p.defaults.lines }));
 
-    const inv = await prisma.invoice.findUniqueOrThrow({ where: { id: res.invoiceId! }, include: { lineItems: { orderBy: { sortOrder: "asc" } } } });
+    const inv = await prisma.invoice.findUniqueOrThrow({ where: { id: res.invoiceId }, include: { lineItems: { orderBy: { sortOrder: "asc" } } } });
     expect(inv.lineItems.map((l) => [l.kind, l.description, l.amountCents])).toEqual([
       ["PER_GALLON", "Grease interceptor pumping & disposal", 24_000],
       ["MANIFEST_FEE", "City of Houston manifest fee", 960],

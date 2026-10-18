@@ -23,8 +23,8 @@ import { companyTimeZone, getSetting } from "./settings";
 
 /**
  * One-tap completion from the dispatch board, for owner-operators who drive the truck
- * themselves: record gallons, photos and signatures, finalize the manifest, issue the invoice,
- * then email and text the customer their paperwork.
+ * themselves: record gallons, photos and signatures and finalize the manifest. The operator then
+ * confirms the invoice (confirmJobInvoice), which sends it and the customer's paperwork.
  */
 export const completeJobSchema = submitSchema.and(
   z.object({
@@ -61,7 +61,7 @@ async function fieldCrew(tx: Db, actor: Actor) {
 
 export type CompletionResult = { invoiceNumber: string | null; invoiceSent: boolean; emailedTo: string[]; texted: number; problems: string[] };
 
-export async function completeJobFromBoard(actor: Actor, input: CompleteJobInput, photos: { bytes: Uint8Array; name: string; phase: "BEFORE" | "AFTER" | "CITY_MANIFEST" }[], meta: { ip: string | null }): Promise<CompletionResult> {
+export async function completeJobFromBoard(actor: Actor, input: CompleteJobInput, photos: { bytes: Uint8Array; name: string; phase: "BEFORE" | "AFTER" | "CITY_MANIFEST" }[], meta: { ip: string | null }): Promise<{ jobId: string }> {
   assertStaffActor(actor, "jobs.approve");
   const tz = await companyTimeZone();
   await prisma.$transaction(
@@ -136,10 +136,10 @@ export async function completeJobFromBoard(actor: Actor, input: CompleteJobInput
     { timeout: 60_000 },
   );
 
-  // Office approval: finalizes the manifest PDF and issues the invoice (sent quietly — the
-  // completion email below carries it).
-  await approveJob(actor, input.jobId, "Completed from dispatch board", { invoice: { send: true, quiet: true } });
-  return sendCompletionPackage(actor, input.jobId);
+  // Office approval finalizes the manifest. No invoice yet: the operator confirms it next, and the
+  // customer's paperwork goes out once they do.
+  await approveJob(actor, input.jobId, "Completed from dispatch board");
+  return { jobId: input.jobId };
 }
 
 /** Who gets the paperwork by email: billing and primary contacts, the account email, the site contact. */
@@ -177,7 +177,7 @@ export async function sendCompletionPackage(actor: Actor, jobId: string, opts: {
   const problems: string[] = [];
   const invoice = job.invoices[0] ?? null;
   const invoiceSent = !!invoice && invoice.status !== "DRAFT";
-  if (!invoice) problems.push("No invoice was created — add a price for this customer, then create the invoice from the job page.");
+  if (!invoice) problems.push("No invoice yet — confirm the invoice from the job page.");
   else if (!invoiceSent) problems.push(`Invoice ${invoice.invoiceNumber} is a draft (no price on file). Add the price on the invoice and send it.`);
 
   const invoiceDocs = invoiceSent ? await prisma.document.findMany({ where: { invoiceId: invoice!.id, type: "INVOICE", deletedAt: null }, include: { versions: { orderBy: { version: "desc" }, take: 1 } }, orderBy: { createdAt: "desc" }, take: 1 }) : [];

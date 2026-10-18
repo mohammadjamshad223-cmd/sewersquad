@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { signIn } from "./helpers";
 
 test.describe.serial("Workflow A (office & customer)", () => {
-  test("admin approves the submitted job: manifest finalized and invoice sent", async ({ page }) => {
+  test("admin approves the submitted job, confirms the invoice, and it is sent", async ({ page }) => {
     await signIn(page, "admin@demo.sewersquad.test");
     await page.goto("/admin/jobs?status=SUBMITTED");
     const first = page.locator("tbody tr").first().getByRole("link", { name: /^J-/ });
@@ -11,8 +11,14 @@ test.describe.serial("Workflow A (office & customer)", () => {
     await expect(page).toHaveURL(/\/admin\/jobs\/[0-9a-f-]{36}/, { timeout: 90_000 });
     await page.getByRole("button", { name: "Approve & finalize" }).first().click();
     await page.getByRole("dialog").getByRole("button", { name: "Approve & finalize" }).click();
-    await expect(page.getByText(/Approved\. Manifest finalized/)).toBeVisible();
-    await page.reload();
+    // Approval finalizes the manifest, then the operator confirms the invoice before anything is sent.
+    await expect(page).toHaveURL(/\/admin\/jobs\/[0-9a-f-]{36}\/invoice/, { timeout: 60_000 });
+    await expect(page.getByRole("heading", { name: "Confirm invoice" })).toBeVisible();
+    const price = page.getByRole("textbox", { name: "Unit price" }).first();
+    if (!(await price.inputValue())) await price.fill("0.30");
+    await page.getByRole("button", { name: /Confirm & send invoice/ }).click();
+    await expect(page.getByText(/Invoice sent/)).toBeVisible({ timeout: 60_000 });
+    await expect(page).not.toHaveURL(/\/invoice$/);
     await expect(page.getByText("Finalized").first()).toBeVisible();
     await expect(page.locator('a[href^="/admin/invoices/"]').first()).toBeVisible();
   });

@@ -48,8 +48,6 @@ export const settingsSchemas = {
     defaultPaymentTermsDays: z.number().int().min(0).max(120).default(30),
     defaultTaxRateBps: z.number().int().min(0).max(2500).default(0),
     allowPartialPayments: z.boolean().default(true),
-    autoInvoiceOnApproval: z.boolean().default(true),
-    autoSendInvoices: z.boolean().default(false),
     lateFeeEnabled: z.boolean().default(false),
     lateFeeBps: z.number().int().min(0).max(2000).default(0),
     invoiceFooter: z.string().default("Thank you for your business."),
