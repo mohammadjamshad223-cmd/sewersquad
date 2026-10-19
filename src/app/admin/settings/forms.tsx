@@ -5,7 +5,7 @@ import { ActionForm, ActionButton, Field, SubmitButton } from "@/components/ui/f
 import { Checkbox, Input, Select, Textarea } from "@/components/ui/input";
 import { FormDialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { sendAccessLinkAction } from "@/app/admin/_actions/customers";
+import { copyAccessLinkAction, sendAccessLinkAction } from "@/app/admin/_actions/customers";
 import { changeStaffRoleAction, inviteStaffAction, setStaffFieldModeAction, saveRolePermissionsAction, saveSettingsAction, saveTemplateAction, setStaffActiveAction } from "@/app/admin/_actions/settings";
 import { savePricingRuleAction } from "@/app/admin/_actions/billing";
 import { SERVICE_TYPE_LABEL } from "@/lib/status";
@@ -113,6 +113,7 @@ export function StaffRow({ user, roles, canEdit, self }: { user: { id: string; r
       </select>
       {canEdit && user.status !== "DEACTIVATED" && <ActionButton size="sm" variant="ghost" action={() => setStaffFieldModeAction(user.id, !user.fieldMode)} title="Field mode lets office staff be assigned jobs and complete them on a phone">{user.fieldMode ? "Field mode: on" : "Enable field mode"}</ActionButton>}
       {canEdit && !self && user.status !== "DEACTIVATED" && <ActionButton size="sm" variant="ghost" action={() => sendAccessLinkAction(user.id)} refresh={false}>{user.status === "INVITED" ? "Resend invite" : "Send reset link"}</ActionButton>}
+      {canEdit && !self && user.status !== "DEACTIVATED" && <ActionButton size="sm" variant="ghost" action={() => copyAccessLinkAction(user.id)} refresh={false}>{user.status === "INVITED" ? "Copy invite link" : "Copy reset link"}</ActionButton>}
       {canEdit && !self && <ActionButton size="sm" variant="ghost" action={() => setStaffActiveAction(user.id, user.status === "DEACTIVATED")} confirm={user.status === "DEACTIVATED" ? undefined : "Deactivate this staff account? They'll be signed out immediately."} successMessage="Updated.">{user.status === "DEACTIVATED" ? "Reactivate" : "Deactivate"}</ActionButton>}
     </div>
   );

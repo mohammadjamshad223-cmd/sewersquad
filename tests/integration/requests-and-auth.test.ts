@@ -132,5 +132,14 @@ describe("staff-issued access links", () => {
     await expectCode(sendAccessLink(dispatcher, cust.userId), "FORBIDDEN"); // no customers.users
     await expectCode(sendAccessLink(admin, owner.userId), "FORBIDDEN"); // only a super admin can reset a super admin
     await expectCode(sendAccessLink(owner, owner.userId), "BAD_REQUEST"); // own account uses Forgot password
+
+    // "Copy invite link": the link comes back to paste into a text, and nothing is emailed.
+    const pending = await prisma.user.create({ data: { email: "new-customer@t.test", name: "New Customer", kind: "CUSTOMER", status: "INVITED" } });
+    await prisma.organizationMembership.create({ data: { organizationId: A.org.id, userId: pending.id, role: "ORG_ADMIN" } });
+    const copied = await sendAccessLink(admin, pending.id, { copyOnly: true });
+    expect((copied as { data?: { inviteLink?: string } }).data?.inviteLink).toMatch(/\/invite\/accept\?token=/);
+    expect(copied.message).toMatch(/copy it and text/);
+    expect(await prisma.notification.count({ where: { userId: pending.id } })).toBe(0);
+    expect(await prisma.auditLog.count({ where: { action: "user.invite_link_copied", entityId: pending.id } })).toBe(1);
   });
 });

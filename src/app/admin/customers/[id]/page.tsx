@@ -11,7 +11,7 @@ import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { Tabs } from "@/components/ui/tabs";
 import { ActionButton } from "@/components/ui/form";
 import { BillingDialog, ContactDialog, InviteUserDialog, LocationDialog, OrgDialog, ReasonDialog } from "@/components/admin/dialogs";
-import { deleteContactAction, removeMembershipAction, sendAccessLinkAction, setOrganizationStatusAction, setUserActiveAction } from "@/app/admin/_actions/customers";
+import { copyAccessLinkAction, deleteContactAction, removeMembershipAction, sendAccessLinkAction, setOrganizationStatusAction, setUserActiveAction } from "@/app/admin/_actions/customers";
 import { formatDateKey, formatInstant } from "@/lib/dates";
 import { formatCents } from "@/lib/money";
 import { ORG_ROLE_LABEL } from "@/lib/status";
@@ -177,6 +177,7 @@ export default async function CustomerDetail({ params, searchParams }: { params:
                     {hasPermission(actor, "customers.users") && (
                       <>
                         {m.user.status !== "DEACTIVATED" && <ActionButton variant="ghost" size="sm" action={sendAccessLinkAction.bind(null, m.user.id)} refresh={false}>{m.user.status === "INVITED" ? "Resend invite" : "Send reset link"}</ActionButton>}
+                        {m.user.status !== "DEACTIVATED" && <ActionButton variant="ghost" size="sm" action={copyAccessLinkAction.bind(null, m.user.id)} refresh={false} title="Get a link you can text or message to them yourself">{m.user.status === "INVITED" ? "Copy invite link" : "Copy reset link"}</ActionButton>}
                         <ActionButton variant="ghost" size="sm" action={setUserActiveAction.bind(null, m.user.id, m.user.status === "DEACTIVATED")} successMessage="Updated." confirm={m.user.status === "DEACTIVATED" ? undefined : "Deactivate this user? They will be signed out everywhere."}>{m.user.status === "DEACTIVATED" ? "Reactivate" : "Deactivate"}</ActionButton>
                         <ActionButton variant="ghost" size="sm" className="text-danger" action={removeMembershipAction.bind(null, org.id, m.user.id)} confirm="Remove this user's access to this organization?" successMessage="Access removed.">Remove</ActionButton>
                       </>

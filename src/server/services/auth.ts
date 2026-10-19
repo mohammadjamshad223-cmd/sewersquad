@@ -227,9 +227,10 @@ export function invitationResult(email: string, token: string) {
 /**
  * Staff help for a user who can't get in: re-sends the invitation (not yet accepted) or a
  * password-reset link (active account). Same permission rules as deactivating the user. When
- * email is not configured the link is returned once to the staff member to hand over.
+ * email is not configured — or `copyOnly` is set, for staff who want to text the link themselves —
+ * the link is returned once to the staff member to hand over instead of being emailed.
  */
-export async function sendAccessLink(actor: Actor, userId: string) {
+export async function sendAccessLink(actor: Actor, userId: string, opts: { copyOnly?: boolean } = {}) {
   const target = await prisma.user.findUnique({ where: { id: userId }, include: { role: true } });
   if (!target) throw notFound();
   if (!hasPermission(actor, target.kind === "CUSTOMER" ? "customers.users" : "staff.manage")) throw forbidden();
@@ -242,8 +243,8 @@ export async function sendAccessLink(actor: Actor, userId: string) {
   const path = kind === "INVITATION" ? "/invite/accept" : "/reset-password";
   const token = await prisma.$transaction(async (tx) => {
     const t = await issueAuthToken(tx, target.id, target.email, kind);
-    await audit(tx, { actorId: actor.userId, action: kind === "INVITATION" ? "user.invite_resent" : "user.password_reset_sent", entityType: "User", entityId: target.id, after: { email: target.email } });
-    await notify(tx, {
+    await audit(tx, { actorId: actor.userId, action: kind === "INVITATION" ? (opts.copyOnly ? "user.invite_link_copied" : "user.invite_resent") : opts.copyOnly ? "user.password_reset_link_copied" : "user.password_reset_sent", entityType: "User", entityId: target.id, after: { email: target.email } });
+    if (!opts.copyOnly) await notify(tx, {
       userIds: [target.id],
       type: "account.security",
       title: kind === "INVITATION" ? "Your Sewer Squad portal invitation" : "Reset your Sewer Squad password",
@@ -255,10 +256,10 @@ export async function sendAccessLink(actor: Actor, userId: string) {
     return t;
   });
   const label = kind === "INVITATION" ? "invitation" : "password-reset link";
-  if (integrations.email()) return { ok: true as const, message: `A new ${label} was emailed to ${target.email}.` };
+  if (integrations.email() && !opts.copyOnly) return { ok: true as const, message: `A new ${label} was emailed to ${target.email}.` };
   return {
     ok: true as const,
-    message: `Email isn't configured — share this ${label} with ${target.email} securely.`,
+    message: opts.copyOnly ? `${label[0]!.toUpperCase()}${label.slice(1)} for ${target.email} — copy it and text or message it to them.` : `Email isn't configured — share this ${label} with ${target.email} securely.`,
     data: { inviteLink: `${env().APP_URL.replace(/\/$/, "")}${path}?token=${encodeURIComponent(token)}`, linkNote: kind === "INVITATION" ? "Valid for 7 days, single use." : "Valid for 1 hour, single use." },
   };
 }
