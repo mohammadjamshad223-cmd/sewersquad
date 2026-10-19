@@ -125,6 +125,15 @@ export async function sendAccessLinkAction(userId: string): Promise<ActionResult
   }
 }
 
+/** A sign-in link the staff member copies and texts to the customer themselves (nothing is emailed). */
+export async function copyAccessLinkAction(userId: string): Promise<ActionResult> {
+  try {
+    return await sendAccessLink(await assertStaff(), z.string().uuid().parse(userId), { copyOnly: true });
+  } catch (err) {
+    return toActionError(err);
+  }
+}
+
 /** Saves coordinates found by the browser's address lookup. Never overwrites existing coordinates. */
 export async function saveLocationCoordinatesAction(locationId: string, latitude: number, longitude: number): Promise<ActionResult> {
   return runAction(async () => {
