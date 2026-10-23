@@ -16,6 +16,7 @@ import {
   savePlanAction,
   updateLocationAction,
   updateOrganizationAction,
+  updatePortalAccessAction,
 } from "@/app/admin/_actions/customers";
 
 type Act = (s: ActionState, fd: FormData) => Promise<ActionState>;
@@ -208,6 +209,31 @@ export function PlanForm({ locationId, assets, drivers, vehicles, plan, today, o
       <Field label="Special instructions" name="specialInstructions" className="sm:col-span-2"><Textarea rows={2} defaultValue={plan?.specialInstructions ?? ""} /></Field>
       <p className="text-[12px] text-muted-foreground sm:col-span-2">Intervals are customer-specific service schedules, not regulatory requirements.</p>
       <div className="sm:col-span-2"><SubmitButton>{plan ? "Save plan" : "Create plan"}</SubmitButton></div>
+    </ActionForm>
+  );
+}
+
+/** Edit an existing portal user's role, locations and payment permission. */
+export function PortalAccessForm({ organizationId, userId, locations, current, onDone }: { organizationId: string; userId: string; locations: { id: string; name: string }[]; current: { role: string; canPay: boolean; locationIds: string[] }; onDone?: () => void }) {
+  const [role, setRole] = React.useState(current.role);
+  return (
+    <ActionForm action={updatePortalAccessAction as Act} className="grid gap-4" onSuccess={onDone}>
+      <input type="hidden" name="organizationId" value={organizationId} />
+      <input type="hidden" name="userId" value={userId} />
+      <Field label="Role" name="orgRole" required>
+        <Select value={role} onChange={(e) => setRole(e.target.value)}><option value="ORG_ADMIN">Organization admin (all locations)</option><option value="LOCATION_MANAGER">Location manager</option><option value="READ_ONLY">Read-only</option></Select>
+      </Field>
+      {role !== "ORG_ADMIN" ? (
+        <fieldset className="space-y-2">
+          <legend className="text-[13px] font-medium">Locations this user can see <span className="text-danger">*</span></legend>
+          <p className="text-[12px] text-muted-foreground">They only see invoices, manifests and services for the locations ticked here.</p>
+          <div className="grid gap-2">{locations.map((l) => <label key={l.id} className="flex items-center gap-2 text-sm"><Checkbox name="locationIds[]" value={l.id} defaultChecked={current.locationIds.includes(l.id)} /> {l.name}</label>)}</div>
+        </fieldset>
+      ) : (
+        <p className="text-[13px] text-muted-foreground">Organization admins see every location, plus account-level invoices.</p>
+      )}
+      <label className="flex items-center gap-2 text-sm"><Checkbox name="canPay" defaultChecked={current.canPay} /> Can make payments</label>
+      <div><SubmitButton>Save access</SubmitButton></div>
     </ActionForm>
   );
 }

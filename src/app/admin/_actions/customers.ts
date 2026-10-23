@@ -114,6 +114,17 @@ const _inviteCustomer = formAction(
 );
 export async function inviteCustomerUserAction(p: ActionResult, fd: FormData) { return _inviteCustomer(p, fd); }
 
+/** Change what an existing portal user can see: role, which locations, and whether they can pay. */
+const _access = formAction(
+  z.object({ organizationId: id, userId: id, orgRole: z.enum(["ORG_ADMIN", "LOCATION_MANAGER", "READ_ONLY"]), canPay: z.enum(["on"]).optional(), locationIds: z.array(id).default([]) }),
+  async (i) => {
+    const actor = await assertStaff("customers.users");
+    await customers.updatePortalAccess(actor, i.organizationId, i.userId, { role: i.orgRole, canPay: i.canPay === "on", locationIds: i.locationIds });
+    return { ok: true, message: "Access updated. They'll see the change next time they open the portal." };
+  },
+);
+export async function updatePortalAccessAction(p: ActionResult, fd: FormData) { return _access(p, fd); }
+
 /** Re-send an invitation or a password-reset link to any user (staff, driver or customer). */
 export async function sendAccessLinkAction(userId: string): Promise<ActionResult> {
   try {

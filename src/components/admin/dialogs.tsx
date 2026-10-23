@@ -6,7 +6,7 @@ import { Button, type ButtonProps } from "@/components/ui/button";
 import { FormDialog } from "@/components/ui/dialog";
 import { ActionForm, Field, SubmitButton, type ActionState } from "@/components/ui/form";
 import { Input, Textarea } from "@/components/ui/input";
-import { AssetForm, BillingProfileForm, ContactForm, InviteCustomerUserForm, LocationForm, OrganizationForm, PlanForm, type PlanInit } from "./customer-forms";
+import { AssetForm, BillingProfileForm, ContactForm, InviteCustomerUserForm, LocationForm, OrganizationForm, PlanForm, PortalAccessForm, type PlanInit } from "./customer-forms";
 
 type Trigger = { label: string; variant?: ButtonProps["variant"]; size?: ButtonProps["size"]; icon?: "plus" | "edit" };
 function trig({ label, variant = "secondary", size = "sm", icon }: Trigger) {
@@ -35,6 +35,9 @@ export function BillingDialog({ trigger, title, ...p }: { trigger: Trigger; titl
 }
 export function PlanDialog({ trigger, title, ...p }: { trigger: Trigger; title: string; plan?: PlanInit } & React.ComponentProps<typeof PlanForm>) {
   return <FormDialog trigger={trig(trigger)} title={title} size="xl">{(close) => <PlanForm {...p} onDone={close} />}</FormDialog>;
+}
+export function PortalAccessDialog({ trigger, name, ...p }: { trigger: Trigger; name: string } & React.ComponentProps<typeof PortalAccessForm>) {
+  return <FormDialog trigger={trig(trigger)} title={`Edit access — ${name}`} description="Choose what this person sees in the customer portal." size="md">{(close) => <PortalAccessForm {...p} onDone={close} />}</FormDialog>;
 }
 export function InviteUserDialog({ trigger, ...p }: { trigger: Trigger } & React.ComponentProps<typeof InviteCustomerUserForm>) {
   return <FormDialog trigger={trig(trigger)} title="Invite customer user" description="They'll receive an email link to set a password (valid 7 days)." size="lg">{(close) => <InviteCustomerUserForm {...p} onDone={close} />}</FormDialog>;
