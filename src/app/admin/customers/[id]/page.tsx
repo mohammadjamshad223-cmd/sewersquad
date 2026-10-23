@@ -10,7 +10,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { Tabs } from "@/components/ui/tabs";
 import { ActionButton } from "@/components/ui/form";
-import { BillingDialog, ContactDialog, InviteUserDialog, LocationDialog, OrgDialog, ReasonDialog } from "@/components/admin/dialogs";
+import { BillingDialog, ContactDialog, InviteUserDialog, LocationDialog, OrgDialog, PortalAccessDialog, ReasonDialog } from "@/components/admin/dialogs";
 import { copyAccessLinkAction, deleteContactAction, removeMembershipAction, sendAccessLinkAction, setOrganizationStatusAction, setUserActiveAction } from "@/app/admin/_actions/customers";
 import { formatDateKey, formatInstant } from "@/lib/dates";
 import { formatCents } from "@/lib/money";
@@ -176,6 +176,7 @@ export default async function CustomerDetail({ params, searchParams }: { params:
                   <TD className="whitespace-nowrap text-right">
                     {hasPermission(actor, "customers.users") && (
                       <>
+                        <PortalAccessDialog trigger={{ label: "Edit access", variant: "ghost" }} name={m.user.name} organizationId={org.id} userId={m.user.id} locations={locOptions} current={{ role: m.role, canPay: m.canPay, locationIds: m.user.locationMemberships.filter((l) => l.location.organizationId === org.id).map((l) => l.location.id) }} />
                         {m.user.status !== "DEACTIVATED" && <ActionButton variant="ghost" size="sm" action={sendAccessLinkAction.bind(null, m.user.id)} refresh={false}>{m.user.status === "INVITED" ? "Resend invite" : "Send reset link"}</ActionButton>}
                         {m.user.status !== "DEACTIVATED" && <ActionButton variant="ghost" size="sm" action={copyAccessLinkAction.bind(null, m.user.id)} refresh={false} title="Get a link you can text or message to them yourself">{m.user.status === "INVITED" ? "Copy invite link" : "Copy reset link"}</ActionButton>}
                         <ActionButton variant="ghost" size="sm" action={setUserActiveAction.bind(null, m.user.id, m.user.status === "DEACTIVATED")} successMessage="Updated." confirm={m.user.status === "DEACTIVATED" ? undefined : "Deactivate this user? They will be signed out everywhere."}>{m.user.status === "DEACTIVATED" ? "Reactivate" : "Deactivate"}</ActionButton>

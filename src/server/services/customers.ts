@@ -328,3 +328,29 @@ export async function assetHistory(assetId: string, take = 50) {
     include: { serviceRecord: { include: { job: { select: { id: true, jobNumber: true, scheduledDate: true, completedAt: true, status: true, manifest: { select: { id: true, manifestNumber: true, status: true } } } }, driver: { include: { user: { select: { name: true } } } } } } },
   });
 }
+
+// ── Portal access ────────────────────────────────────────────────────────────
+
+/**
+ * Change an existing portal user's access to one customer: their role, which locations they see
+ * (location managers and read-only users only see invoices, manifests and services for these),
+ * and whether they can pay online.
+ */
+export async function updatePortalAccess(actor: Actor, organizationId: string, userId: string, input: { role: "ORG_ADMIN" | "LOCATION_MANAGER" | "READ_ONLY"; canPay: boolean; locationIds: string[] }) {
+  assertStaffActor(actor, "customers.users");
+  return prisma.$transaction(async (tx) => {
+    const membership = await tx.organizationMembership.findFirst({ where: { organizationId, userId }, include: { user: { select: { kind: true } } } });
+    if (!membership || membership.user.kind !== "CUSTOMER") throw notFound("This person isn't a portal user for this customer.");
+    const locationIds = input.role === "ORG_ADMIN" ? [] : [...new Set(input.locationIds)];
+    if (input.role !== "ORG_ADMIN" && locationIds.length === 0) throw badRequest("Pick at least one location, or make them an Organization admin.");
+    if (locationIds.length && (await tx.serviceLocation.count({ where: { id: { in: locationIds }, organizationId, deletedAt: null } })) !== locationIds.length) throw badRequest("Locations must belong to this customer.");
+    const before = { role: membership.role, canPay: membership.canPay, locationIds: (await tx.locationMembership.findMany({ where: { userId, location: { organizationId } }, select: { locationId: true } })).map((l) => l.locationId) };
+    await tx.organizationMembership.update({ where: { id: membership.id }, data: { role: input.role, canPay: input.canPay } });
+    // Only this customer's locations are touched; access to other customers stays as it is.
+    await tx.locationMembership.deleteMany({ where: { userId, location: { organizationId }, locationId: { notIn: locationIds } } });
+    for (const locationId of locationIds) {
+      await tx.locationMembership.upsert({ where: { locationId_userId: { locationId, userId } }, create: { userId, locationId }, update: {} });
+    }
+    await audit(tx, { actorId: actor.userId, action: "user.portal_access_update", entityType: "User", entityId: userId, organizationId, before, after: { role: input.role, canPay: input.canPay, locationIds } });
+  });
+}
