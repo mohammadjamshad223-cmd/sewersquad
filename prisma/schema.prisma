@@ -204,6 +204,7 @@ model Organization {
   pricingRules      PricingRule[]
   proposals         Proposal[]
   serviceReports    ServiceReport[]
+  expenses          Expense[]
 
   @@index([name])
   @@index([status])
@@ -758,6 +759,7 @@ model Job {
   issues           IssueReport[]
   loadAllocations  DisposalLoadAllocation[]
   supportTickets   SupportTicket[]
+  expenses         Expense[]
 
   @@unique([planId, occurrenceDate])
   @@index([scheduledDate, status])
@@ -1055,6 +1057,8 @@ model Document {
   disposalEvent      DisposalEvent?     @relation(fields: [disposalEventId], references: [id])
   disposalBillId     String?            @db.Uuid
   disposalBill       DisposalBill?      @relation(fields: [disposalBillId], references: [id])
+  expenseId          String?            @db.Uuid
+  expense            Expense?           @relation(fields: [expenseId], references: [id])
   proposalId         String?            @db.Uuid
   proposal           Proposal?          @relation(fields: [proposalId], references: [id])
   serviceReportId    String?            @db.Uuid
@@ -1874,4 +1878,62 @@ model LeadActivity {
   occurredAt DateTime @default(now())
 
   @@index([leadId, occurredAt])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// External costs (gas, contractors, tools, permits…) for profit reporting
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum ExpenseCategory {
+  FUEL
+  CONTRACTOR
+  TOOLS_EQUIPMENT
+  PERMITS_LICENSES
+  TRUCK_MAINTENANCE
+  INSURANCE
+  SUPPLIES
+  MARKETING
+  OFFICE_SOFTWARE
+  OTHER
+}
+
+enum ExpensePaidFrom {
+  BUSINESS_ACCOUNT
+  BUSINESS_CARD
+  CASH
+  PERSONAL
+}
+
+model Expense {
+  id             String          @id @default(uuid()) @db.Uuid
+  date           DateTime        @db.Date
+  category       ExpenseCategory
+  amountCents    Int
+  /// Who was paid (gas station, contractor, store…).
+  vendor         String?
+  description    String
+  paymentMethod  String?
+  /// Where the money came from. PERSONAL means someone covered it themselves and may need paying back.
+  paidFrom       ExpensePaidFrom @default(BUSINESS_ACCOUNT)
+  /// For PERSONAL: whose own money it was.
+  paidByName     String?
+  paidByUserId   String?         @db.Uuid
+  /// For PERSONAL: when the business paid them back (null = still owed).
+  reimbursedAt   DateTime?
+  /// Optional: the customer or job this cost was for (e.g. a contractor on a plumbing job).
+  organizationId String?         @db.Uuid
+  organization   Organization?   @relation(fields: [organizationId], references: [id])
+  jobId          String?         @db.Uuid
+  job            Job?            @relation(fields: [jobId], references: [id])
+  notes          String?
+  createdById    String?         @db.Uuid
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  deletedAt      DateTime?
+  documents      Document[]
+
+  @@index([date])
+  @@index([category, date])
+  @@index([organizationId])
+  @@index([paidFrom, reimbursedAt])
 }

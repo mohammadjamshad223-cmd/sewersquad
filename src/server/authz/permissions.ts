@@ -35,6 +35,8 @@ export const PERMISSIONS = {
   "payments.read": { group: "Billing", description: "View payments" },
   "payments.record": { group: "Billing", description: "Record manual payments (check, cash)" },
   "payments.refund": { group: "Billing", description: "Issue refunds" },
+  "expenses.read": { group: "Billing", description: "View external costs (gas, contractors, tools, permits)" },
+  "expenses.write": { group: "Billing", description: "Record and edit external costs" },
 
   "reports.operations": { group: "Reporting", description: "View operational reports and dashboards" },
   "reports.financial": { group: "Reporting", description: "View financial reports, receivables and profitability" },
@@ -96,6 +98,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<SystemRoleKey, Permission[]> = {
     "payments.read",
     "payments.record",
     "payments.refund",
+    "expenses.read",
+    "expenses.write",
     "disposal.read",
     "reports.financial",
     "reports.operations",
