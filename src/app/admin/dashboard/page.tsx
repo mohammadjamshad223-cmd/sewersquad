@@ -40,7 +40,7 @@ export default async function AdminDashboard() {
           <Stat label="Revenue this month" value={formatCents(k.revenueMonth.value)} hint={<Delta value={k.revenueMonth.value} previous={k.revenueMonth.previous} />} icon={CircleDollarSign} tone="brand" href="/admin/invoices" />
           <Stat label="Payments collected" value={formatCents(k.collectedMonth.value)} hint={<Delta value={k.collectedMonth.value} previous={k.collectedMonth.previous} />} icon={Wallet} tone="success" href="/admin/payments" />
           <Stat label="Outstanding" value={formatCents(k.outstanding.value)} hint={k.outstanding.count ? `${k.outstanding.count} open invoice${k.outstanding.count > 1 ? "s" : ""}${k.overdue.count ? ` · ${k.overdue.count} past due` : ""}` : "All paid up"} icon={Landmark} tone={k.overdue.value ? "warning" : "neutral"} href="/admin/invoices?status=OPEN" />
-          <Stat label="Gross profit this month" value={thisMonth ? formatCents(thisMonth.profitCents) : "—"} hint={thisMonth ? `${pct(thisMonth.marginPct)} margin after disposal` : undefined} icon={TrendingUp} tone="success" />
+          <Stat label="Profit this month" value={thisMonth ? formatCents(thisMonth.profitCents) : "—"} hint={thisMonth ? `${pct(thisMonth.marginPct)} margin after disposal & other costs` : undefined} icon={TrendingUp} tone="success" href="/admin/expenses" />
         </div>
       )}
 
@@ -49,12 +49,12 @@ export default async function AdminDashboard() {
           {profit && (
             <Card>
               <CardHeader
-                title="Gross profitability"
-                description={profit.centsPerGallon !== null ? `Revenue minus disposal, at your average disposal cost of $${(profit.centsPerGallon / 100).toFixed(3)} per gallon (from disposal-site bills).` : "Add disposal-site bills (Disposal → Fees & bills) to calculate disposal cost per gallon."}
+                title="Profitability"
+                description={profit.centsPerGallon !== null ? `Revenue minus disposal (at your average $${(profit.centsPerGallon / 100).toFixed(3)} per gallon from disposal-site bills) and other costs from External costs.` : "Add disposal-site bills (Disposal → Fees & bills) to calculate disposal cost per gallon."}
               />
               <Table>
                 <THead>
-                  <tr><TH>Month</TH><TH className="text-right">Revenue</TH><TH className="hidden text-right sm:table-cell">Gallons</TH><TH className="hidden text-right sm:table-cell">Disposal cost</TH><TH className="text-right">Gross profit</TH><TH className="text-right">Margin</TH></tr>
+                  <tr><TH>Month</TH><TH className="text-right">Revenue</TH><TH className="hidden text-right sm:table-cell">Gallons</TH><TH className="hidden text-right sm:table-cell">Disposal cost</TH><TH className="hidden text-right sm:table-cell">Other costs</TH><TH className="text-right">Profit</TH><TH className="text-right">Margin</TH></tr>
                 </THead>
                 <TBody>
                   {profit.months.map((m, i) => (
@@ -63,6 +63,7 @@ export default async function AdminDashboard() {
                       <TD className="text-right tabular-nums">{formatCents(m.revenueCents)}</TD>
                       <TD className="hidden text-right tabular-nums sm:table-cell">{m.gallons ? m.gallons.toLocaleString() : "—"}</TD>
                       <TD className="hidden text-right tabular-nums text-muted-foreground sm:table-cell">{m.disposalCents ? `−${formatCents(m.disposalCents)}` : "—"}</TD>
+                      <TD className="hidden text-right tabular-nums text-muted-foreground sm:table-cell">{m.otherCostsCents ? <Link href={`/admin/expenses?month=${m.month}`} className="hover:text-brand">−{formatCents(m.otherCostsCents)}</Link> : "—"}</TD>
                       <TD className={cn("text-right font-semibold tabular-nums", m.profitCents < 0 && "text-danger")}>{formatCents(m.profitCents)}</TD>
                       <TD className="text-right tabular-nums">{pct(m.marginPct)}</TD>
                     </TR>

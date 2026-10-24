@@ -259,7 +259,7 @@ export function bigintSafe<T>(rows: T[]): T[] {
 export async function grossProfitByMonth(months = 6) {
   const tz = await companyTimeZone();
   const start = addMonths(startOfMonthKey(todayKey(tz)), -(months - 1));
-  const [rows, cost] = await Promise.all([
+  const [rows, cost, external] = await Promise.all([
     prisma.$queryRaw<{ m: string; rev: bigint; gal: Prisma.Decimal | null; invoices: bigint }[]>`
       WITH inv AS (
         SELECT i.id, i."jobId", to_char(date_trunc('month', i."issueDate"), 'YYYY-MM') AS m, (i."subtotalCents" - i."discountCents") AS rev
@@ -276,6 +276,9 @@ export async function grossProfitByMonth(months = 6) {
       SELECT SUM(l."amountCents")::bigint AS cents, SUM(l."gallons")::bigint AS gal
       FROM "DisposalBillLine" l JOIN "DisposalBill" b ON b.id = l."billId"
       WHERE b."status" <> 'VOID' AND l."gallons" IS NOT NULL AND l."gallons" > 0`,
+    prisma.$queryRaw<{ m: string; cents: bigint }[]>`
+      SELECT to_char(date_trunc('month', "date"), 'YYYY-MM') AS m, SUM("amountCents")::bigint AS cents
+      FROM "Expense" WHERE "deletedAt" IS NULL AND "date" >= ${start}::date GROUP BY 1`,
   ]);
   const costGal = Number(cost[0]?.gal ?? 0);
   const centsPerGallon = costGal > 0 ? Number(cost[0]!.cents ?? 0) / costGal : null;
@@ -287,8 +290,11 @@ export async function grossProfitByMonth(months = 6) {
     const revenueCents = Number(r?.rev ?? 0);
     const gallons = Math.round(Number(r?.gal ?? 0));
     const disposalCents = centsPerGallon !== null ? Math.round(gallons * centsPerGallon) : 0;
-    const profitCents = revenueCents - disposalCents;
-    return { month: k, label: label(k), invoices: Number(r?.invoices ?? 0), revenueCents, gallons, disposalCents, profitCents, marginPct: revenueCents > 0 ? (profitCents / revenueCents) * 100 : null };
+    const grossCents = revenueCents - disposalCents;
+    // External costs (gas, contractors, tools, permits…) recorded on the External costs page.
+    const otherCostsCents = Number(external.find((x) => x.m === k)?.cents ?? 0);
+    const profitCents = grossCents - otherCostsCents;
+    return { month: k, label: label(k), invoices: Number(r?.invoices ?? 0), revenueCents, gallons, disposalCents, grossCents, otherCostsCents, profitCents, marginPct: revenueCents > 0 ? (profitCents / revenueCents) * 100 : null };
   });
   return { centsPerGallon, months: out.reverse() };
 }
