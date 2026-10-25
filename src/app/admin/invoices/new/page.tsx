@@ -5,6 +5,7 @@ import { Card, CardBody } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/misc";
 import { withLocationLabels } from "@/lib/location-label";
 import { InvoiceEditor } from "@/components/admin/invoice-editor";
+import { averageDisposalCentsPerGallon } from "@/server/services/invoices";
 
 export const metadata = { title: "New invoice" };
 
@@ -16,8 +17,8 @@ export default async function NewInvoice() {
   ]);
   return (
     <div>
-      <PageHeader title="New invoice" description="Create a manual invoice. Invoices for completed jobs are generated automatically on approval." breadcrumbs={[{ label: "Invoices", href: "/admin/invoices" }, { label: "New" }]} />
-      <Card><CardBody><InvoiceEditor orgs={orgs.map((o) => ({ ...o, locations: withLocationLabels(o.locations).map((l) => ({ id: l.id, name: l.label })) }))} taxRateBps={billing.defaultTaxRateBps} manifestFeeBps={billing.manifestFeeBps} /></CardBody></Card>
+      <PageHeader title="New invoice" description="Create a manual invoice. Invoices for completed jobs are confirmed from the job (Confirm invoice)." breadcrumbs={[{ label: "Invoices", href: "/admin/invoices" }, { label: "New" }]} />
+      <Card><CardBody><InvoiceEditor orgs={orgs.map((o) => ({ ...o, locations: withLocationLabels(o.locations).map((l) => ({ id: l.id, name: l.label })) }))} taxRateBps={billing.defaultTaxRateBps} manifestFeeBps={billing.manifestFeeBps} disposal={{ defaultCents: "", averageCents: await averageDisposalCentsPerGallon(), gallons: null, hauls: true }} /></CardBody></Card>
     </div>
   );
 }

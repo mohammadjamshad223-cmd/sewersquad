@@ -47,6 +47,7 @@ export default async function ConfirmJobInvoice({ params, searchParams }: { para
                 taxRateBps={taxRateBps}
                 manifestFeeBps={billing.manifestFeeBps}
                 confirmJob={{ jobId: id, locationId: p.job.locationId, locationName: p.job.locationName, redirectTo: back }}
+                disposal={{ defaultCents: p.defaults.disposalCentsPerGallon, averageCents: p.averageDisposalCents, gallons: p.gallons, hauls: p.hauls }}
                 invoice={{ id: "", organizationId: org.id, serviceLocationId: p.job.locationId, billingProfileId: null, serviceDate: p.defaults.serviceDate, paymentTermsDays: profile?.paymentTermsDays ?? billing.defaultPaymentTermsDays, poNumber: profile?.poNumber ?? null, serviceTitle: p.defaults.serviceTitle, nextServiceDate: p.defaults.nextServiceDate, notes: null, lines: p.defaults.lines }}
               />
             </CardBody>

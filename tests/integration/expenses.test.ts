@@ -50,3 +50,35 @@ describe("external costs", () => {
     expect(m.profitCents).toBe(m.grossCents - 30000);
   });
 });
+
+describe("disposal cost per job", () => {
+  it("uses the cost entered on the invoice, 0 for waste water, and never charges dumping on hydro jetting", async () => {
+    const { createInvoice, invoiceSchema, sendInvoice, setInvoiceDisposalCost } = await import("@/server/services/invoices");
+    const { haulsWaste } = await import("@/domain/disposal-cost");
+    const owner = await staff("super_admin");
+    const C = await org("Disposal Co", { locations: 1 });
+    const facility = await prisma.disposalFacility.create({ data: { name: "LES", addressLine1: "250 Gellhorn Dr", city: "Houston", state: "TX", postalCode: "77013" } });
+    await prisma.disposalBill.create({ data: { facilityId: facility.id, vendorInvoiceNumber: "B1", invoiceDate: new Date(), totalCents: 20000, lines: { create: { description: "Grease", gallons: 1000, amountCents: 20000 } } } }); // 20¢/gal average
+    const before = (await grossProfitByMonth(1)).months[0]!;
+    const make = async (title: string, gallons: string, disposalCentsPerGallon?: string) => {
+      const inv = await createInvoice(owner, invoiceSchema.parse({ organizationId: C.org.id, serviceLocationId: C.locations[0]!.id, serviceTitle: title, disposalCentsPerGallon, lines: [{ kind: "PER_GALLON", description: title, quantity: gallons, unitPrice: "0.89" }] }));
+      await sendInvoice(owner, inv.id);
+      return inv;
+    };
+    const entered = await make("Grease Trap Pumping & Disposal", "500", "15"); // 500 × 15¢ = $75
+    expect((await prisma.invoice.findUniqueOrThrow({ where: { id: entered.id } })).disposalCostCents).toBe(7500);
+    const water = await make("Grease Trap Pumping & Disposal", "300", "0"); // waste water: $0
+    await make("Hydro Jetting", "400"); // jetting: never charged, even with gallons
+    const avg = await make("Grit Trap Pumping & Disposal", "100"); // not entered: average 20¢ → $20
+    const after = (await grossProfitByMonth(1)).months[0]!;
+    expect(after.disposalCents - before.disposalCents).toBe(7500 + 0 + 2000);
+    expect(after.gallons - before.gallons).toBe(900); // jetting gallons aren't "hauled"
+
+    // Changing it later from the invoice page updates profit.
+    await setInvoiceDisposalCost(owner, avg.id, "0");
+    await setInvoiceDisposalCost(owner, water.id, "18.5"); // 300 × 18.5¢ = $55.50
+    expect((await grossProfitByMonth(1)).months[0]!.disposalCents - before.disposalCents).toBe(7500 + 5550);
+    await expectCode(setInvoiceDisposalCost(owner, avg.id, "abc"), "BAD_REQUEST");
+    expect([haulsWaste("HYDRO_JETTING"), haulsWaste("LINE_CLEANING"), haulsWaste("GREASE_TRAP_PUMPING"), haulsWaste(null, "Line Snaking, Jetting & Inspection"), haulsWaste(null, "Grease Trap & Sanitary Line Waste")]).toEqual([false, false, true, false, true]);
+  });
+});

@@ -259,19 +259,32 @@ export function bigintSafe<T>(rows: T[]): T[] {
 export async function grossProfitByMonth(months = 6) {
   const tz = await companyTimeZone();
   const start = addMonths(startOfMonthKey(todayKey(tz)), -(months - 1));
+  // Per invoice: gallons hauled (the job's pumped gallons, or per-gallon lines), whether the service
+  // hauls anything at all (jetting, line cleaning and inspections don't — same rule as haulsWaste()),
+  // and the disposal cost the operator entered when confirming it, if any.
   const [rows, cost, external] = await Promise.all([
-    prisma.$queryRaw<{ m: string; rev: bigint; gal: Prisma.Decimal | null; invoices: bigint }[]>`
+    prisma.$queryRaw<{ m: string; rev: bigint; invoices: bigint; hauled: Prisma.Decimal | null; avg_gal: Prisma.Decimal | null; entered: bigint | null }[]>`
       WITH inv AS (
-        SELECT i.id, i."jobId", to_char(date_trunc('month', i."issueDate"), 'YYYY-MM') AS m, (i."subtotalCents" - i."discountCents") AS rev
-        FROM "Invoice" i
+        SELECT i.id, i."jobId", i."disposalCostCents" AS entered, to_char(date_trunc('month', i."issueDate"), 'YYYY-MM') AS m, (i."subtotalCents" - i."discountCents") AS rev,
+          CASE
+            WHEN j."serviceType" IS NOT NULL THEN j."serviceType"::text NOT IN ('HYDRO_JETTING','LINE_CLEANING','INSPECTION')
+            WHEN coalesce(i."serviceTitle", '') ~* '(pump|trap|septic|interceptor|waste|lift)' THEN true
+            ELSE NOT coalesce(i."serviceTitle", '') ~* '(jett|snak|inspection|line clean)'
+          END AS hauls
+        FROM "Invoice" i LEFT JOIN "Job" j ON j.id = i."jobId"
         WHERE i."status" IN ('SENT','VIEWED','PARTIALLY_PAID','PAID','OVERDUE') AND i."issueDate" >= ${start}::date
-      )
-      SELECT inv.m, SUM(inv.rev)::bigint AS rev, COUNT(*)::bigint AS invoices,
-        SUM(COALESCE(
+      ), g AS (
+        SELECT inv.*, COALESCE(
           (SELECT SUM(sar."gallonsPumped") FROM "ServiceRecord" sr JOIN "ServiceAssetRecord" sar ON sar."serviceRecordId" = sr.id WHERE sr."jobId" = inv."jobId"),
           (SELECT SUM(li."quantity") FROM "InvoiceLineItem" li WHERE li."invoiceId" = inv.id AND li."kind" = 'PER_GALLON'),
-          0)) AS gal
-      FROM inv GROUP BY inv.m ORDER BY inv.m`,
+          0) AS gal
+        FROM inv
+      )
+      SELECT m, SUM(rev)::bigint AS rev, COUNT(*)::bigint AS invoices,
+        SUM(CASE WHEN hauls THEN gal ELSE 0 END) AS hauled,
+        SUM(CASE WHEN hauls AND entered IS NULL THEN gal ELSE 0 END) AS avg_gal,
+        SUM(COALESCE(entered, 0))::bigint AS entered
+      FROM g GROUP BY m ORDER BY m`,
     prisma.$queryRaw<{ cents: bigint | null; gal: bigint | null }[]>`
       SELECT SUM(l."amountCents")::bigint AS cents, SUM(l."gallons")::bigint AS gal
       FROM "DisposalBillLine" l JOIN "DisposalBill" b ON b.id = l."billId"
@@ -288,8 +301,9 @@ export async function grossProfitByMonth(months = 6) {
   const out = keys.map((k) => {
     const r = rows.find((x) => x.m === k);
     const revenueCents = Number(r?.rev ?? 0);
-    const gallons = Math.round(Number(r?.gal ?? 0));
-    const disposalCents = centsPerGallon !== null ? Math.round(gallons * centsPerGallon) : 0;
+    const gallons = Math.round(Number(r?.hauled ?? 0));
+    // Entered per-job disposal costs first; anything not entered at the average cost per gallon.
+    const disposalCents = Number(r?.entered ?? 0) + (centsPerGallon !== null ? Math.round(Number(r?.avg_gal ?? 0) * centsPerGallon) : 0);
     const grossCents = revenueCents - disposalCents;
     // External costs (gas, contractors, tools, permits…) recorded on the External costs page.
     const otherCostsCents = Number(external.find((x) => x.m === k)?.cents ?? 0);

@@ -13,6 +13,7 @@ import { formatCents, parseDollarRateToCentsString } from "@/lib/money";
 import { LINE_ITEM_KIND_LABEL, SERVICE_TYPE_LABEL } from "@/lib/status";
 import { companyTimeZone, getSetting } from "./settings";
 import { manifestFeeCents } from "@/domain/document-lines";
+import { disposalCostCents, haulsWaste } from "@/domain/disposal-cost";
 import { notify, staffWithPermission } from "./notifications";
 import { storeDocument } from "./documents";
 
@@ -37,6 +38,12 @@ export const invoiceSchema = z.object({
   nextServiceDate: z.string().refine(isDateKey).optional().or(z.literal("").transform(() => undefined)),
   notes: z.string().trim().max(2000).optional(),
   lines: z.array(lineSchema).min(1, "Add at least one line item."),
+  /** Internal: what dumping this job's waste costs, in cents per gallon. "0" = nothing to dump. */
+  disposalCentsPerGallon: z
+    .string()
+    .trim()
+    .optional()
+    .refine((v) => !v || (/^\d+(\.\d{1,2})?$/.test(v) && Number(v) <= 500), "Enter cents per gallon, e.g. 17 or 18.5 (0 if nothing was dumped)."),
 });
 
 /** Invoice headline for a service type, as on the owner's invoices ("Grease Trap Pumping & Disposal"). */
@@ -153,7 +160,24 @@ async function insertInvoice(tx: Db, actor: Actor, input: z.infer<typeof invoice
     },
   });
   const t = await writeLines(tx, invoice.id, linesFromInput(input.lines, (await getSetting("billing", tx)).manifestFeeBps), b.taxRateBps);
-  return tx.invoice.update({ where: { id: invoice.id }, data: { subtotalCents: t.subtotalCents, discountCents: t.discountCents, taxCents: t.taxCents, totalCents: t.totalCents, balanceCents: t.totalCents } });
+  return tx.invoice.update({ where: { id: invoice.id }, data: { subtotalCents: t.subtotalCents, discountCents: t.discountCents, taxCents: t.taxCents, totalCents: t.totalCents, balanceCents: t.totalCents, ...(await disposalFields(tx, input, link.jobId ?? null)) } });
+}
+
+/** Gallons hauled for an invoice: the job's pumped gallons, or the per-gallon lines when there's no job. */
+async function haulGallons(db: Db, input: z.infer<typeof invoiceSchema>, jobId: string | null) {
+  if (jobId) {
+    const rec = await db.serviceAssetRecord.aggregate({ where: { serviceRecord: { jobId } }, _sum: { gallonsPumped: true } });
+    if (rec._sum.gallonsPumped) return rec._sum.gallonsPumped;
+  }
+  return Math.round(input.lines.filter((l) => l.kind === "PER_GALLON").reduce((s, l) => s + Number(l.quantity), 0));
+}
+
+/** The operator's disposal cost for this invoice (internal), or nothing when they left it blank. */
+async function disposalFields(db: Db, input: z.infer<typeof invoiceSchema>, jobId: string | null) {
+  if (input.disposalCentsPerGallon === undefined || input.disposalCentsPerGallon === "") return {};
+  const rate = Number(input.disposalCentsPerGallon);
+  const gallons = await haulGallons(db, input, jobId);
+  return { disposalRateCents: new Prisma.Decimal(input.disposalCentsPerGallon), disposalGallons: gallons, disposalCostCents: disposalCostCents(gallons, rate) };
 }
 
 export async function updateDraftInvoice(actor: Actor, invoiceId: string, input: z.infer<typeof invoiceSchema>, reason?: string) {
@@ -182,6 +206,7 @@ export async function updateDraftInvoice(actor: Actor, invoiceId: string, input:
         totalCents: t.totalCents,
         balanceCents: t.totalCents,
         updatedById: actor.userId,
+        ...(await disposalFields(tx, input, inv.jobId)),
       },
     });
     await audit(tx, {
@@ -278,6 +303,33 @@ export async function buildJobLines(db: Db, jobId: string): Promise<{ lines: Lin
   return { lines, needsPricing, gallons };
 }
 
+/**
+ * Record (or change) what dumping an invoice's waste cost us, on any invoice, sent or not. It's
+ * internal — never printed — and only feeds profit figures. null clears it (back to the average).
+ */
+export async function setInvoiceDisposalCost(actor: Actor, invoiceId: string, centsPerGallon: string | null) {
+  assertStaffActor(actor, "invoices.write");
+  if (centsPerGallon !== null && !(/^\d+(\.\d{1,2})?$/.test(centsPerGallon) && Number(centsPerGallon) <= 500)) throw badRequest("Enter cents per gallon, e.g. 17 or 18.5 (0 if nothing was dumped).");
+  return prisma.$transaction(async (tx) => {
+    const inv = await tx.invoice.findUnique({ where: { id: invoiceId }, include: { lineItems: true } });
+    if (!inv) throw notFound();
+    const input = { lines: inv.lineItems.map((l) => ({ kind: l.kind, quantity: l.quantity.toString() })) } as unknown as z.infer<typeof invoiceSchema>;
+    const data = centsPerGallon === null ? { disposalRateCents: null, disposalGallons: null, disposalCostCents: null } : await disposalFields(tx, { ...input, disposalCentsPerGallon: centsPerGallon }, inv.jobId);
+    await tx.invoice.update({ where: { id: invoiceId }, data });
+    await audit(tx, { actorId: actor.userId, action: "invoice.disposal_cost", entityType: "Invoice", entityId: invoiceId, organizationId: inv.organizationId, before: { disposalCostCents: inv.disposalCostCents }, after: data });
+  });
+}
+
+/** Average disposal cost per gallon (cents) across all disposal-site bills, or null with no bills. */
+export async function averageDisposalCentsPerGallon(db: Db = prisma) {
+  const r = await db.$queryRaw<{ cents: bigint | null; gal: bigint | null }[]>`
+    SELECT SUM(l."amountCents")::bigint AS cents, SUM(l."gallons")::bigint AS gal
+    FROM "DisposalBillLine" l JOIN "DisposalBill" b ON b.id = l."billId"
+    WHERE b."status" <> 'VOID' AND l."gallons" IS NOT NULL AND l."gallons" > 0`;
+  const gal = Number(r[0]?.gal ?? 0);
+  return gal > 0 ? Number(r[0]!.cents ?? 0) / gal : null;
+}
+
 /** Editable dollars for a stored cents rate: "89" → "0.89", "35000" → "350.00", "18.5" → "0.185". */
 function dollarsInput(unitPriceCents: string) {
   const fixed = (Number(unitPriceCents) / 100).toFixed(6);
@@ -293,12 +345,18 @@ export async function proposeJobInvoice(jobId: string) {
   if (!job) throw notFound();
   const { lines, needsPricing, gallons } = await buildJobLines(prisma, jobId);
   const next = await nextServiceDateFor(prisma, job);
+  const hauls = haulsWaste(job.serviceType);
+  const avg = hauls ? await averageDisposalCentsPerGallon() : null;
   return {
     job: { id: job.id, jobNumber: job.jobNumber, status: job.status, serviceType: job.serviceType, organizationId: job.organizationId, organizationName: job.organization.name, locationId: job.locationId, locationName: job.location.name },
     invoice: job.invoices.find((i) => i.status !== "VOID") ?? null,
     gallons,
     needsPricing,
+    hauls,
+    averageDisposalCents: avg,
     defaults: {
+      // Jetting and other jobs with nothing hauled start at 0; others at the average from disposal bills.
+      disposalCentsPerGallon: !hauls ? "0" : avg !== null ? String(Math.round(avg * 10) / 10) : "",
       serviceDate: keyFromDate(job.scheduledDate),
       serviceTitle: SERVICE_TITLE[job.serviceType] ?? "",
       nextServiceDate: next ? keyFromDate(next) : null,

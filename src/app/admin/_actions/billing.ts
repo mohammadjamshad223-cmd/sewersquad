@@ -41,6 +41,7 @@ function invoiceInput(fd: FormData) {
     serviceTitle: fd.get("serviceTitle") || undefined,
     nextServiceDate: fd.get("nextServiceDate") || undefined,
     notes: fd.get("notes") || undefined,
+    disposalCentsPerGallon: fd.get("disposalCentsPerGallon") ?? undefined,
     lines: linesFrom(fd),
   });
 }
@@ -75,6 +76,14 @@ export async function confirmJobInvoiceAction(p: ActionResult, fd: FormData): Pr
     return [`${sent}.`, ...r.problems].join(" ");
   });
   return res.ok ? { ok: true, message: res.data } : res;
+}
+
+export async function setInvoiceDisposalCostAction(invoiceId: string, centsPerGallon: string | null) {
+  return runAction(async () => {
+    if (!isUuid(invoiceId)) throw badRequest("Invalid invoice.");
+    await inv.setInvoiceDisposalCost(await assertStaff("invoices.write"), invoiceId, centsPerGallon === null ? null : centsPerGallon.trim());
+    return null;
+  });
 }
 
 export async function regenerateInvoicePdfAction(invoiceId: string) {
