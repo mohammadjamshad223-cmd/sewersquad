@@ -22,8 +22,12 @@ const SERVICE_TITLES = ["Grease Trap Pumping & Disposal", "Grit Trap Pumping & D
  * `confirmJob`: the operator is confirming a completed job's invoice. Customer and location are
  * fixed, and submitting creates the invoice, sends it, and sends the customer their paperwork.
  */
-export function InvoiceEditor({ orgs, invoice, taxRateBps, manifestFeeBps = 400, confirmJob }: { orgs: Org[]; taxRateBps: number; manifestFeeBps?: number; confirmJob?: { jobId: string; locationId: string; locationName: string; redirectTo: string }; invoice?: { id: string; organizationId: string; serviceLocationId: string | null; billingProfileId: string | null; serviceDate: string | null; paymentTermsDays: number; poNumber: string | null; serviceTitle?: string | null; nextServiceDate?: string | null; notes: string | null; lines: Line[] } }) {
+/** Internal disposal cost for this invoice: default rate (cents/gal), the average from disposal bills, and the job's gallons. */
+type DisposalInit = { defaultCents: string; averageCents: number | null; gallons: number | null; hauls: boolean };
+
+export function InvoiceEditor({ orgs, invoice, taxRateBps, manifestFeeBps = 400, confirmJob, disposal }: { orgs: Org[]; taxRateBps: number; manifestFeeBps?: number; disposal?: DisposalInit; confirmJob?: { jobId: string; locationId: string; locationName: string; redirectTo: string }; invoice?: { id: string; organizationId: string; serviceLocationId: string | null; billingProfileId: string | null; serviceDate: string | null; paymentTermsDays: number; poNumber: string | null; serviceTitle?: string | null; nextServiceDate?: string | null; notes: string | null; lines: Line[] } }) {
   const [orgId, setOrgId] = React.useState(invoice?.organizationId ?? "");
+  const [disposalCents, setDisposalCents] = React.useState(disposal?.defaultCents ?? "");
   const [lines, setLines] = React.useState<Line[]>(invoice?.lines ?? [{ kind: "SERVICE", description: "", quantity: "1", unitPrice: "", taxable: true }]);
   const org = orgs.find((o) => o.id === orgId);
   const set = (i: number, patch: Partial<Line>) => setLines((ls) => ls.map((l, j) => (j === i ? { ...l, ...patch } : l)));
@@ -103,6 +107,29 @@ export function InvoiceEditor({ orgs, invoice, taxRateBps, manifestFeeBps = 400,
           )}
         </div>
       </div>
+      {disposal && (() => {
+        const gallons = disposal.gallons ?? Math.round(lines.filter((l) => l.kind === "PER_GALLON").reduce((s, l) => s + (Number(l.quantity) || 0), 0));
+        const rate = disposalCents === "" ? null : Number(disposalCents);
+        const cost = rate !== null && Number.isFinite(rate) ? Math.round(gallons * rate) : null;
+        const avg = disposal.averageCents !== null ? Math.round(disposal.averageCents * 10) / 10 : null;
+        return (
+          <div className="space-y-2 rounded-lg border border-dashed p-4">
+            <div className="flex flex-wrap items-end gap-3">
+              <label className="space-y-1.5 text-[13px] font-medium">
+                <span>Disposal cost for this job (¢ per gallon)</span>
+                <Input name="disposalCentsPerGallon" inputMode="decimal" value={disposalCents} onChange={(e) => setDisposalCents(e.target.value)} placeholder={avg !== null ? `${avg}` : "e.g. 17"} className="h-11 w-40 text-[16px]" />
+              </label>
+              <Button type="button" variant="secondary" size="sm" className="h-9" onClick={() => setDisposalCents("0")}>0¢ — nothing to dump</Button>
+              {avg !== null && <Button type="button" variant="ghost" size="sm" className="h-9" onClick={() => setDisposalCents(String(avg))}>Average {avg}¢</Button>}
+            </div>
+            <p className="text-[13px] text-muted-foreground">
+              {!disposal.hauls ? "Nothing is hauled on this kind of job, so it's 0. " : ""}
+              {cost !== null ? `≈ ${formatCents(cost)} to dump ${gallons.toLocaleString()} gal` : avg !== null ? `Blank uses your average of ${avg}¢ per gallon` : "Blank = not counted"}
+              {cost !== null && preview && !previewError ? ` · profit on this job ≈ ${formatCents(preview.subtotalCents - preview.discountCents - cost)}` : ""}. Internal only — never printed on the invoice. Use 0 for waste water.
+            </p>
+          </div>
+        );
+      })()}
       {invoice && !confirmJob && <Field label="Reason for change (audit log)" name="reason"><Input /></Field>}
       {confirmJob ? (
         <div className="space-y-2 rounded-lg border border-brand/20 bg-brand-soft/40 p-4">

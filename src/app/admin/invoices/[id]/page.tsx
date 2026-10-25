@@ -13,6 +13,9 @@ import { ActionButton } from "@/components/ui/form";
 import { ReasonDialog } from "@/components/admin/dialogs";
 import { DocLink } from "@/components/portal/doc-link";
 import { InvoiceEditor } from "@/components/admin/invoice-editor";
+import { DisposalCostForm } from "@/components/admin/disposal-cost-form";
+import { averageDisposalCentsPerGallon } from "@/server/services/invoices";
+import { haulsWaste } from "@/domain/disposal-cost";
 import { AuditTrail } from "@/components/admin/audit-trail";
 import { regenerateInvoicePdfAction, sendInvoiceAction, voidInvoiceAction } from "@/app/admin/_actions/billing";
 import { formatDateKey, formatInstant, keyFromDate } from "@/lib/dates";
@@ -25,13 +28,14 @@ export const metadata = { title: "Invoice" };
 export default async function AdminInvoice({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ created?: string; edit?: string }> }) {
   const [id, sp] = await Promise.all([idParam(params), searchParams]);
   const actor = await requireStaffPage("invoices.read");
-  const inv = await prisma.invoice.findUnique({ where: { id }, include: { lineItems: { orderBy: { sortOrder: "asc" } }, organization: { select: { id: true, name: true, accountNumber: true, locations: { where: { deletedAt: null }, select: { id: true, name: true, addressLine1: true } }, billingProfiles: { select: { id: true, name: true } } } }, serviceLocation: true, billingProfile: true, job: { select: { id: true, jobNumber: true } }, manifest: { select: { id: true, manifestNumber: true } }, documents: { where: { deletedAt: null }, orderBy: { createdAt: "desc" } }, allocations: { include: { payment: true } } } });
+  const inv = await prisma.invoice.findUnique({ where: { id }, include: { lineItems: { orderBy: { sortOrder: "asc" } }, organization: { select: { id: true, name: true, accountNumber: true, locations: { where: { deletedAt: null }, select: { id: true, name: true, addressLine1: true } }, billingProfiles: { select: { id: true, name: true } } } }, serviceLocation: true, billingProfile: true, job: { select: { id: true, jobNumber: true, serviceType: true } }, manifest: { select: { id: true, manifestNumber: true } }, documents: { where: { deletedAt: null }, orderBy: { createdAt: "desc" } }, allocations: { include: { payment: true } } } });
   if (!inv) notFound();
   const tz = await companyTimeZone();
   const canWrite = hasPermission(actor, "invoices.write");
   const open = ["SENT", "VIEWED", "PARTIALLY_PAID", "OVERDUE"].includes(inv.status);
   const pdf = inv.documents.find((d) => d.type === "INVOICE");
   const editing = inv.status === "DRAFT" && canWrite;
+  const avgDisposal = await averageDisposalCentsPerGallon();
   return (
     <div className="space-y-6">
       <PageHeader
@@ -57,6 +61,7 @@ export default async function AdminInvoice({ params, searchParams }: { params: P
       {editing ? (
         <Card><CardHeader title="Edit draft" /><CardBody>
           <InvoiceEditor orgs={[{ id: inv.organization.id, name: inv.organization.name, locations: withLocationLabels(inv.organization.locations).map((l) => ({ id: l.id, name: l.label })), billingProfiles: inv.organization.billingProfiles }]} taxRateBps={inv.taxRateBps} manifestFeeBps={(await getSetting("billing")).manifestFeeBps}
+            disposal={{ defaultCents: inv.disposalRateCents !== null ? String(Number(inv.disposalRateCents)) : "", averageCents: avgDisposal, gallons: null, hauls: true }}
             invoice={{ id: inv.id, organizationId: inv.organizationId, serviceLocationId: inv.serviceLocationId, billingProfileId: inv.billingProfileId, serviceDate: inv.serviceDate ? keyFromDate(inv.serviceDate) : null, paymentTermsDays: inv.paymentTermsDays, poNumber: inv.poNumber, serviceTitle: inv.serviceTitle, nextServiceDate: inv.nextServiceDate ? keyFromDate(inv.nextServiceDate) : null, notes: inv.notes, lines: inv.lineItems.map((l) => ({ kind: l.kind, description: l.description, quantity: l.quantity.toString(), unitPrice: (Number(l.unitPriceCents) / 100).toFixed(Number(l.unitPriceCents) % 1 ? 4 : 2), taxable: l.taxable })) }} />
         </CardBody></Card>
       ) : (
@@ -65,6 +70,12 @@ export default async function AdminInvoice({ params, searchParams }: { params: P
             <Card>
               <CardBody><DescriptionList columns={3} items={[{ label: "Issued", value: formatDateKey(inv.issueDate, "long") }, { label: "Due", value: formatDateKey(inv.dueDate, "long") }, { label: "Terms", value: `Net ${inv.paymentTermsDays}` }, { label: "Customer", value: <Link href={`/admin/customers/${inv.organizationId}`} className="text-brand hover:underline">{inv.organization.name}</Link> }, { label: "Job", value: inv.job ? <Link href={`/admin/jobs/${inv.job.id}`} className="text-brand hover:underline">{inv.job.jobNumber}</Link> : null }, { label: "Manifest", value: inv.manifest ? <Link href={`/admin/manifests/${inv.manifest.id}`} className="text-brand hover:underline">{inv.manifest.manifestNumber}</Link> : null }, { label: "Billing profile", value: inv.billingProfile?.name }, { label: "Sent", value: inv.sentAt ? formatInstant(inv.sentAt, tz) : "Not sent" }, { label: "Viewed by customer", value: inv.viewedAt ? formatInstant(inv.viewedAt, tz) : "Not yet" }, { label: "Notes", value: inv.notes }, ...(inv.voidReason ? [{ label: "Void reason", value: inv.voidReason }] : [])]} /></CardBody>
             </Card>
+            {canWrite && (
+              <Card>
+                <CardHeader title="Disposal cost (internal)" description={inv.disposalCostCents !== null ? `${Number(inv.disposalRateCents)}¢ per gallon × ${(inv.disposalGallons ?? 0).toLocaleString()} gal = ${formatCents(inv.disposalCostCents)}. Used for profit; never shown to the customer.` : haulsWaste(inv.job?.serviceType ?? null, inv.serviceTitle) ? `Not entered — profit uses your average${avgDisposal !== null ? ` of ${Math.round(avgDisposal * 10) / 10}¢ per gallon` : ""}. Enter 0 for waste water.` : "Nothing hauled on this kind of job, so no dumping cost is counted."} />
+                <CardBody><DisposalCostForm invoiceId={inv.id} current={inv.disposalRateCents !== null ? String(Number(inv.disposalRateCents)) : null} averageCents={avgDisposal} /></CardBody>
+              </Card>
+            )}
             <Card>
               <Table>
                 <THead><tr><TH>Description</TH><TH className="text-right">Qty</TH><TH className="text-right">Unit</TH><TH className="text-right">Amount</TH></tr></THead>

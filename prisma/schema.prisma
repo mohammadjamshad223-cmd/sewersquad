@@ -1293,6 +1293,12 @@ model Invoice {
   manifestRef       String?
   /// Original file for invoices imported from records kept before the portal.
   legacySource      String?
+  /// What dumping this job's waste costs us, entered when the invoice is confirmed (internal; never
+  /// printed). Rate in cents per gallon (17.5 = $0.175); 0 for waste water or jobs with nothing hauled.
+  /// Null = not entered, so profit falls back to the average disposal cost per gallon.
+  disposalRateCents Decimal?         @db.Decimal(10, 4)
+  disposalGallons   Int?
+  disposalCostCents Int?
   notes             String?
   sentAt            DateTime?
   viewedAt          DateTime?
