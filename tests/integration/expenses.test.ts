@@ -82,3 +82,15 @@ describe("disposal cost per job", () => {
     expect([haulsWaste("HYDRO_JETTING"), haulsWaste("LINE_CLEANING"), haulsWaste("GREASE_TRAP_PUMPING"), haulsWaste(null, "Line Snaking, Jetting & Inspection"), haulsWaste(null, "Grease Trap & Sanitary Line Waste")]).toEqual([false, false, true, false, true]);
   });
 });
+
+describe("profit page", () => {
+  it("lists each job's dumping fee and matches the dashboard totals", async () => {
+    const { monthProfitDetail } = await import("@/server/services/analytics");
+    const d = await monthProfitDetail(today());
+    const m = (await grossProfitByMonth(1)).months[0]!;
+    expect([d.revenueCents, d.disposalCents, d.otherCostsCents, d.profitCents]).toEqual([m.revenueCents, m.disposalCents, m.otherCostsCents, m.profitCents]);
+    const jetting = d.jobs.find((j) => j.service === "Hydro Jetting")!;
+    expect([jetting.source, jetting.disposalCents, jetting.gallons]).toEqual(["none", 0, 0]);
+    expect(d.jobs.filter((j) => j.source === "average").length).toBe(d.usingAverage);
+  });
+});

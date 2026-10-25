@@ -312,3 +312,70 @@ export async function grossProfitByMonth(months = 6) {
   });
   return { centsPerGallon, months: out.reverse() };
 }
+
+/**
+ * One month's profit, job by job: revenue, the dumping fee on each invoice (entered when it was
+ * confirmed, else the average cost per gallon, and never for jobs that haul nothing), and the
+ * external costs. Totals match grossProfitByMonth for the same month.
+ */
+export async function monthProfitDetail(monthKey: string) {
+  const { haulsWaste } = await import("@/domain/disposal-cost");
+  const from = startOfMonthKey(monthKey);
+  const to = addMonths(from, 1);
+  const [invoices, cost, expenses] = await Promise.all([
+    prisma.invoice.findMany({
+      where: { status: { in: [...REVENUE_INVOICE] }, issueDate: { gte: dateFromKey(from), lt: dateFromKey(to) } },
+      include: {
+        organization: { select: { name: true } },
+        serviceLocation: { select: { name: true } },
+        lineItems: { where: { kind: "PER_GALLON" }, select: { quantity: true } },
+        job: { select: { serviceType: true, serviceRecord: { select: { assetRecords: { select: { gallonsPumped: true } } } } } },
+      },
+      orderBy: [{ issueDate: "asc" }, { invoiceNumber: "asc" }],
+    }),
+    prisma.$queryRaw<{ cents: bigint | null; gal: bigint | null }[]>`
+      SELECT SUM(l."amountCents")::bigint AS cents, SUM(l."gallons")::bigint AS gal
+      FROM "DisposalBillLine" l JOIN "DisposalBill" b ON b.id = l."billId"
+      WHERE b."status" <> 'VOID' AND l."gallons" IS NOT NULL AND l."gallons" > 0`,
+    prisma.expense.findMany({ where: { deletedAt: null, date: { gte: dateFromKey(from), lt: dateFromKey(to) } }, orderBy: { date: "asc" } }),
+  ]);
+  const costGal = Number(cost[0]?.gal ?? 0);
+  const avg = costGal > 0 ? Number(cost[0]!.cents ?? 0) / costGal : null;
+  const jobs = invoices.map((i) => {
+    const jobGallons = i.job?.serviceRecord?.assetRecords.reduce((s, a) => s + a.gallonsPumped, 0) ?? 0;
+    const gallons = Math.round(jobGallons || i.lineItems.reduce((s, l) => s + Number(l.quantity), 0));
+    const hauls = haulsWaste(i.job?.serviceType ?? null, i.serviceTitle);
+    const source: "entered" | "average" | "none" = i.disposalCostCents !== null ? "entered" : hauls ? "average" : "none";
+    const disposalCents = source === "entered" ? i.disposalCostCents! : source === "average" && avg !== null ? Math.round(gallons * avg) : 0;
+    const revenueCents = i.subtotalCents - i.discountCents;
+    return {
+      id: i.id,
+      invoiceNumber: i.invoiceNumber,
+      customer: i.organization.name,
+      location: i.serviceLocation?.name ?? null,
+      service: i.serviceTitle ?? (i.job ? SERVICE_TYPE_LABEL[i.job.serviceType] : null),
+      issueDate: i.issueDate,
+      revenueCents,
+      gallons: hauls ? gallons : 0,
+      hauls,
+      source,
+      rateCents: i.disposalRateCents !== null ? Number(i.disposalRateCents) : source === "average" ? avg : 0,
+      disposalCents,
+      profitCents: revenueCents - disposalCents,
+    };
+  });
+  const revenueCents = jobs.reduce((s, j) => s + j.revenueCents, 0);
+  const disposalCents = jobs.reduce((s, j) => s + j.disposalCents, 0);
+  const otherCostsCents = expenses.reduce((s, e) => s + e.amountCents, 0);
+  return {
+    month: from.slice(0, 7),
+    averageDisposalCents: avg,
+    jobs,
+    expenses,
+    revenueCents,
+    disposalCents,
+    otherCostsCents,
+    profitCents: revenueCents - disposalCents - otherCostsCents,
+    usingAverage: jobs.filter((j) => j.source === "average").length,
+  };
+}
