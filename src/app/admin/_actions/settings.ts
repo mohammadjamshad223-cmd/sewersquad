@@ -116,11 +116,10 @@ export async function saveTemplateAction(p: ActionResult, fd: FormData) { return
 
 const _testText = formAction(z.object({ to: z.string().trim().min(7, "Enter a mobile number.") }), async ({ to }) => {
   const actor = await assertStaff("settings.write");
-  const { sendSms } = await import("@/server/integrations/sms");
+  const { diagnoseSms } = await import("@/server/integrations/sms");
   const { smsText } = await import("@/server/services/notifications");
-  const res = await sendSms(to, smsText("Test message", "Text messages from the Sewer Squad portal are working."));
-  await audit(prisma, { actorId: actor.userId, action: "sms.test", entityType: "Integration", entityId: "twilio", after: { to: to.replace(/\d(?=\d{4})/g, "•"), status: res.status } });
-  if (res.status === "sent") return { ok: true, message: `Sent. Twilio message ${res.providerId ?? ""} — check the phone.` };
-  return { ok: false, error: res.status === "skipped" ? res.reason : res.error };
+  const steps = await diagnoseSms(to, smsText("Test message", "Text messages from the Sewer Squad portal are working."));
+  await audit(prisma, { actorId: actor.userId, action: "sms.test", entityType: "Integration", entityId: "twilio", after: { to: to.replace(/\d(?=\d{4})/g, "•"), steps: steps.map((s) => `${s.label}: ${s.ok === null ? "?" : s.ok ? "ok" : "failed"}`) } });
+  return { ok: true, data: { steps } };
 });
 export async function sendTestTextAction(p: ActionResult, fd: FormData) { return _testText(p, fd); }

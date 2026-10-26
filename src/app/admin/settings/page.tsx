@@ -21,6 +21,7 @@ import { MapsCheck } from "@/components/maps/maps-check";
 import { InviteStaffDialog, PricingRuleDialog, RolePermissionsForm, SettingsForm, StaffRow, TemplateForm, type SettingField } from "./forms";
 
 export const metadata = { title: "Settings" };
+export const maxDuration = 60;
 
 export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ tab?: string; role?: string }> }) {
   const actor = await requireStaffPage("settings.read");
