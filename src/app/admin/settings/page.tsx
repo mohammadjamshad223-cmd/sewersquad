@@ -17,6 +17,7 @@ import { formatInstant } from "@/lib/dates";
 import { formatRateCents, formatCents } from "@/lib/money";
 import { SERVICE_TYPE_LABEL, LINE_ITEM_KIND_LABEL } from "@/lib/status";
 import { titleCase } from "@/lib/utils";
+import { MapsCheck } from "@/components/maps/maps-check";
 import { InviteStaffDialog, PricingRuleDialog, RolePermissionsForm, SettingsForm, StaffRow, TemplateForm, type SettingField } from "./forms";
 
 export const metadata = { title: "Settings" };
@@ -87,6 +88,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             </TBody>
           </Table>
           {canWrite && <CardBody className="border-t"><TestTextForm /></CardBody>}
+          <CardBody className="border-t"><MapsCheck testAddress={[s.company.addressLine1, s.company.city, s.company.state, s.company.postalCode].filter(Boolean).join(", ") || "Houston, TX"} /></CardBody>
         </Card>
       )}
       {tab === "integrations" && (

@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import { geocodeAddress, mapsEnabled } from "./google-maps";
+import { GeocodeDeniedError, geocodeAddress, mapsEnabled } from "./google-maps";
 import { saveLocationCoordinatesAction } from "@/app/admin/_actions/customers";
 
 export type GeocodeItem = { id: string; name: string; address: string };
@@ -14,7 +14,7 @@ export type GeocodeItem = { id: string; name: string; address: string };
  */
 export function AutoGeocode({ items, limit = 25 }: { items: GeocodeItem[]; limit?: number }) {
   const router = useRouter();
-  const [status, setStatus] = React.useState<{ working: boolean; done: number; failed: string[] }>({ working: false, done: 0, failed: [] });
+  const [status, setStatus] = React.useState<{ working: boolean; done: number; failed: string[]; denied?: string }>({ working: false, done: 0, failed: [] });
   const ids = items.map((i) => i.id).join(",");
 
   React.useEffect(() => {
@@ -26,7 +26,15 @@ export function AutoGeocode({ items, limit = 25 }: { items: GeocodeItem[]; limit
       const failed: string[] = [];
       for (const item of items.slice(0, limit)) {
         if (cancelled) return;
-        const pos = await geocodeAddress(item.address).catch(() => null);
+        let pos: Awaited<ReturnType<typeof geocodeAddress>> = null;
+        try {
+          pos = await geocodeAddress(item.address);
+        } catch (e) {
+          if (e instanceof GeocodeDeniedError) {
+            if (!cancelled) setStatus({ working: false, done: saved, failed, denied: e.message });
+            return;
+          }
+        }
         if (!pos) {
           failed.push(item.name);
           continue;
@@ -47,6 +55,7 @@ export function AutoGeocode({ items, limit = 25 }: { items: GeocodeItem[]; limit
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ids]);
 
+  if (status.denied) return <p role="alert" className="text-[12px] font-medium text-danger">{status.denied} Until then, stops without saved coordinates can&apos;t be placed on the map.</p>;
   if (!mapsEnabled || (!status.working && status.failed.length === 0)) return null;
   return (
     <p role="status" className="flex items-center gap-2 text-[12px] text-muted-foreground">
