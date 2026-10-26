@@ -35,6 +35,8 @@ declare global {
 
 const KEY = (process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "").trim();
 export const mapsEnabled = KEY.length > 0;
+/** Last characters of the key built into this deploy, to check it's the one you expect. */
+export const mapsKeyHint = KEY ? `…${KEY.slice(-4)}` : null;
 
 let loading: Promise<GoogleMaps> | null = null;
 let authFailed = false;
@@ -123,6 +125,9 @@ export function loadGoogleMaps(): Promise<GoogleMaps> {
 }
 
 /** Address → coordinates (US only). Returns null when Google has no confident match. */
+/** Google refused address lookups for the whole key (not just one address). */
+export class GeocodeDeniedError extends Error {}
+
 export async function geocodeAddress(address: string): Promise<LatLng | null> {
   const g = await loadGoogleMaps();
   try {
@@ -130,7 +135,16 @@ export async function geocodeAddress(address: string): Promise<LatLng | null> {
     const best = results.find((r) => !r.partial_match) ?? null;
     if (!best) return null;
     return { lat: best.geometry.location.lat(), lng: best.geometry.location.lng() };
-  } catch {
-    return null; // ZERO_RESULTS and similar come back as rejections
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (/REQUEST_DENIED/.test(msg)) {
+      throw new GeocodeDeniedError(
+        /not (activated|authorized|enabled)/i.test(msg)
+          ? "Google refused address lookups: turn on the “Geocoding API” for this key (Google Cloud → APIs & Services → Library), and allow it under the key's API restrictions."
+          : `Google refused address lookups (${msg.replace(/^.*?REQUEST_DENIED[:\s-]*/, "").slice(0, 160) || "REQUEST_DENIED"}). Check the key allows the Geocoding API.`,
+      );
+    }
+    if (/OVER_QUERY_LIMIT|OVER_DAILY_LIMIT/.test(msg)) throw new GeocodeDeniedError("Google's address-lookup limit was reached (billing may be off). Check billing in Google Cloud.");
+    return null; // ZERO_RESULTS and similar: just this address
   }
 }
