@@ -310,3 +310,36 @@ export async function materializeAllDuePlans() {
   }
   return { plans: plans.length, created };
 }
+
+/** How far ahead the calendar shows planned visits that don't have a job yet. */
+export const PROJECTION_DAYS = 365;
+
+export type ProjectedVisit = { planId: string; date: DateKey; locationId: string; locationName: string };
+
+/**
+ * Upcoming visits each active plan will produce in [from, to], beyond the job that already exists.
+ * Only the next visit becomes a real job (inside the scheduling horizon); later ones are worked out
+ * from the plan's schedule so the calendar is never empty months ahead. Visits on plans that count
+ * from the completion date assume on-time completion and move if a visit is done late.
+ */
+export async function projectedVisits(from: DateKey, to: DateKey, today: DateKey): Promise<ProjectedVisit[]> {
+  const limit = addDays(today, PROJECTION_DAYS);
+  const end = compareKeys(to, limit) < 0 ? to : limit;
+  if (compareKeys(end, from) < 0) return [];
+  const plans = await prisma.servicePlan.findMany({
+    where: { status: "ACTIVE", nextServiceDate: { not: null, lte: dateFromKey(end) }, location: { status: "ACTIVE", deletedAt: null } },
+    select: { id: true, nextServiceDate: true, endDate: true, recurrenceRule: true, location: { select: { id: true, name: true } }, jobs: { where: { occurrenceDate: { not: null } }, select: { occurrenceDate: true } } },
+  });
+  const out: ProjectedVisit[] = [];
+  for (const p of plans) {
+    const rule = ruleFromRecord(p.recurrenceRule);
+    const taken = new Set(p.jobs.map((j) => keyFromDate(j.occurrenceDate!)));
+    const stop = p.endDate && compareKeys(keyFromDate(p.endDate), end) < 0 ? keyFromDate(p.endDate) : end;
+    let cur: DateKey | null = keyFromDate(p.nextServiceDate!);
+    for (let guard = 0; cur && compareKeys(cur, stop) <= 0 && guard < 400; guard++) {
+      if (compareKeys(cur, from) >= 0 && !taken.has(cur)) out.push({ planId: p.id, date: cur, locationId: p.location.id, locationName: p.location.name });
+      cur = nextOccurrence(rule, cur, cur);
+    }
+  }
+  return out;
+}
