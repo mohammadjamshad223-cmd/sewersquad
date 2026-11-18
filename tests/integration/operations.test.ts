@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { prisma, resetDb, seedRbac, staff, org, driver, job, expectCode, PNG, SIGNATURE, today } from "./helpers";
-import { createPlan, materializePlan, advancePlan } from "@/server/services/plans";
+import { createPlan, materializePlan, advancePlan, projectedVisits } from "@/server/services/plans";
 import { cancelJob, rescheduleJob, driverTransition } from "@/server/services/jobs";
 import { saveServiceDraft, uploadJobPhoto, submitService, approveJob, rejectJob } from "@/server/services/field";
 import { correctManifest } from "@/server/services/manifests";
@@ -28,6 +28,14 @@ describe("recurring scheduling", () => {
     expect(await prisma.job.count({ where: { planId: plan.id } })).toBe(1);
     const j = await prisma.job.findFirstOrThrow({ where: { planId: plan.id } });
     expect(keyFromDate(j.scheduledDate)).toBe(addDays(today(), 3));
+  });
+
+  it("shows later visits as planned, months past the one real job, without duplicating it", async () => {
+    const plan = await createPlan(admin, { ...base(), name: "Projection" });
+    const first = addDays(today(), 3);
+    const visits = (await projectedVisits(today(), addDays(today(), 120), today())).filter((v) => v.planId === plan.id).map((v) => v.date);
+    expect(visits).toEqual([30, 60, 90].map((d) => addDays(first, d)));
+    expect(await prisma.job.count({ where: { planId: plan.id } })).toBe(1);
   });
 
   it("advancing twice for the same occurrence does not skip or duplicate", async () => {
