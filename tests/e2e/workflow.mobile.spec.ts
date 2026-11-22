@@ -13,14 +13,14 @@ test("Workflow A (driver, mobile): complete today's first stop with photos, gall
 
   await next(); // → Before
   const photo = { name: "before.png", mimeType: "image/png", buffer: Buffer.from("89504E470D0A1A0A0000000D49484452000000010000000108060000001F15C4890000000D49444154789C6360000002000154A24F5D0000000049454E44AE426082", "hex") };
-  await page.locator("input[type=file]").setInputFiles(photo);
+  await page.locator("input[type=file][multiple]").setInputFiles(photo); // "Upload photos"
   await expect(page.getByRole("img", { name: "before photo" })).toBeVisible();
   await page.getByLabel("Equipment condition").fill("Grease cap ~6 in.");
   await next(); // → Pumping
   await page.locator("#waste").selectOption("Grease trap waste");
   await page.getByLabel("Actual gallons pumped").first().fill("1180");
   await next(); // → After
-  await page.locator("input[type=file]").setInputFiles({ ...photo, name: "after.png" });
+  await page.locator("input[type=file][capture]").setInputFiles({ ...photo, name: "after.png" }); // "Take photo"
   await expect(page.getByRole("img", { name: "after photo" })).toBeVisible();
   await next(); // → Manifest
   await expect(page.getByText("1,180").first()).toBeVisible();
