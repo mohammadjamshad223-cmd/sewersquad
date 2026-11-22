@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { AlertTriangle, Camera, Check, CheckCircle2, ChevronLeft, ChevronRight, CloudOff, Loader2, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { AlertTriangle, Camera, Check, CheckCircle2, ChevronLeft, ChevronRight, CloudOff, ImagePlus, Loader2, Plus, RefreshCw, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select, Textarea } from "@/components/ui/input";
 import { Alert } from "@/components/ui/misc";
@@ -409,7 +409,8 @@ function TextBlock({ label, value, onChange, placeholder }: { label: string; val
 
 function PhotoSection({ title, phase, photos, onAdd, onRemove, uploading, hint = "at least 1 required" }: { title: string; phase: PhotoPhaseKey; photos: Photo[]; onAdd: (f: FileList | null, phase: PhotoPhaseKey) => void; onRemove: (p: Photo) => void; uploading: number; hint?: string }) {
   const mine = photos.filter((p) => p.phase === phase);
-  const ref = React.useRef<HTMLInputElement>(null);
+  const camera = React.useRef<HTMLInputElement>(null);
+  const library = React.useRef<HTMLInputElement>(null);
   return (
     <div className="space-y-2">
       <p className="text-[15px] font-medium">{title} <span className="text-[13px] font-normal text-muted-foreground">({mine.length}, {hint})</span></p>
@@ -422,12 +423,18 @@ function PhotoSection({ title, phase, photos, onAdd, onRemove, uploading, hint =
             <button type="button" onClick={() => onRemove(p)} aria-label="Remove photo" className="absolute right-1 top-1 rounded-full bg-black/60 p-1.5 text-white"><Trash2 className="h-4 w-4" /></button>
           </div>
         ))}
-        <button type="button" onClick={() => ref.current?.click()} className="flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed text-[13px] text-muted-foreground active:bg-subtle">
+        <button type="button" onClick={() => camera.current?.click()} className="flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed text-[13px] text-muted-foreground active:bg-subtle">
           {uploading ? <Loader2 className="h-7 w-7 animate-spin" /> : <Camera className="h-7 w-7" />}
-          Add photo
+          Take photo
+        </button>
+        <button type="button" onClick={() => library.current?.click()} className="flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed text-[13px] text-muted-foreground active:bg-subtle">
+          <ImagePlus className="h-7 w-7" />
+          Upload photos
         </button>
       </div>
-      <input ref={ref} type="file" accept="image/*" capture="environment" multiple className="hidden" onChange={(e) => { onAdd(e.target.files, phase); e.target.value = ""; }} />
+      {/* Two inputs: phones open the camera directly when `capture` is set, which hides the photo library. */}
+      <input ref={camera} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { onAdd(e.target.files, phase); e.target.value = ""; }} />
+      <input ref={library} type="file" accept="image/*" multiple className="hidden" onChange={(e) => { onAdd(e.target.files, phase); e.target.value = ""; }} />
     </div>
   );
 }

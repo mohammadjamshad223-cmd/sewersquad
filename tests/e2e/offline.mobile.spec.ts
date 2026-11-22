@@ -16,7 +16,7 @@ test("driver work survives going offline and syncs on reconnect", async ({ page,
   await next(); // Before
 
   await context.setOffline(true);
-  await page.locator("input[type=file]").setInputFiles(PHOTO);
+  await page.locator("input[type=file][multiple]").setInputFiles(PHOTO);
   await expect(page.getByText("Pending").first()).toBeVisible();
   await expect(page.getByRole("status").filter({ hasText: /Offline — saved on this device/ })).toBeVisible();
   await page.getByLabel("Equipment condition").fill("Typed while offline");
