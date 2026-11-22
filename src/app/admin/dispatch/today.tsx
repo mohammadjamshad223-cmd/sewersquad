@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { AlertTriangle, CalendarClock, Camera, CheckCircle2, ChevronDown, MapPin, MessageSquare, Navigation, Phone, Receipt, Repeat, Siren, Truck } from "lucide-react";
+import { AlertTriangle, CalendarClock, Camera, CheckCircle2, ChevronDown, ImagePlus, MapPin, MessageSquare, Navigation, Phone, Receipt, Repeat, Siren, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox, Input, Textarea } from "@/components/ui/input";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -256,13 +256,22 @@ function reportResult(r: Result, lead = "Completed") {
 const SIG_KEY = "ss.driverSignature";
 
 function PhotoPicker({ label, name, files, setFiles, accept = "image/*" }: { label: string; name: string; files: File[]; setFiles: (f: File[]) => void; accept?: string }) {
+  const add = (e: React.ChangeEvent<HTMLInputElement>) => { setFiles([...files, ...Array.from(e.target.files ?? [])]); e.target.value = ""; };
   return (
     <div>
       <p className="text-[14px] font-medium">{label}</p>
-      <label className="mt-1.5 flex cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed border-input px-3 py-4 text-[14px] text-muted-foreground hover:bg-subtle">
-        <Camera className="h-4 w-4" />{files.length ? `${files.length} added — tap to add more` : "Take or choose photos"}
-        <input type="file" name={name} accept={accept} multiple capture="environment" className="sr-only" onChange={(e) => { setFiles([...files, ...Array.from(e.target.files ?? [])]); e.target.value = ""; }} />
-      </label>
+      {/* Two inputs: phones open the camera directly when `capture` is set, which hides the photo library. */}
+      <div className="mt-1.5 grid grid-cols-2 gap-2">
+        <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed border-input px-3 py-4 text-[14px] text-muted-foreground hover:bg-subtle">
+          <Camera className="h-4 w-4" />Take photo
+          <input type="file" accept={accept} capture="environment" className="sr-only" onChange={add} />
+        </label>
+        <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed border-input px-3 py-4 text-[14px] text-muted-foreground hover:bg-subtle">
+          <ImagePlus className="h-4 w-4" />Upload photos
+          <input type="file" name={name} accept={accept} multiple className="sr-only" onChange={add} />
+        </label>
+      </div>
+      {files.length > 0 && <p className="mt-1.5 text-[13px] text-muted-foreground">{files.length} added</p>}
       {files.length > 0 && (
         <ul className="mt-2 flex flex-wrap gap-2">
           {files.map((f, i) => (
