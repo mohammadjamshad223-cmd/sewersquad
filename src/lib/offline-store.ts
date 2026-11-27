@@ -116,7 +116,7 @@ export async function removeQueuedPhoto(id: string) {
 
 /** Downscale to ≤1600px JPEG for faster uploads on cellular. Falls back to the original file. */
 export async function compressImage(file: File, maxDim = 1600, quality = 0.82): Promise<Blob> {
-  if (!file.type.startsWith("image/") || file.type === "image/heic") return file;
+  if (!file.type.startsWith("image/")) return file; // HEIC decodes on iPhones; elsewhere the catch keeps the original
   try {
     const bitmap = await createImageBitmap(file);
     const scale = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height));
