@@ -14,6 +14,7 @@ import { AutoGeocode } from "@/components/maps/auto-geocode";
 import { compressImage } from "@/lib/offline-store";
 import { cn } from "@/lib/utils";
 import { completeJobAction, resendCompletionAction } from "@/app/admin/_actions/dispatch";
+import { attachJobFilesAction } from "@/app/admin/_actions/billing";
 import { moveJobAction } from "@/app/admin/_actions/ops";
 
 export type BoardStop = {
@@ -254,6 +255,37 @@ function reportResult(r: Result, lead = "Completed") {
 }
 
 const SIG_KEY = "ss.driverSignature";
+/** Bytes of photos per request, safely under the host's ~4.5 MB request limit. */
+const UPLOAD_BUDGET = 3_000_000;
+
+/** Attach photos to a completed job a few at a time. Returns how many failed. */
+async function uploadInBatches(jobId: string, photos: { phase: "BEFORE" | "AFTER"; blob: Blob; name: string }[]) {
+  let failed = 0;
+  for (const phase of ["BEFORE", "AFTER"] as const) {
+    const queue = photos.filter((p) => p.phase === phase);
+    while (queue.length) {
+      const batch: typeof queue = [];
+      let size = 0;
+      while (queue.length && batch.length < 10 && (batch.length === 0 || size + queue[0]!.blob.size <= UPLOAD_BUDGET)) {
+        size += queue[0]!.blob.size;
+        batch.push(queue.shift()!);
+      }
+      const fd = new FormData();
+      fd.set("jobId", jobId);
+      fd.set("kind", phase);
+      fd.set("title", "");
+      fd.set("visible", "on");
+      for (const p of batch) fd.append("files", p.blob, p.name);
+      try {
+        const res = await attachJobFilesAction({ ok: true }, fd);
+        if (!res.ok) failed += batch.length;
+      } catch {
+        failed += batch.length;
+      }
+    }
+  }
+  return failed;
+}
 
 function PhotoPicker({ label, name, files, setFiles, accept = "image/*" }: { label: string; name: string; files: File[]; setFiles: (f: File[]) => void; accept?: string }) {
   const add = (e: React.ChangeEvent<HTMLInputElement>) => { setFiles([...files, ...Array.from(e.target.files ?? [])]); e.target.value = ""; };
@@ -339,51 +371,73 @@ function CompleteDialog({ stop: s, onClose }: { stop: CompletableJob; onClose: (
     e.preventDefault();
     const form = e.currentTarget;
     start(async () => {
-      const fd = new FormData();
-      fd.set("jobId", s.id);
-      fd.set("certify", "on");
-      if (!approveOnly) {
-        const data = new FormData(form);
-        for (const k of ["gallons", "notes", "customerSignerName", "customerUnavailableReason"]) {
-          const v = data.get(k);
-          if (typeof v === "string" && v.trim()) fd.set(k, v);
-        }
-        for (const a of s.assets) {
-          fd.append("assetIds[]", a.id);
-          fd.append("assetGallons[]", String(data.get(`gal_${a.id}`) ?? ""));
-        }
-        if (unavailable) fd.set("customerUnavailable", "on");
-        else if (customerSig) fd.set("customerSignature", customerSig);
-        if (driverSig) fd.set("driverSignature", driverSig);
-        const add = async (files: File[], phase: string) => {
-          for (const f of files) {
-            const blob = f.type.startsWith("image/") ? await compressImage(f) : f;
-            fd.append(`photo_${phase}`, blob, blob === f ? f.name : f.name.replace(/\.\w+$/, "") + ".jpg");
-          }
-        };
-        await add(before, "BEFORE");
-        await add(after, "AFTER");
-        await add(city, "CITY_MANIFEST");
-      } else {
-        fd.set("driverSignature", "x"); // already signed in the driver app
-        fd.set("customerUnavailable", "on");
-        fd.set("customerUnavailableReason", "n/a");
-      }
-      const res = await completeJobAction(fd);
-      if (res.ok && res.data) {
-        try {
-          if (remember && driverSig) localStorage.setItem(SIG_KEY, driverSig);
-        } catch {
-          /* ignore */
-        }
-        toast.success("Service saved and manifest finalized. Now confirm the invoice.");
-        onClose();
-        router.push(`/admin/jobs/${res.data.jobId}/invoice?from=dispatch`);
-      } else if (!res.ok) {
-        setErrors(res.fieldErrors ?? {});
-        toast.error(res.error);
+      try {
+        await complete(form);
+      } catch {
+        // A dropped connection or a rejected upload must not take down the page.
+        toast.error("Couldn't reach the portal. Check your signal and tap Completed again.", { duration: 10000 });
       }
     });
+  };
+
+  const complete = async (form: HTMLFormElement) => {
+    const fd = new FormData();
+    fd.set("jobId", s.id);
+    fd.set("certify", "on");
+    // Hosting rejects requests over ~4.5 MB, so photos beyond the first few go up afterwards in batches.
+    const later: { phase: "BEFORE" | "AFTER"; blob: Blob; name: string }[] = [];
+    let skipped = 0;
+    if (!approveOnly) {
+      const data = new FormData(form);
+      for (const k of ["gallons", "notes", "customerSignerName", "customerUnavailableReason"]) {
+        const v = data.get(k);
+        if (typeof v === "string" && v.trim()) fd.set(k, v);
+      }
+      for (const a of s.assets) {
+        fd.append("assetIds[]", a.id);
+        fd.append("assetGallons[]", String(data.get(`gal_${a.id}`) ?? ""));
+      }
+      if (unavailable) fd.set("customerUnavailable", "on");
+      else if (customerSig) fd.set("customerSignature", customerSig);
+      if (driverSig) fd.set("driverSignature", driverSig);
+      let budget = UPLOAD_BUDGET;
+      const add = async (files: File[], phase: "BEFORE" | "AFTER" | "CITY_MANIFEST") => {
+        for (const f of files) {
+          const blob = f.type.startsWith("image/") ? await compressImage(f) : f;
+          const name = blob === f ? f.name : f.name.replace(/\.\w+$/, "") + ".jpg";
+          if (blob.size > UPLOAD_BUDGET) { skipped++; continue; }
+          // The city manifest has to ride with the completion; job photos can follow.
+          if (phase === "CITY_MANIFEST" || blob.size <= budget) {
+            fd.append(`photo_${phase}`, blob, name);
+            budget -= blob.size;
+          } else later.push({ phase, blob, name });
+        }
+      };
+      await add(city, "CITY_MANIFEST");
+      await add(before, "BEFORE");
+      await add(after, "AFTER");
+    } else {
+      fd.set("driverSignature", "x"); // already signed in the driver app
+      fd.set("customerUnavailable", "on");
+      fd.set("customerUnavailableReason", "n/a");
+    }
+    const res = await completeJobAction(fd);
+    if (!res.ok) {
+      setErrors(res.fieldErrors ?? {});
+      toast.error(res.error);
+      return;
+    }
+    if (!res.data) return;
+    try {
+      if (remember && driverSig) localStorage.setItem(SIG_KEY, driverSig);
+    } catch {
+      /* ignore */
+    }
+    const failed = skipped + (await uploadInBatches(s.id, later));
+    toast.success("Service saved and manifest finalized. Now confirm the invoice.");
+    if (failed) toast.warning(`${failed} photo${failed > 1 ? "s" : ""} didn't upload. Add ${failed > 1 ? "them" : "it"} from the job page (Add photos & files).`, { duration: 15000 });
+    onClose();
+    router.push(`/admin/jobs/${res.data.jobId}/invoice?from=dispatch`);
   };
   const err = (k: string) => errors[k]?.[0];
 
